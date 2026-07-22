@@ -1,0 +1,1092 @@
+[
+  {
+    "name": "Ikebana",
+    "type": "Apartment",
+    "developer": "Gala",
+    "status": "Near Possession",
+    "location": "Sindhu Bhavan Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "7300",
+          "carpet": "3358",
+          "price": "6.57cr+",
+          "rate": "9800"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "8400",
+          "carpet": "3864",
+          "price": "7.56cr+",
+          "rate": "9800"
+        }
+      ],
+      "Penthouse": [
+        {
+          "area": "13500-15500",
+          "carpet": "6210-7130",
+          "price": "19-26cr+",
+          "rate": null
+        }
+      ],
+      "Duplex": [
+        {
+          "area": "13500-15500",
+          "carpet": "6210-7130",
+          "price": "19-26cr+",
+          "rate": null
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "9 Months"
+  },
+  {
+    "name": "Maruti 360",
+    "type": "Apartment",
+    "developer": "Maruti",
+    "status": "Near Possession",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "5700",
+          "carpet": "2622",
+          "price": "6cr+",
+          "rate": "10500",
+          "livingArea": "Family Room/Dining 773 sq ft (18'0\" × 42'11\")",
+          "kitchen": "Core 122 sq ft (11'0\" × 11'1\") + Display 116 sq ft (11'7\" × 10'0\")"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "7600",
+          "carpet": "3496",
+          "price": "8cr+",
+          "rate": "10500",
+          "livingArea": "Family Room/Dining 773 sq ft (18'0\" × 42'11\")",
+          "kitchen": "Core 122 sq ft (11'0\" × 11'1\") + Display 116 sq ft (11'7\" × 10'0\")"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": [
+        {
+          "area": "11000",
+          "carpet": "5060",
+          "price": "14cr+",
+          "rate": null,
+          "livingArea": "Family Room/Dining 773 sq ft (18'0\" × 42'11\")",
+          "kitchen": "Core 122 sq ft (11'0\" × 11'1\") + Display 116 sq ft (11'7\" × 10'0\")"
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "1.5 Year",
+    "highlights": [
+      "Maruti 36 — 4 BHK & 5 BHK luxury residences with a personal foyer for every apartment",
+      "Separate owner and service lifts",
+      "Dual-kitchen concept — core kitchen plus display kitchen",
+      "Large drawing and family living areas with dedicated pooja space",
+      "Store room, utility and wash yard designed into every plan"
+    ]
+  },
+  {
+    "name": "Pashmina",
+    "type": "Apartment",
+    "developer": "Venus",
+    "status": "Ready to Move in",
+    "location": "Sindhu Bhavan Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "5250",
+          "carpet": "2415",
+          "price": "5.25",
+          "rate": "10000"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "6875",
+          "carpet": "3162.5",
+          "price": "6.875",
+          "rate": "10000",
+          "livingArea": "Living & Dining 720 sq ft (40'0\" × 18'0\") + Drawing Room 278 sq ft (15'0\" × 18'6\")",
+          "kitchen": "Display 120 sq ft (12'0\" × 10'0\") + Core 120 sq ft (12'0\" × 10'0\")",
+          "bedroom1": "280 sq ft (20'0\" × 14'0\")",
+          "bedroom2": "280 sq ft (20'0\" × 14'0\")",
+          "bedroom3": "260 sq ft (13'0\" × 20'0\")",
+          "bedroom4": "241 sq ft (13'0\" × 18'6\")",
+          "bedroom5": "222 sq ft (12'0\" × 18'6\")"
+        }
+      ],
+      "Penthouse": [
+        {
+          "area": "11500",
+          "carpet": "5290",
+          "price": "18",
+          "rate": null
+        }
+      ],
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "RTMI",
+    "highlights": [
+      "Luxury 4 BHK & 5 BHK residences with a private owner lift plus separate guest and service lift",
+      "Dedicated personal foyer and vestibule for every residence",
+      "Display kitchen with a separate core kitchen, and a servant room with servant toilet",
+      "Premium clubhouse with 37+ lifestyle amenities",
+      "VRV centralized air-conditioning with Italian marble/exotic granite flooring in major spaces"
+    ],
+    "amenities": [
+      "Ballroom / Banquet",
+      "Private Theatre",
+      "Library & Reading Lounge",
+      "Indoor Games",
+      "Music Room",
+      "Kids Play Area",
+      "Multi-game Court",
+      "Club Lawn",
+      "BBQ Zone",
+      "Sports Café",
+      "Salon",
+      "Luxury Spa",
+      "Fitness Centre",
+      "Pilates / CrossFit",
+      "Yoga / Zumba Studio",
+      "Steam & Sauna",
+      "Walking/Jogging Track",
+      "Performance Area",
+      "Open Deck",
+      "Gazebo"
+    ]
+  },
+  {
+    "name": "Triveni 84",
+    "type": "Apartment",
+    "developer": "Triveni Bohra Infraspace",
+    "status": "Under Construction",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "3700",
+          "carpet": "1702",
+          "price": "4cr+",
+          "rate": "9000",
+          "livingArea": "460 sq ft (27'6\" × 16'9\")",
+          "kitchen": "139 sq ft (15'6\" × 9'0\")",
+          "bedroom1": "216 sq ft (18'0\" × 12'0\")",
+          "bedroom2": "216 sq ft (18'0\" × 12'0\")",
+          "bedroom3": "161 sq ft (14'0\" × 11'6\")",
+          "bedroom4": "126 sq ft (11'0\" × 11'6\")"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": [
+        {
+          "area": "6500",
+          "carpet": "2990",
+          "price": "7.15",
+          "rate": null
+        }
+      ],
+      "Duplex": [
+        {
+          "area": "6500",
+          "carpet": "2990",
+          "price": "7.15cr+",
+          "rate": null
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "2 YEAR",
+    "highlights": [
+      "84 exclusive residences, 2 apartments per floor",
+      "2 private lifts + 1 service lift per tower",
+      "3-level basement parking with guest parking",
+      "Central landscape garden",
+      "Wet kitchen, utility and servant room in 4 BHK plan"
+    ]
+  },
+  {
+    "name": "Anamika",
+    "type": "Apartment",
+    "developer": "Constera",
+    "status": "Under Construction",
+    "location": "Sindhu Bhavan Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "3300-4300",
+          "carpet": "1648-2096",
+          "price": "3-4cr+",
+          "rate": "8500",
+          "livingArea": "461 sq ft (Drawing 12'0\" × 20'0\" + Living/Dining 12'0\" × 18'5\")",
+          "kitchen": "164 sq ft (15'7\" × 10'6\") + kitchen yard",
+          "bedroom1": "216 sq ft (18'0\" × 12'0\")",
+          "bedroom2": "255 sq ft (12'6\" × 20'5\")",
+          "bedroom3": "180 sq ft (12'0\" × 15'0\")",
+          "bedroom4": "162 sq ft (12'0\" × 13'6\")"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "6700",
+          "carpet": "3120",
+          "price": "5.75cr+",
+          "rate": "8500",
+          "livingArea": "630 sq ft (Living/Dining 23'0\" × 18'0\" + Drawing 12'0\" × 18'0\")",
+          "kitchen": "180 sq ft (11'0\" × 16'4\") + wet kitchen",
+          "bedroom1": "234 sq ft (13'0\" × 18'0\")",
+          "bedroom2": "180 sq ft (15'0\" × 12'0\")",
+          "bedroom3": "222 sq ft (18'5\" × 12'0\")",
+          "bedroom4": "260 sq ft (13'0\" × 20'0\")",
+          "bedroom5": "187 sq ft (11'0\" × 17'0\")"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "2 YEAR",
+    "highlights": [
+      "Four distinct 4 BHK layouts — Classy Residence & Luxurious Retreat",
+      "RERA carpet 1,648–2,096 sq ft (4 BHK), 3,120 sq ft (5 BHK)",
+      "5 BHK Lifestyle Living with puja passage and powder room"
+    ]
+  },
+  {
+    "name": "Swati Senor",
+    "type": "Apartment",
+    "developer": "Swati",
+    "status": "Ready to Move in",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "8000",
+          "carpet": "3680",
+          "price": "8cr+",
+          "rate": "9700"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "10000",
+          "carpet": "4600",
+          "price": "10cr+",
+          "rate": "9700",
+          "livingArea": "Formal/Family Living & Dining 963 sq ft (41'3\" × 23'4\")",
+          "kitchen": "Dry 130 sq ft (13'0\" × 10'0\") + Wet 95 sq ft (13'0\" × 7'4\")",
+          "bedroom1": "355 sq ft (14'0\" × 25'4\")",
+          "bedroom2": "355 sq ft (14'0\" × 25'4\")",
+          "bedroom3": "234 sq ft (13'0\" × 18'0\")",
+          "bedroom4": "238 sq ft (13'0\" × 18'4\")",
+          "bedroom5": "216 sq ft (12'0\" × 18'0\")"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "RTMI",
+    "highlights": [
+      "SENOR — 54 exclusive 5 BHK residences across a 20-storey luxury tower",
+      "Two private owner lifts and two dedicated service lifts per apartment, plus a separate club lift",
+      "4 parking levels with 5 allotted car parks per residence",
+      "11'-4\" floor-to-floor height with column-free & beam-free living-dining",
+      "Three grand deck balconies with unrestricted views"
+    ],
+    "amenities": [
+      "Banquet Hall",
+      "Home Theatre",
+      "Squash Court",
+      "Badminton Court",
+      "Basketball Half Court",
+      "Swimming Pool",
+      "Indoor Pool",
+      "Jacuzzi",
+      "Gym",
+      "Aerobics Studio",
+      "Library",
+      "Salon",
+      "Spa & Steam",
+      "Cardio Zone",
+      "Discussion Room",
+      "Toddler Room",
+      "Game Zone",
+      "Reception & Lounge"
+    ]
+  },
+  {
+    "name": "Rashmi",
+    "type": "Apartment",
+    "developer": "Skyscape",
+    "status": "Under Construction",
+    "location": "Thaltej",
+    "configs": {
+      "4 BHK": [
+        {
+          "type": "Type A",
+          "area": "3300",
+          "carpet": "1518",
+          "price": "2.5cr+",
+          "rate": "6800",
+          "livingArea": "224 sq ft (19'6\" × 11'6\")",
+          "kitchen": "Kitchen + Dining 213 sq ft (17'0\" × 12'6\")",
+          "bedroom1": "161 sq ft (15'0\" × 10'9\")",
+          "bedroom2": "125 sq ft (12'6\" × 10'0\")",
+          "bedroom3": "221 sq ft (17'0\" × 13'0\")",
+          "bedroom4": "165 sq ft (11'0\" × 15'0\")"
+        },
+        {
+          "type": "Type B",
+          "area": "3300",
+          "carpet": "1518",
+          "price": "2.5cr+",
+          "rate": "6800",
+          "livingArea": "273 sq ft (22'9\" × 12'0\")",
+          "kitchen": "Kitchen + Dining 255 sq ft (15'0\" × 17'0\")",
+          "bedroom1": "172 sq ft (16'0\" × 10'9\")",
+          "bedroom2": "125 sq ft (12'6\" × 10'0\")",
+          "bedroom3": "213 sq ft (12'6\" × 17'0\")",
+          "bedroom4": "165 sq ft (11'0\" × 15'0\")"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": [
+        {
+          "area": "5700",
+          "carpet": "2622",
+          "price": "6",
+          "rate": null
+        }
+      ],
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "2 YEAR",
+    "highlights": [
+      "SKYSCAPE — 66 exclusive 4 BHK residences, 3 per floor",
+      "G+24 storeys with Ground+1 podium, near Shilaj Circle",
+      "Personal lift and private foyer",
+      "Duplex with double-height drawing room and home theatre",
+      "3-level basement parking"
+    ],
+    "amenities": [
+      "Swimming Pool",
+      "Kids Pool",
+      "Indoor Gym",
+      "Indoor Games",
+      "Library",
+      "Home Theatre",
+      "Multipurpose Hall",
+      "Multipurpose Court",
+      "Children's Play Area",
+      "Senior Citizen Seating",
+      "Community Garden",
+      "Party Lawn",
+      "Terrace Garden",
+      "Reception Lounge",
+      "Double Height Entrance Foyer",
+      "Deck Area"
+    ]
+  },
+  {
+    "name": "Avant",
+    "type": "Apartment",
+    "developer": "Ravi Desai",
+    "status": "Ready to Move in",
+    "location": "Sindhu Bhavan Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "4700",
+          "carpet": "2162",
+          "price": "4.5cr+",
+          "rate": "8600"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": [
+        {
+          "area": "8500",
+          "carpet": "3910",
+          "price": "8.5",
+          "rate": null
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "RTMI"
+  },
+  {
+    "name": "Capstone",
+    "type": "Apartment",
+    "developer": "Beaumonde",
+    "status": "Under Construction",
+    "location": "Thaltej",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "5200",
+          "carpet": "2392",
+          "price": "3.744",
+          "rate": "7200"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": [
+        {
+          "area": "8700",
+          "carpet": "4002",
+          "price": "8",
+          "rate": null
+        }
+      ],
+      "Duplex": [
+        {
+          "area": "8700",
+          "carpet": "4002",
+          "price": null,
+          "rate": null
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "2 YEAR"
+  },
+  {
+    "name": "Eminence 96",
+    "type": "Apartment",
+    "developer": "Arista",
+    "status": "Ready to Move in",
+    "location": "Thaltej",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "3400",
+          "carpet": "1564",
+          "price": "2.8cr+",
+          "rate": "7500"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "RTMI"
+  },
+  {
+    "name": "Belrosa",
+    "type": "Apartment",
+    "developer": "Adani Realty",
+    "status": "Pre-Launch",
+    "location": "Shantigram",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "5300",
+          "carpet": "2942",
+          "price": "3.975",
+          "rate": "7500"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "6800",
+          "carpet": "3665",
+          "price": "5.1",
+          "rate": "7500"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": [
+        {
+          "area": "11000-12500",
+          "carpet": "3669-6911",
+          "price": "12",
+          "rate": null
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "3 YEAR",
+    "highlights": [
+      "Golf course views from a 32-storey, 125 m tower",
+      "One apartment per floor — 100 apartments + 8 duplexes",
+      "Sky Lounge with infinity pool, 35+ lifestyle amenities",
+      "Private foyer, Vastu-compliant homes",
+      "4 car parks (4 BHK), 5 car parks (5/6 BHK) in 3-level basement"
+    ]
+  },
+  {
+    "name": "Anurita",
+    "type": "Bungalow",
+    "developer": "Constera",
+    "status": "Ready to Move in",
+    "location": "Thaltej",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": null,
+          "carpet": null,
+          "price": "20",
+          "rate": null,
+          "livingArea": "470 sq ft (Drawing 13'0\" × 19'0\" + Living/Dining 11'9\" × 19'0\")",
+          "kitchen": "167 sq ft (11'9\" × 14'3\") + kitchen balcony",
+          "bedroom1": "192 sq ft (13'0\" × 14'9\")",
+          "bedroom2": "204 sq ft (12'0\" × 17'0\")",
+          "bedroom3": "165 sq ft (11'9\" × 14'0\")",
+          "bedroom4": "132 sq ft (11'0\" × 12'0\")"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": "313.5 sq.yd",
+    "plotCarpet": "175 sq.yd",
+    "possession": "RTMI",
+    "highlights": [
+      "Four premium residences per floor around a central common foyer",
+      "Twin passenger lifts with waiting areas on every floor",
+      "Main balcony 24'9\" × 5'6\" plus a separate kitchen balcony",
+      "Two toilet-dress suites, dedicated wash and store in plan"
+    ]
+  },
+  {
+    "name": "Vaikunth",
+    "type": "Bungalow",
+    "developer": "A. Shridhar",
+    "status": "Near Possession",
+    "location": "Shilaj",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": null,
+          "carpet": null,
+          "price": "6",
+          "rate": null,
+          "livingArea": "416 sq ft (Drawing 14'0\" × 18'0\" + Dining 10'3\" × 16'0\")",
+          "kitchen": "125 sq ft (14'9\" × 8'6\")",
+          "bedroom1": "Master 300 sq ft (25'0\" × 12'0\") + dress room",
+          "bedroom2": "238 sq ft (14'0\" × 17'0\")",
+          "bedroom3": "238 sq ft (14'0\" × 17'0\")",
+          "bedroom4": "140 sq ft (14'0\" × 10'0\")"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": "128.7sq.yd",
+    "plotCarpet": "110 sq.yd",
+    "possession": "1 YEAR",
+    "highlights": [
+      "Four-level bungalow — ground, first, second and terrace, with private lift",
+      "Approx. 440 sq yd built-up across the four levels",
+      "Private garden, courtyard, parking, wash yard and bedroom courtyard",
+      "Terrace sitting area 14'0\" × 23'3\"",
+      "78-plot gated layout with 20–40 ft internal roads, beside AMC Oxygen Park"
+    ]
+  },
+  {
+    "name": "Kalrav Alpines",
+    "type": "Plots",
+    "developer": "A. Shridhar",
+    "status": "Near Possession",
+    "location": "Nandoli",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": null,
+          "carpet": null,
+          "price": "8",
+          "rate": null
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": "363 sq.yd",
+    "plotCarpet": "500 sq.yd",
+    "possession": "1 YEAR"
+  },
+  {
+    "name": "Northpark",
+    "type": "Bungalow",
+    "developer": "Adani",
+    "status": "Near Possession",
+    "location": "Vaishnodevi",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": null,
+          "carpet": null,
+          "price": "8",
+          "rate": null
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": "165 sq.yd",
+    "plotCarpet": "137.5 sq.yd",
+    "possession": "1 YEAR"
+  },
+  {
+    "name": "Westpark",
+    "type": "Plots",
+    "developer": "Adani",
+    "status": "Ready to Move in",
+    "location": "Vaishnodevi",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": null,
+          "carpet": null,
+          "price": "8",
+          "rate": null
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": "231 sq.yd",
+    "plotCarpet": "525 sq.yd",
+    "possession": "RTMI"
+  },
+  {
+    "name": "Atman",
+    "type": "Apartment",
+    "developer": "Maruti",
+    "status": "Ready to Move in",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "5000",
+          "carpet": "2300",
+          "price": "4.5",
+          "rate": "9000"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "6 Months"
+  },
+  {
+    "name": "Shaligram Luxuria",
+    "type": "Apartment",
+    "developer": "Shaligram",
+    "status": "Ready to Move in",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "3900",
+          "carpet": "1794",
+          "price": "3.432",
+          "rate": "8800",
+          "livingArea": "Living 289 sq ft (17'0\" × 17'0\") + Family/Dining 341 sq ft (28'5\" × 12'0\")",
+          "kitchen": "156 sq ft (14'6\" × 10'9\")",
+          "bedroom1": "240 sq ft (20'0\" × 12'0\")",
+          "bedroom2": "216 sq ft (18'0\" × 12'0\")",
+          "bedroom3": "174 sq ft (12'5\" × 14'0\")",
+          "bedroom4": "158 sq ft (12'11\" × 12'3\")"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": [
+        {
+          "area": "6500",
+          "carpet": "2990",
+          "price": "6.5CR+",
+          "rate": null
+        }
+      ],
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "RTMI",
+    "highlights": [
+      "Shaligram Luxuria — G+14 towers with only 2 residences per floor across 4 wings",
+      "3 lifts in each block and 2-level basement parking",
+      "20+ lifestyle amenities in a premium low-density layout",
+      "Servant room with attached toilet in every residence",
+      "Vastu-oriented planning with large family living & dining spaces"
+    ],
+    "amenities": [
+      "Entrance Plaza",
+      "Security Cabin",
+      "Pick-up & Drop-off",
+      "Lounge & Library",
+      "Society Meeting Room",
+      "Landscaped Lawn",
+      "Plaza",
+      "Gym",
+      "Indoor Games",
+      "Multi-purpose Hall",
+      "Children's Play Area",
+      "Skating Area",
+      "Badminton Court",
+      "Verandah with Swings",
+      "Dry Fountain"
+    ]
+  },
+  {
+    "name": "Kimana",
+    "type": "Apartment",
+    "developer": "Sun",
+    "status": "Near Possession",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "6000",
+          "carpet": "2760",
+          "price": "6.3",
+          "rate": "10500"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "8000",
+          "carpet": "3680",
+          "price": "8.4",
+          "rate": "10500"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "RTMI"
+  },
+  {
+    "name": "Belagio",
+    "type": "Apartment",
+    "developer": "Palak",
+    "status": "Near Possession",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "6100",
+          "carpet": "2806",
+          "price": "5.795",
+          "rate": "9500"
+        }
+      ],
+      "5 BHK": [
+        {
+          "type": "Type 1",
+          "area": "8500",
+          "carpet": "3910",
+          "price": "8.075",
+          "rate": "9500",
+          "livingArea": "Family Room/Dining 932 sq ft (40'1\" × 23'3\") + Formal Living 348 sq ft (14'11\" × 23'4\")",
+          "kitchen": "Core 108 sq ft (10'11\" × 9'11\") + Display 113 sq ft (11'4\" × 10'0\")",
+          "bedroom1": "329 sq ft (15'0\" × 21'11\")",
+          "bedroom2": "300 sq ft (15'0\" × 20'0\")",
+          "bedroom3": "252 sq ft (14'0\" × 18'0\")",
+          "bedroom4": "218 sq ft (12'6\" × 17'5\")",
+          "bedroom5": "242 sq ft (12'1\" × 20'0\")"
+        },
+        {
+          "type": "Type 2",
+          "area": "8500",
+          "carpet": "3910",
+          "price": "8.075",
+          "rate": "9500",
+          "livingArea": "Family Room/Dining 873 sq ft (40'11\" × 21'4\") + Formal Living 378 sq ft (14'11\" × 25'4\")",
+          "kitchen": "Core 122 sq ft (11'0\" × 11'1\") + Display 142 sq ft (11'4\" × 12'6\")",
+          "bedroom1": "329 sq ft (15'0\" × 21'11\")",
+          "bedroom2": "300 sq ft (15'0\" × 20'0\")",
+          "bedroom3": "280 sq ft (14'0\" × 20'0\")",
+          "bedroom4": "285 sq ft (13'0\" × 21'11\")",
+          "bedroom5": "210 sq ft (12'1\" × 17'5\")"
+        },
+        {
+          "type": "Type 3",
+          "area": "8500",
+          "carpet": "3910",
+          "price": "8.075",
+          "rate": "9500",
+          "livingArea": "Family Room/Dining 873 sq ft (40'11\" × 21'4\") + Formal Living 378 sq ft (14'11\" × 25'4\")",
+          "kitchen": "Core 126 sq ft (11'0\" × 11'5\") + Display 136 sq ft (11'4\" × 12'0\")",
+          "bedroom1": "329 sq ft (15'0\" × 21'11\")",
+          "bedroom2": "300 sq ft (15'0\" × 20'0\")",
+          "bedroom3": "280 sq ft (14'0\" × 20'0\")",
+          "bedroom4": "285 sq ft (13'0\" × 21'11\")",
+          "bedroom5": "210 sq ft (12'1\" × 17'5\")"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "1 YEAR",
+    "highlights": [
+      "Belagio — ultra-luxury 5 BHK residences with a private owner lift and separate service lift",
+      "Arrival lounge and private foyer with large attached dress and toilet areas",
+      "Separate display and core kitchens",
+      "Staff accommodation with toilet, utility and wash yard",
+      "Multiple 5 BHK layout options (Type 1, Type 2 & Type 3) with large verandahs"
+    ]
+  },
+  {
+    "name": "The Park",
+    "type": "Apartment",
+    "developer": "HN Safal",
+    "status": "Under Construction",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": null,
+      "5 BHK": [
+        {
+          "area": "8800",
+          "carpet": "4048",
+          "price": "8.36Cr+",
+          "rate": "9500"
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "2 Years"
+  },
+  {
+    "name": "SATYAMEV Luxor",
+    "type": "Apartment",
+    "developer": "Satyamev",
+    "status": "Under Construction",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "4200",
+          "carpet": "1932",
+          "price": "3.15",
+          "rate": "7500",
+          "livingArea": "510 sq ft (Drawing 13'0\" × 19'6\" + Living/Dining 13'0\" × 19'9\")",
+          "kitchen": "158 sq ft (15'0\" × 10'6\")",
+          "bedroom1": "187 sq ft (11'0\" × 17'0\")",
+          "bedroom2": "179 sq ft (11'0\" × 16'3\")",
+          "bedroom3": "237 sq ft (12'0\" × 19'9\")",
+          "bedroom4": "204 sq ft (17'0\" × 12'0\")"
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": [
+        {
+          "area": "7700",
+          "carpet": "3542",
+          "price": "6.93CR+",
+          "rate": null,
+          "livingArea": "Lounge 403 sq ft (26'0\" × 15'6\")",
+          "bedroom4": "316 sq ft (16'0\" × 19'9\")",
+          "bedroom5": "204 sq ft (17'0\" × 12'0\")"
+        }
+      ],
+      "Duplex": [
+        {
+          "area": "7700",
+          "carpet": "3542",
+          "price": "6.93CR+",
+          "rate": null,
+          "livingArea": "Lounge 403 sq ft (26'0\" × 15'6\")",
+          "bedroom4": "316 sq ft (16'0\" × 19'9\")",
+          "bedroom5": "204 sq ft (17'0\" × 12'0\")"
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "1.5 Years",
+    "highlights": [
+      "4 BHK + Podium Living Space with 787 sq ft private terrace",
+      "Personal lift and personal foyer for every home",
+      "Servant's room with separate toilet",
+      "Dedicated pooja, store and utility in plan"
+    ]
+  },
+  {
+    "name": "Goyal Riviera Select",
+    "type": "Apartment",
+    "developer": "Goyal",
+    "status": "Under Construction",
+    "location": "Iskon Ambli Road",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "6900",
+          "carpet": "3174",
+          "price": "6.55cr+",
+          "rate": null,
+          "livingArea": "887 sq ft (Drawing 14'0\" × 22'0\" + Living 13'4\" × 22'0\" + Dining 13'0\" × 22'0\")",
+          "kitchen": "189 sq ft (18'0\" × 10'6\") + kitchen yard"
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "9600",
+          "carpet": "4416",
+          "price": "9.2Cr+",
+          "rate": null,
+          "livingArea": "1026 sq ft (Drawing 14'2\" × 27'0\" + Living 14'0\" × 23'0\" + Dining 14'0\" × 23'0\")",
+          "kitchen": "245 sq ft (13'3\" × 18'6\") + wet kitchen 10'3\" × 10'0\""
+        }
+      ],
+      "Penthouse": [
+        {
+          "area": null,
+          "carpet": "7171",
+          "price": null,
+          "rate": null,
+          "livingArea": "1031 sq ft (Drawing 14'4\" × 27'0\" + Living 14'0\" × 23'0\" + Dining 14'0\" × 23'0\")",
+          "kitchen": "245 sq ft (13'3\" × 18'6\")"
+        }
+      ],
+      "Duplex": [
+        {
+          "area": null,
+          "carpet": "6412",
+          "price": null,
+          "rate": null,
+          "livingArea": "899 sq ft (Drawing 13'5\" × 22'0\" + Living 14'0\" × 22'0\" + Dining 13'0\" × 22'0\")",
+          "kitchen": "189 sq ft (18'0\" × 10'6\")"
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "2 Years",
+    "highlights": [
+      "Carpet areas from 3,174 sq ft (4 BHK) to 8,349 sq ft (6 BHK Triplex)",
+      "6 BHK Triplex with 36' × 25' lounge and 1,577 sq ft terrace",
+      "5 BHK Penthouse with 818 sq ft of balconies",
+      "Vestibule entry, puja, store and kitchen yard in every plan"
+    ]
+  },
+  {
+    "name": "VENUS UNIVERSE",
+    "type": "Apartment",
+    "developer": "Venus",
+    "status": "Pre-Launch",
+    "location": "Nehrunagar",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "2900-5000",
+          "carpet": "1334-2300",
+          "price": "3-5.5",
+          "rate": null
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "5800-10000",
+          "carpet": "2668-4600",
+          "price": "6-10 Cr+",
+          "rate": null
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "3.5 Years"
+  },
+  {
+    "name": "GODREJ ALTUS",
+    "type": "Apartment",
+    "developer": "Godrej Properties",
+    "status": "Pre-Launch",
+    "location": "Vastrapur",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "4000-4800",
+          "carpet": "1840-2208",
+          "price": "5.6-6.8",
+          "rate": null
+        }
+      ],
+      "5 BHK": null,
+      "Penthouse": null,
+      "Duplex": [
+        {
+          "area": "6000-9600 (Ika)",
+          "carpet": "2760-4416",
+          "price": "8.6-13.6",
+          "rate": null
+        }
+      ]
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "3.5 Years"
+  },
+  {
+    "name": "AMARIS",
+    "type": "Apartment",
+    "developer": "Adani",
+    "status": "Pre-Launch",
+    "location": "Gota",
+    "configs": {
+      "4 BHK": [
+        {
+          "area": "4000-5000",
+          "carpet": "1840-2300",
+          "price": "2.6-3.4",
+          "rate": null
+        }
+      ],
+      "5 BHK": [
+        {
+          "area": "7000-9000",
+          "carpet": "3220-4140",
+          "price": "5.5-6.75",
+          "rate": null
+        }
+      ],
+      "Penthouse": null,
+      "Duplex": null
+    },
+    "plotSuper": null,
+    "plotCarpet": null,
+    "possession": "3 Years"
+  }
+]

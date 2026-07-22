@@ -1,0 +1,1476 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Editorial token aliases — kept for backward compat with existing classes */
+  --color-lux-black: var(--lux-black);
+  --color-soft-black: var(--soft-black);
+  --color-graphite: var(--graphite);
+  --color-ivory: var(--ivory);
+  --color-champagne: var(--champagne-gold);
+  --color-antique: var(--antique-gold);
+  --color-muted-gold: var(--muted-gold);
+
+  --font-display:
+    "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* =========================================================
+   CLARITY SYSTEM
+   Dark = deep graphite with white content
+   Light = true white with black content
+   The comparison content must stay clear before decorative luxury.
+   ========================================================= */
+
+:root {
+  --radius: 0.75rem;
+
+  /* Ink palette (dark theme defaults) */
+  --lux-black: #090909;
+  --soft-black: #151515;
+  --graphite: #222222;
+  --ivory: #ffffff;
+  /* Accent maps to paper-white in ink mode — keeps existing
+     "champagne" / gold-text classes readable without retro warmth. */
+  --champagne-gold: #ffffff;
+  --antique-gold: #e6e6e6;
+  --muted-gold: #b8b8b8;
+
+  --background: #090909;
+  --foreground: #ffffff;
+  --card: #151515;
+  --card-foreground: #ffffff;
+  --popover: #151515;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #090909;
+  --secondary: #222222;
+  --secondary-foreground: #ffffff;
+  --muted: #1d1d1d;
+  --muted-foreground: #d4d4d4;
+  --accent: #ffffff;
+  --accent-foreground: #090909;
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: #f5f3ee;
+  --border: rgba(255, 255, 255, 0.16);
+  --input: rgba(255, 255, 255, 0.2);
+  --ring: #ffffff;
+
+  --gradient-gold: linear-gradient(135deg, #ffffff 0%, #d7d7d7 100%);
+  --gradient-dark: linear-gradient(180deg, #090909 0%, #151515 100%);
+  --gradient-radial-gold: none;
+
+  --shadow-gold: 0 18px 50px -22px rgba(0, 0, 0, 0.6);
+  --shadow-deep: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+
+  --glass-bg: rgba(21, 21, 21, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.16);
+}
+
+.light {
+  --lux-black: #ffffff;
+  --soft-black: #ffffff;
+  --graphite: #f4f4f4;
+  --ivory: #080808;
+
+  --champagne-gold: #080808;
+  --antique-gold: #080808;
+  --muted-gold: #3f3f3f;
+
+  --background: #ffffff;
+  --foreground: #080808;
+  --card: #ffffff;
+  --card-foreground: #080808;
+  --popover: #ffffff;
+  --popover-foreground: #080808;
+  --primary: #080808;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f4;
+  --secondary-foreground: #080808;
+  --muted: #f6f6f6;
+  --muted-foreground: #2a2a2a;
+  --accent: #080808;
+  --accent-foreground: #ffffff;
+  --border: rgba(8, 8, 8, 0.16);
+  --input: rgba(8, 8, 8, 0.24);
+  --ring: #080808;
+
+  --gradient-gold: linear-gradient(135deg, #080808 0%, #343434 100%);
+  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #f7f7f7 100%);
+  --gradient-radial-gold: none;
+
+  --shadow-gold: 0 18px 44px -30px rgba(8, 8, 8, 0.26);
+  --shadow-deep: 0 24px 60px -38px rgba(8, 8, 8, 0.28);
+  --shadow-glass: 0 8px 24px -14px rgba(8, 8, 8, 0.18);
+
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(8, 8, 8, 0.16);
+}
+
+.light body {
+  background:
+    linear-gradient(rgba(8, 8, 8, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 8, 8, 0.035) 1px, transparent 1px), #ffffff;
+  background-size: 44px 44px;
+}
+
+.light header,
+.light .glass,
+.light .glass-strong {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: var(--foreground) !important;
+}
+
+/* ----------------- Compat overrides for legacy luxury classes ----------------- */
+/* Map all `lux-black` / `soft-black` / `graphite` surface utilities to current tokens. */
+.bg-lux-black {
+  background-color: var(--background) !important;
+}
+.bg-lux-black\/40 {
+  background-color: color-mix(in oklab, var(--background) 40%, transparent) !important;
+}
+.bg-lux-black\/60 {
+  background-color: color-mix(in oklab, var(--background) 60%, transparent) !important;
+}
+.bg-lux-black\/70 {
+  background-color: color-mix(in oklab, var(--background) 70%, transparent) !important;
+}
+
+.bg-soft-black,
+.bg-soft-black\/30,
+.bg-soft-black\/40,
+.bg-soft-black\/60,
+.bg-soft-black\/70,
+.bg-soft-black\/80,
+.bg-soft-black\/85 {
+  background-color: var(--card) !important;
+}
+
+.bg-graphite {
+  background-color: var(--secondary) !important;
+}
+.bg-graphite\/40 {
+  background-color: color-mix(in oklab, var(--secondary) 40%, transparent) !important;
+}
+.bg-graphite\/60 {
+  background-color: color-mix(in oklab, var(--secondary) 60%, transparent) !important;
+}
+.bg-graphite\/70 {
+  background-color: color-mix(in oklab, var(--secondary) 70%, transparent) !important;
+}
+
+/* Text classes */
+.text-ivory {
+  color: var(--foreground) !important;
+}
+.text-ivory\/95,
+.text-ivory\/90 {
+  color: color-mix(in oklab, var(--foreground) 92%, transparent) !important;
+}
+.text-ivory\/85,
+.text-ivory\/80 {
+  color: color-mix(in oklab, var(--foreground) 82%, transparent) !important;
+}
+.text-ivory\/70 {
+  color: color-mix(in oklab, var(--foreground) 72%, transparent) !important;
+}
+.text-ivory\/60,
+.text-ivory\/50 {
+  color: color-mix(in oklab, var(--foreground) 60%, transparent) !important;
+}
+
+.text-champagne,
+.text-champagne\/90,
+.text-champagne\/80,
+.text-champagne\/70,
+.text-champagne\/60 {
+  color: var(--brand-strong, var(--brand)) !important;
+}
+.text-champagne\/40 {
+  color: color-mix(in oklab, var(--brand-strong, var(--brand)) 55%, transparent) !important;
+}
+
+/* Backgrounds tied to gold */
+.bg-champagne {
+  background-color: var(--brand) !important;
+  color: var(--brand-ink) !important;
+}
+.bg-champagne\/5 {
+  background-color: color-mix(in oklab, var(--brand) 8%, transparent) !important;
+}
+.bg-champagne\/10,
+.bg-champagne\/12 {
+  background-color: color-mix(in oklab, var(--brand) 14%, transparent) !important;
+}
+.bg-muted-gold {
+  background-color: color-mix(in oklab, var(--brand) 65%, var(--muted)) !important;
+}
+
+/* Borders tied to gold */
+.border-champagne\/12 {
+  border-color: color-mix(in oklab, var(--brand) 18%, transparent) !important;
+}
+.border-champagne\/15,
+.border-champagne\/18,
+.border-champagne\/20,
+.border-champagne\/22 {
+  border-color: color-mix(in oklab, var(--brand) 26%, transparent) !important;
+}
+.border-champagne\/25,
+.border-champagne\/30,
+.border-champagne\/40 {
+  border-color: color-mix(in oklab, var(--brand) 40%, transparent) !important;
+}
+.border-champagne\/50 {
+  border-color: color-mix(in oklab, var(--brand) 55%, transparent) !important;
+}
+.border-champagne {
+  border-color: var(--brand) !important;
+}
+.divide-champagne\/12 > :not([hidden]) ~ :not([hidden]) {
+  border-color: color-mix(in oklab, var(--brand) 18%, transparent) !important;
+}
+.ring-champagne\/35 {
+  --tw-ring-color: color-mix(in oklab, var(--brand) 40%, transparent) !important;
+}
+.ring-champagne\/40,
+.ring-champagne\/45 {
+  --tw-ring-color: color-mix(in oklab, var(--brand) 55%, transparent) !important;
+}
+
+/* Gold gradient text → active brand accent */
+.gold-text {
+  background: linear-gradient(120deg, var(--brand), var(--brand-soft)) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Gold-border becomes a brand hairline */
+.gold-border {
+  border: 1px solid color-mix(in oklab, var(--brand) 45%, transparent) !important;
+  background: transparent !important;
+}
+
+/* Theme transitions — applied ONLY while the theme is switching.
+   A permanent universal transition makes every hover and state change
+   trigger full-page style work, which reads as lag. */
+html.theme-anim,
+html.theme-anim * {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.2s ease !important;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis-weight: none;
+    font-synthesis-style: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "ss02", "cv11", "kern", "liga", "clig", "calt";
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures contextual;
+    font-optical-sizing: auto;
+    letter-spacing: -0.005em;
+  }
+  input,
+  textarea,
+  select,
+  button {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: inherit;
+  }
+  /* Plus Jakarta Sans (geometric sans) needs tighter tracking than a serif at display sizes */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-display {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+  }
+  h1 {
+    font-weight: 800 !important;
+  }
+  strong,
+  b {
+    font-weight: 700;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+  ::selection {
+    background: var(--foreground);
+    color: var(--background);
+  }
+}
+
+/* Lighter blur radii — backdrop blur cost grows with radius and these
+   read identically at half the GPU work. */
+@utility glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+}
+
+@utility glass-strong {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--glass-border);
+}
+
+@utility hover-lift {
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-deep);
+}
+
+@utility tracking-luxury {
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+@utility container-lux {
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+@media (min-width: 640px) {
+  .container-lux {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+/* Comparison grids sized inline as repeat(N, 1fr) collapse to a single
+   column on phones — three columns on a 375px screen is unreadable. */
+@media (max-width: 639px) {
+  .stack-sm {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Data comparisons stay SIDE BY SIDE on mobile: the row label takes a
+     full line, and the N property values share the width beneath it. */
+  .compare-cols {
+    grid-template-columns: repeat(var(--compare-cols, 2), minmax(0, 1fr)) !important;
+  }
+  .compare-cols > .compare-label {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Comparison rows whose column widths vary with how many layout variants are
+   fanned out. Inline `grid-template-columns` would also hit the stacked phone
+   layout, so the value rides in as a custom property and is only applied from
+   the md breakpoint up, where the table is actually side-by-side. */
+@media (min-width: 768px) {
+  .compare-row[style*="--row-cols"] {
+    grid-template-columns: var(--row-cols) !important;
+  }
+}
+
+/* Respect users who ask the OS for less motion — everything settles instantly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Sidebar scrollbar */
+.pref-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.pref-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.pref-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+.pref-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  overscroll-behavior: contain;
+}
+
+/* =========================================================
+   MEDIA FRAME — refined image presentation, esp. light theme
+   ========================================================= */
+@utility media-frame {
+  position: relative;
+  isolation: isolate;
+  background: color-mix(in oklab, var(--foreground) 6%, transparent);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, var(--foreground) 6%, transparent) inset,
+    0 18px 40px -24px color-mix(in oklab, var(--foreground) 28%, transparent),
+    0 4px 12px -6px color-mix(in oklab, var(--foreground) 14%, transparent);
+  transition:
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.media-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent) inset;
+  pointer-events: none;
+  z-index: 2;
+}
+.media-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    transparent 55%,
+    color-mix(in oklab, #000 18%, transparent) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+.media-frame > img,
+.media-frame > .media-img {
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  image-rendering: auto;
+  image-rendering: high-quality;
+  filter: saturate(1.06) contrast(1.03);
+}
+
+/* HD image quality — applied globally to any <img> in the app.
+   No forced GPU layers (translateZ) here: pre-rasterised layers get
+   scaled by the compositor and come out soft on high-DPR displays. */
+img {
+  image-rendering: auto;
+  image-rendering: high-quality;
+}
+
+.group:hover .media-frame,
+.media-frame:hover {
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, var(--foreground) 8%, transparent) inset,
+    0 28px 60px -28px color-mix(in oklab, var(--foreground) 36%, transparent),
+    0 8px 20px -8px color-mix(in oklab, var(--foreground) 18%, transparent);
+}
+.light .media-frame {
+  background: #f3f3f3;
+  box-shadow:
+    0 0 0 1px rgba(8, 8, 8, 0.08) inset,
+    0 22px 44px -26px rgba(8, 8, 8, 0.22),
+    0 6px 14px -8px rgba(8, 8, 8, 0.12);
+}
+.light .media-frame::after {
+  background: linear-gradient(to bottom, transparent 60%, rgba(8, 8, 8, 0.22) 100%);
+}
+
+/* Global typography normalization — enforce upright type across the app */
+html,
+body,
+*,
+*::before,
+*::after {
+  font-style: normal !important;
+}
+
+/* Hero display accent — deliberate exception to the upright rule */
+.hero-italic {
+  font-style: italic !important;
+  font-weight: 700 !important;
+}
+
+@utility text-upright {
+  font-style: normal;
+}
+
+/* Plus Jakarta Sans has a deeper descender than the serif it replaced: its
+   glyph content box is ~1.25em, so any tighter line-height leaves g/y/p/j
+   hanging outside the line box. That is invisible normally, but a clipping
+   context (overflow-hidden, truncate, line-clamp) cuts the tails off.
+   Grow the clip box downward, then pull the following content back up so
+   vertical rhythm is unchanged. */
+@utility descender-safe {
+  padding-bottom: 0.18em;
+  margin-bottom: -0.18em;
+}
+
+/* Gemini-style ambient gradient backdrop for onboarding card */
+.gemini-bg {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(200, 164, 93, 0.1), transparent 60%),
+    radial-gradient(ellipse at 0% 100%, rgba(122, 162, 247, 0.08), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(244, 114, 182, 0.07), transparent 55%);
+}
+.gemini-conic {
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(200, 164, 93, 0.18),
+    rgba(122, 162, 247, 0.16),
+    rgba(244, 114, 182, 0.16),
+    rgba(110, 231, 183, 0.14),
+    rgba(200, 164, 93, 0.18)
+  );
+  filter: blur(70px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: gemini-spin 28s linear infinite;
+}
+.gemini-grain {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.25;
+  mix-blend-mode: overlay;
+}
+.gemini-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.65;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.gemini-blob-1 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(200, 164, 93, 0.85), rgba(200, 164, 93, 0) 70%);
+  top: -140px;
+  left: -120px;
+  animation: gemini-float-1 12s ease-in-out infinite alternate;
+}
+.gemini-blob-2 {
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(122, 162, 247, 0.7), rgba(122, 162, 247, 0) 70%);
+  bottom: -140px;
+  right: -110px;
+  animation: gemini-float-2 15s ease-in-out infinite alternate;
+}
+.gemini-blob-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.55), rgba(244, 114, 182, 0) 70%);
+  top: 40%;
+  left: 30%;
+  animation: gemini-float-3 18s ease-in-out infinite alternate;
+}
+.gemini-blob-4 {
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(110, 231, 183, 0.5), rgba(110, 231, 183, 0) 70%);
+  top: 10%;
+  right: -60px;
+  animation: gemini-float-1 20s ease-in-out infinite alternate-reverse;
+}
+@keyframes gemini-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes gemini-float-1 {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translate(180px, 120px) scale(1.2) rotate(40deg);
+  }
+  50% {
+    transform: translate(260px, -80px) scale(1.3) rotate(90deg);
+  }
+  75% {
+    transform: translate(60px, -160px) scale(1.1) rotate(140deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(180deg);
+  }
+}
+@keyframes gemini-float-2 {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translate(-200px, -120px) scale(1.25) rotate(-50deg);
+  }
+  50% {
+    transform: translate(-280px, 100px) scale(1.35) rotate(-110deg);
+  }
+  75% {
+    transform: translate(-80px, 200px) scale(1.15) rotate(-160deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(-220deg);
+  }
+}
+@keyframes gemini-float-3 {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translate(-140px, 160px) scale(1.15) rotate(60deg);
+  }
+  50% {
+    transform: translate(160px, 180px) scale(1.3) rotate(120deg);
+  }
+  75% {
+    transform: translate(200px, -120px) scale(1.05) rotate(200deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(280deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gemini-blob,
+  .gemini-conic {
+    animation: none;
+  }
+}
+
+/* ============ Editorial ticker strip ============ */
+.ticker-strip {
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+  padding: 14px 0;
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 46s linear infinite;
+  will-change: transform;
+}
+.ticker-strip:hover .ticker-track {
+  animation-play-state: paused;
+}
+.ticker-row {
+  display: flex;
+  flex-shrink: 0;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  opacity: 0.85;
+}
+.ticker-dot {
+  margin: 0 1.4rem;
+  opacity: 0.35;
+}
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+/* ============ Developer alliances strip ============ */
+.alliance-strip {
+  overflow: hidden;
+  background: var(--foreground);
+  padding: 40px 0;
+}
+.alliance-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 38s linear infinite;
+  will-change: transform;
+}
+.alliance-strip:hover .alliance-track {
+  animation-play-state: paused;
+}
+.alliance-row {
+  display: flex;
+  flex-shrink: 0;
+}
+.alliance-card {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 190px;
+  height: 84px;
+  margin: 0 10px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--background);
+  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.4);
+}
+.alliance-card img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alliance-track {
+    animation: none;
+  }
+}
+
+/* ============ Shine sweep on media hover ============ */
+.shine {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 45%;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 100%
+  );
+  transform: translateX(-180%) skewX(-14deg);
+}
+.group:hover > .media-frame .shine,
+.media-frame:hover .shine,
+.shine-host:hover .shine {
+  animation: shine-sweep 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes shine-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-180%) skewX(-14deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(360%) skewX(-14deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shine {
+    display: none;
+  }
+}
+
+/* ============ Film grain texture ============ */
+/* No blend modes here — blending a fixed full-viewport layer forces
+   expensive compositing on every scroll frame. Plain alpha is cheap. */
+.page-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.03;
+  contain: strict;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+.dark .page-grain {
+  opacity: 0.05;
+  filter: invert(1);
+}
+
+/* ============ Suggested Properties marquee ============ */
+.suggested-marquee {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.suggested-marquee-track {
+  display: flex;
+  gap: 1rem;
+  width: max-content;
+  padding: 4px 1rem;
+  animation: suggested-scroll var(--marquee-duration, 40s) linear infinite;
+  will-change: transform;
+}
+@media (min-width: 640px) {
+  .suggested-marquee-track {
+    gap: 1.25rem;
+    padding: 4px 1.5rem;
+  }
+}
+.suggested-marquee:hover .suggested-marquee-track,
+.suggested-marquee:focus-within .suggested-marquee-track {
+  animation-play-state: paused;
+}
+body.suggested-popup-open .suggested-marquee-track {
+  animation-play-state: paused !important;
+}
+.suggested-card {
+  width: 240px;
+  transition:
+    box-shadow 0.4s ease,
+    border-color 0.4s ease,
+    transform 0.4s ease;
+}
+@media (min-width: 640px) {
+  .suggested-card {
+    width: 260px;
+  }
+}
+@media (min-width: 1024px) {
+  .suggested-card {
+    width: 280px;
+  }
+}
+.suggested-card:hover {
+  border-color: color-mix(in oklab, var(--foreground) 45%, transparent);
+  box-shadow:
+    0 24px 50px -22px color-mix(in oklab, var(--foreground) 35%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--foreground) 18%, transparent);
+}
+.suggested-fade-left,
+.suggested-fade-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 64px;
+  pointer-events: none;
+}
+@keyframes suggested-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Flash + sustained focus ring when a row is opened from a suggestion */
+@keyframes row-flash-pulse {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--foreground) 55%, transparent),
+      0 0 0 0 color-mix(in oklab, var(--foreground) 20%, transparent);
+  }
+  60% {
+    box-shadow:
+      0 0 0 18px color-mix(in oklab, var(--foreground) 0%, transparent),
+      0 22px 60px -18px color-mix(in oklab, var(--foreground) 30%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--foreground) 0%, transparent),
+      0 0 0 0 color-mix(in oklab, var(--foreground) 0%, transparent);
+  }
+}
+.row-flash {
+  border-radius: 24px;
+  animation: row-flash-pulse 2.2s ease-out;
+}
+.row-focus {
+  position: relative;
+  border-radius: 24px;
+  outline: 2px solid color-mix(in oklab, var(--foreground) 55%, transparent);
+  outline-offset: 6px;
+  transition:
+    outline-color 0.6s ease,
+    outline-offset 0.6s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .suggested-marquee-track {
+    animation: none;
+  }
+  .row-flash {
+    animation: none;
+  }
+}
+
+/* =========================================================
+   PALETTE SYSTEM
+   Four selectable palettes via [data-palette] on <html>.
+   Each palette defines a --brand (accent) plus light/dark
+   backgrounds, cards and borders. Compat rules re-route
+   the legacy "champagne"/"gold" utility classes to --brand
+   so accent colors carry through the whole app.
+   Default palette = warm-sand.
+   ========================================================= */
+
+:root {
+  --brand: #b8894a;
+  --brand-soft: #d9b985;
+  --brand-ink: #4a3218;
+}
+
+/* ---------- Bright Gold (default) — white canvas, vivid gold accents ----------
+   --brand        bright gold for fills, buttons, gradients
+   --brand-strong deeper gold for small text (readable on white)
+   --brand-ink    near-black text placed ON gold surfaces */
+[data-palette="bright"] {
+  --brand: #f2a900;
+  --brand-soft: #ffd15e;
+  --brand-strong: #9d6b00;
+  --brand-ink: #221603;
+  --champagne-gold: #f2a900;
+  --antique-gold: #d99500;
+  --muted-gold: #b07d00;
+}
+.light[data-palette="bright"] {
+  --background: #ffffff;
+  --foreground: #131313;
+  --card: #ffffff;
+  --card-foreground: #131313;
+  --popover: #ffffff;
+  --popover-foreground: #131313;
+  --primary: #131313;
+  --primary-foreground: #ffffff;
+  --secondary: #fdf3dc;
+  --secondary-foreground: #221603;
+  --muted: #faf6ec;
+  --muted-foreground: #4c4432;
+  --accent: #f2a900;
+  --accent-foreground: #221603;
+  --border: rgba(34, 22, 3, 0.14);
+  --input: rgba(157, 107, 0, 0.32);
+  --ring: #f2a900;
+  --gradient-gold: linear-gradient(135deg, #f2a900 0%, #ffd15e 100%);
+  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+  --shadow-gold: 0 18px 44px -26px rgba(242, 169, 0, 0.45);
+  --shadow-deep: 0 24px 60px -38px rgba(34, 22, 3, 0.3);
+  --shadow-glass: 0 8px 24px -14px rgba(34, 22, 3, 0.14);
+  --glass-bg: rgba(255, 255, 255, 0.94);
+  --glass-border: rgba(34, 22, 3, 0.12);
+}
+.dark[data-palette="bright"] {
+  --brand: #ffbe2e;
+  --brand-soft: #ffd977;
+  --brand-strong: #ffd06a;
+  --brand-ink: #221603;
+  --champagne-gold: #ffbe2e;
+  --antique-gold: #ffd06a;
+  --muted-gold: #d9a53a;
+  --background: #0d0a03;
+  --foreground: #fff8ea;
+  --card: #171105;
+  --card-foreground: #fff8ea;
+  --popover: #171105;
+  --popover-foreground: #fff8ea;
+  --primary: #ffbe2e;
+  --primary-foreground: #221603;
+  --secondary: #241b09;
+  --secondary-foreground: #fff8ea;
+  --muted: #1a1407;
+  --muted-foreground: #cdbf9d;
+  --accent: #ffbe2e;
+  --accent-foreground: #221603;
+  --border: rgba(255, 201, 77, 0.2);
+  --input: rgba(255, 201, 77, 0.26);
+  --ring: #ffbe2e;
+  --gradient-gold: linear-gradient(135deg, #ffbe2e 0%, #ffd977 100%);
+  --gradient-dark: linear-gradient(180deg, #0d0a03 0%, #171105 100%);
+  --shadow-gold: 0 18px 50px -22px rgba(0, 0, 0, 0.6);
+  --shadow-deep: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --glass-bg: rgba(23, 17, 5, 0.86);
+  --glass-border: rgba(255, 201, 77, 0.2);
+}
+
+/* ---------- Monochrome — pure white / pure black ---------- */
+[data-palette="mono"] {
+  --brand: #000000;
+  --brand-soft: #3d3d3d;
+  --brand-ink: #ffffff;
+}
+.light[data-palette="mono"] {
+  --brand: #000000;
+  --brand-soft: #3d3d3d;
+  --brand-ink: #ffffff;
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #000000;
+  --muted: #f5f5f5;
+  --muted-foreground: #3d3d3d;
+  --accent: #000000;
+  --accent-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.14);
+  --input: rgba(0, 0, 0, 0.22);
+  --ring: #000000;
+  --gradient-gold: linear-gradient(135deg, #000000 0%, #3d3d3d 100%);
+  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  --shadow-gold: 0 18px 44px -30px rgba(0, 0, 0, 0.25);
+  --shadow-deep: 0 24px 60px -38px rgba(0, 0, 0, 0.28);
+  --shadow-glass: 0 8px 24px -14px rgba(0, 0, 0, 0.16);
+  --glass-bg: rgba(255, 255, 255, 0.94);
+  --glass-border: rgba(0, 0, 0, 0.12);
+}
+.dark[data-palette="mono"] {
+  --brand: #ffffff;
+  --brand-soft: #c4c4c4;
+  --brand-ink: #000000;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0d0d0d;
+  --card-foreground: #ffffff;
+  --popover: #0d0d0d;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #141414;
+  --muted-foreground: #c4c4c4;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --border: rgba(255, 255, 255, 0.16);
+  --input: rgba(255, 255, 255, 0.22);
+  --ring: #ffffff;
+  --gradient-gold: linear-gradient(135deg, #ffffff 0%, #c4c4c4 100%);
+  --gradient-dark: linear-gradient(180deg, #000000 0%, #0d0d0d 100%);
+  --shadow-gold: 0 18px 50px -22px rgba(0, 0, 0, 0.6);
+  --shadow-deep: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --glass-bg: rgba(13, 13, 13, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.16);
+}
+
+/* ---------- Warm Sand & Clay ---------- */
+:root[data-palette="warm-sand"],
+:root:not([data-palette]) {
+  --brand: #b8894a;
+  --brand-soft: #d9b985;
+  --brand-ink: #4a3218;
+}
+.dark[data-palette="warm-sand"],
+.dark:not([data-palette]) {
+  --background: #17110a;
+  --foreground: #f6ecdb;
+  --card: #221810;
+  --card-foreground: #f6ecdb;
+  --popover: #221810;
+  --popover-foreground: #f6ecdb;
+  --secondary: #2b1f14;
+  --muted: #1e150d;
+  --muted-foreground: #c9b699;
+  --border: rgba(217, 185, 133, 0.18);
+  --input: rgba(217, 185, 133, 0.22);
+  --ring: #d9b985;
+  --glass-bg: rgba(34, 24, 16, 0.82);
+  --glass-border: rgba(217, 185, 133, 0.18);
+}
+.light[data-palette="warm-sand"],
+.light:not([data-palette]) {
+  --background: #faf7f2;
+  --foreground: #2c1f10;
+  --card: #ffffff;
+  --card-foreground: #2c1f10;
+  --popover: #ffffff;
+  --popover-foreground: #2c1f10;
+  --secondary: #efe6d6;
+  --muted: #f2ead9;
+  --muted-foreground: #6b533a;
+  --border: rgba(74, 50, 24, 0.14);
+  --input: rgba(74, 50, 24, 0.22);
+  --ring: #b8894a;
+  --glass-bg: rgba(255, 252, 245, 0.92);
+  --glass-border: rgba(74, 50, 24, 0.14);
+}
+
+/* ---------- Sage & Cream ---------- */
+[data-palette="sage"] {
+  --brand: #7d9b76;
+  --brand-soft: #a8c0a0;
+  --brand-ink: #2a3a2a;
+}
+.dark[data-palette="sage"] {
+  --background: #101610;
+  --foreground: #ecf3e8;
+  --card: #182018;
+  --card-foreground: #ecf3e8;
+  --popover: #182018;
+  --popover-foreground: #ecf3e8;
+  --secondary: #1e2a1e;
+  --muted: #16201a;
+  --muted-foreground: #b8c9b0;
+  --border: rgba(168, 192, 160, 0.18);
+  --input: rgba(168, 192, 160, 0.22);
+  --ring: #a8c0a0;
+  --glass-bg: rgba(24, 32, 24, 0.82);
+  --glass-border: rgba(168, 192, 160, 0.18);
+}
+.light[data-palette="sage"] {
+  --background: #f5f0e8;
+  --foreground: #1e2a1e;
+  --card: #ffffff;
+  --card-foreground: #1e2a1e;
+  --popover: #ffffff;
+  --popover-foreground: #1e2a1e;
+  --secondary: #dce5d4;
+  --muted: #e6ecdc;
+  --muted-foreground: #4a5f48;
+  --border: rgba(42, 58, 42, 0.14);
+  --input: rgba(42, 58, 42, 0.22);
+  --ring: #7d9b76;
+  --glass-bg: rgba(253, 251, 246, 0.92);
+  --glass-border: rgba(42, 58, 42, 0.14);
+}
+
+/* ---------- Emerald Prestige ---------- */
+[data-palette="emerald"] {
+  --brand: #c9a84c;
+  --brand-soft: #e6d18a;
+  --brand-ink: #064e3b;
+}
+.dark[data-palette="emerald"] {
+  --background: #0a1611;
+  --foreground: #f5f0e0;
+  --card: #0f2018;
+  --card-foreground: #f5f0e0;
+  --popover: #0f2018;
+  --popover-foreground: #f5f0e0;
+  --secondary: #113028;
+  --muted: #0e1c17;
+  --muted-foreground: #c9c2a5;
+  --border: rgba(201, 168, 76, 0.22);
+  --input: rgba(201, 168, 76, 0.26);
+  --ring: #c9a84c;
+  --glass-bg: rgba(15, 32, 24, 0.82);
+  --glass-border: rgba(201, 168, 76, 0.22);
+}
+.light[data-palette="emerald"] {
+  --background: #f7f3e6;
+  --foreground: #064e3b;
+  --card: #ffffff;
+  --card-foreground: #064e3b;
+  --popover: #ffffff;
+  --popover-foreground: #064e3b;
+  --secondary: #e8ecd8;
+  --muted: #eee7cf;
+  --muted-foreground: #3a5c4a;
+  --border: rgba(6, 78, 59, 0.16);
+  --input: rgba(6, 78, 59, 0.24);
+  --ring: #0d7a5f;
+  --glass-bg: rgba(255, 253, 244, 0.92);
+  --glass-border: rgba(6, 78, 59, 0.14);
+}
+
+/* ---------- Ocean & Champagne ---------- */
+[data-palette="ocean"] {
+  --brand: #2d8a9e;
+  --brand-soft: #7cc0ce;
+  --brand-ink: #0c2340;
+}
+.dark[data-palette="ocean"] {
+  --background: #0a141a;
+  --foreground: #eaf3f7;
+  --card: #12212b;
+  --card-foreground: #eaf3f7;
+  --popover: #12212b;
+  --popover-foreground: #eaf3f7;
+  --secondary: #17303c;
+  --muted: #101e26;
+  --muted-foreground: #a9c4cf;
+  --border: rgba(124, 192, 206, 0.2);
+  --input: rgba(124, 192, 206, 0.24);
+  --ring: #7cc0ce;
+  --glass-bg: rgba(18, 33, 43, 0.82);
+  --glass-border: rgba(124, 192, 206, 0.2);
+}
+.light[data-palette="ocean"] {
+  --background: #f4f7fa;
+  --foreground: #0c2340;
+  --card: #ffffff;
+  --card-foreground: #0c2340;
+  --popover: #ffffff;
+  --popover-foreground: #0c2340;
+  --secondary: #dfeaf2;
+  --muted: #e6eef5;
+  --muted-foreground: #3f5773;
+  --border: rgba(12, 35, 64, 0.14);
+  --input: rgba(12, 35, 64, 0.22);
+  --ring: #2d8a9e;
+  --glass-bg: rgba(252, 253, 255, 0.92);
+  --glass-border: rgba(12, 35, 64, 0.14);
+}
+
+/* ---------- Cloud White — editorial navy + amber accent ---------- */
+[data-palette="cloud"] {
+  --brand: #0a1f4d;
+  --brand-soft: #3b6fd6;
+  --brand-ink: #ffffff;
+  --brand-accent: #c9a24d;
+  --brand-accent-soft: #e6c987;
+}
+.dark[data-palette="cloud"] {
+  --background: #0b1220;
+  --foreground: #f5f7fb;
+  --card: #131a2b;
+  --card-foreground: #f5f7fb;
+  --popover: #131a2b;
+  --popover-foreground: #f5f7fb;
+  --secondary: #1a2338;
+  --muted: #131a2b;
+  --muted-foreground: #94a3b8;
+  --border: rgba(148, 163, 184, 0.22);
+  --input: rgba(148, 163, 184, 0.28);
+  --ring: #3b82f6;
+  --glass-bg: rgba(19, 26, 43, 0.82);
+  --glass-border: rgba(148, 163, 184, 0.22);
+}
+.light[data-palette="cloud"] {
+  --background: #f5f2ea;
+  --foreground: #0a1f4d;
+  --card: #ffffff;
+  --card-foreground: #0a1f4d;
+  --popover: #ffffff;
+  --popover-foreground: #0a1f4d;
+  --secondary: #ece7dc;
+  --muted: #efeadf;
+  --muted-foreground: #4a5878;
+  --border: rgba(10, 31, 77, 0.12);
+  --input: rgba(10, 31, 77, 0.22);
+  --ring: #0a1f4d;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(10, 31, 77, 0.1);
+}
+
+/* ---------- Body backgrounds with soft gradients per palette ---------- */
+.light[data-palette="warm-sand"] body,
+.light:not([data-palette]) body {
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(184, 137, 74, 0.1), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(217, 185, 133, 0.14), transparent 55%), #faf7f2;
+}
+.light[data-palette="sage"] body {
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(125, 155, 118, 0.1), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(168, 192, 160, 0.16), transparent 55%), #f5f0e8;
+}
+.light[data-palette="emerald"] body {
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(13, 122, 95, 0.1), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(201, 168, 76, 0.16), transparent 55%), #f7f3e6;
+}
+.light[data-palette="ocean"] body {
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(45, 138, 158, 0.1), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(201, 168, 76, 0.14), transparent 55%), #f4f7fa;
+}
+.light[data-palette="cloud"] body {
+  background:
+    radial-gradient(1100px 700px at 8% -8%, rgba(201, 162, 77, 0.2), transparent 60%),
+    radial-gradient(900px 700px at 100% 0%, rgba(59, 111, 214, 0.14), transparent 55%),
+    radial-gradient(700px 500px at 50% 100%, rgba(10, 31, 77, 0.06), transparent 60%), #f5f2ea;
+}
+.light[data-palette="cloud"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(10, 31, 77, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 31, 77, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%);
+}
+.dark body {
+  background:
+    radial-gradient(
+      1000px 600px at 10% -10%,
+      color-mix(in oklab, var(--brand) 12%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at 100% 0%,
+      color-mix(in oklab, var(--brand-soft) 8%, transparent),
+      transparent 55%
+    ),
+    var(--background);
+}
+
+/* Monochrome: flat, pure surfaces — no tints, no grid pattern. */
+.light[data-palette="mono"] body {
+  background: #ffffff;
+}
+.dark[data-palette="mono"] body {
+  background: #000000;
+}
+
+/* Bright Gold: white canvas with soft golden washes. */
+.light[data-palette="bright"] body {
+  background:
+    radial-gradient(1100px 620px at 12% -10%, rgba(242, 169, 0, 0.1), transparent 60%),
+    radial-gradient(900px 560px at 100% 0%, rgba(255, 209, 94, 0.12), transparent 55%), #ffffff;
+}
+.dark[data-palette="bright"] body {
+  background:
+    radial-gradient(1000px 600px at 12% -10%, rgba(255, 190, 46, 0.1), transparent 60%), #0d0a03;
+}
+
+/* ---------- Re-route legacy accent utilities to --brand ---------- */
+.text-champagne,
+.text-champagne\/90,
+.text-champagne\/80,
+.text-champagne\/70,
+.text-champagne\/60 {
+  color: var(--brand-strong, var(--brand)) !important;
+}
+.text-champagne\/40 {
+  color: color-mix(in oklab, var(--brand-strong, var(--brand)) 55%, transparent) !important;
+}
+
+.bg-champagne {
+  background-color: var(--brand) !important;
+  color: var(--brand-ink) !important;
+}
+.bg-champagne\/5 {
+  background-color: color-mix(in oklab, var(--brand) 8%, transparent) !important;
+}
+.bg-champagne\/10,
+.bg-champagne\/12 {
+  background-color: color-mix(in oklab, var(--brand) 14%, transparent) !important;
+}
+.bg-muted-gold {
+  background-color: var(--brand-soft) !important;
+}
+
+.border-champagne\/12,
+.border-champagne\/15,
+.border-champagne\/18,
+.border-champagne\/20,
+.border-champagne\/22,
+.border-champagne\/25 {
+  border-color: color-mix(in oklab, var(--brand) 28%, transparent) !important;
+}
+.border-champagne\/30,
+.border-champagne\/40,
+.border-champagne\/50 {
+  border-color: color-mix(in oklab, var(--brand) 45%, transparent) !important;
+}
+.border-champagne {
+  border-color: var(--brand) !important;
+}
+.divide-champagne\/12 > :not([hidden]) ~ :not([hidden]) {
+  border-color: color-mix(in oklab, var(--brand) 24%, transparent) !important;
+}
+.ring-champagne\/35,
+.ring-champagne\/40,
+.ring-champagne\/45 {
+  --tw-ring-color: color-mix(in oklab, var(--brand) 45%, transparent) !important;
+}
+
+.gold-text {
+  background: linear-gradient(
+    135deg,
+    var(--brand-accent, var(--brand)) 0%,
+    var(--brand-accent-soft, var(--brand-soft)) 100%
+  ) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+.gold-border {
+  border: 1px solid color-mix(in oklab, var(--brand) 55%, transparent) !important;
+  background: color-mix(in oklab, var(--brand) 6%, transparent) !important;
+}
+
+/* ---------- Text placed ON gold surfaces always uses brand ink ---------- */
+.text-lux-black {
+  color: var(--brand-ink) !important;
+}
+.hover\:text-lux-black:hover {
+  color: var(--brand-ink) !important;
+}
+.hover\:bg-champagne:hover {
+  background-color: var(--brand) !important;
+  color: var(--brand-ink) !important;
+}
