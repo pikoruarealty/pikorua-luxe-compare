@@ -84,7 +84,7 @@ export function ResidenceLayouts({ property }: { property: Property }) {
               {/* Horizontal scroll rather than shrinking columns — a residence
                   can offer more layouts than fit, and unreadable columns are
                   worse than a scrollbar. */}
-              <div className="overflow-x-auto rounded-3xl border border-[var(--glass-border)] bg-card/60">
+              <div className="overflow-x-auto rounded-3xl border-2 border-border-strong bg-card/60">
                 <div
                   className="min-w-[520px]"
                   style={
@@ -98,7 +98,7 @@ export function ResidenceLayouts({ property }: { property: Property }) {
                       doesn't make. The BHK heading above already names it. */}
                   {variants.length > 1 && (
                     <div
-                      className="grid items-center gap-3 border-b border-[var(--glass-border)] bg-muted/10 p-4 sm:p-5"
+                      className="grid items-center gap-3 border-b-2 border-border-strong bg-muted/25 p-4 sm:p-5"
                       style={{
                         gridTemplateColumns: `minmax(140px, 200px) repeat(${variants.length}, minmax(0, 1fr))`,
                       }}

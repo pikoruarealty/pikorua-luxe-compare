@@ -705,14 +705,14 @@ function ComparisonGrid({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-background/40">
+    <div className="overflow-hidden rounded-xl border-2 border-border-strong bg-background/40">
       {/* Header row */}
-      <div className={`hidden md:grid ${gridTpl} border-b border-border bg-muted/30`}>
+      <div className={`hidden md:grid ${gridTpl} border-b-2 border-border-strong bg-muted/30`}>
         <div className="px-4 py-3 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
           Attribute
         </div>
         {items.map((p, i) => (
-          <div key={p.id} className={`px-4 py-3 ${i > 0 ? "border-l border-border" : ""}`}>
+          <div key={p.id} className={`px-4 py-3 ${i > 0 ? "border-l border-border-strong" : ""}`}>
             <div className="flex items-center gap-2">
               <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-background text-[10px] font-medium">
                 {String.fromCharCode(65 + i)}
@@ -932,7 +932,7 @@ function RoomDimensionsGroup({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-4 py-2.5">
+      <div className="flex items-center justify-between gap-3 border-y border-border-strong bg-muted/50 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <span className="font-display text-[17px] font-bold tracking-tight text-foreground">
             {configKey}
@@ -965,7 +965,7 @@ function RoomDimensionsGroup({
           it controls line up with the bands running down every row below. */}
       {showFields && items.some((p) => variantsOf(p, configKey).length > 1) && (
         <div
-          className={`compare-row grid ${gridTpl} border-b border-border bg-muted/10`}
+          className={`compare-row grid ${gridTpl} border-b border-border-strong bg-muted/25`}
           style={colTpl ? ({ "--row-cols": colTpl } as React.CSSProperties) : undefined}
         >
           <div className="hidden px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-muted-foreground md:block">
@@ -974,7 +974,7 @@ function RoomDimensionsGroup({
           {items.map((p, i) => (
             <div
               key={p.id}
-              className={`px-2.5 py-2 md:px-4 ${i > 0 ? "border-l border-border" : ""}`}
+              className={`px-2.5 py-2 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
             >
               <VariantSwitcher
                 property={p}
@@ -1019,8 +1019,8 @@ function RoomDimensionsGroup({
 /* ---------------- primitives ---------------- */
 function SectionLabel({ title }: { title: string }) {
   return (
-    <div className="border-y border-border bg-muted/40 px-4 py-2">
-      <span className="text-[10px] font-medium uppercase tracking-[0.28em] text-muted-foreground">
+    <div className="border-y-2 border-border-strong bg-muted/70 px-4 py-2.5">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground/70">
         {title}
       </span>
     </div>
@@ -1049,7 +1049,7 @@ function Row({
       className={`compare-row grid ${mobileCols} ${gridTpl} border-b border-border last:border-b-0`}
       style={colTpl ? ({ "--row-cols": colTpl } as React.CSSProperties) : undefined}
     >
-      <div className="col-span-full md:col-span-1 px-4 py-3 md:border-r md:border-border bg-muted/10 flex items-center gap-1.5">
+      <div className="col-span-full md:col-span-1 px-4 py-3 md:border-r md:border-border-strong bg-muted/10 flex items-center gap-1.5">
         <span className="font-display text-[14px] font-medium tracking-tight text-foreground">
           {label}
         </span>
@@ -1080,7 +1080,7 @@ function Row({
       {items.map((p, i) => (
         <div
           key={p.id}
-          className={`px-2.5 py-2.5 md:px-4 ${i > 0 ? "border-l border-border" : ""}`}
+          className={`px-2.5 py-2.5 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
         >
           <div className="md:hidden mb-1 truncate text-[9px] uppercase tracking-wide text-muted-foreground">
             {String.fromCharCode(65 + i)} · {p.name}

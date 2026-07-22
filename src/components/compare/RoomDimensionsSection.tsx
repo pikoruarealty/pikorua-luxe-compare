@@ -98,11 +98,11 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                 <h3 className="font-display text-[20px] text-ivory sm:text-[24px]">{cfgKey}</h3>
                 <span className="h-px flex-1 bg-champagne/15" />
               </div>
-              <div className="overflow-x-auto rounded-3xl border border-[var(--glass-border)] bg-card/60">
+              <div className="overflow-x-auto rounded-3xl border-2 border-border-strong bg-card/60">
                 <div style={minWidth ? { minWidth } : undefined}>
                   {anyMultiVariant && (
                     <div
-                      className="compare-cols grid items-center gap-3 border-b border-[var(--glass-border)] bg-muted/10 p-4 sm:p-5"
+                      className="compare-cols grid items-center gap-3 border-b-2 border-border-strong bg-muted/25 p-4 sm:p-5"
                       style={
                         {
                           gridTemplateColumns: colTpl,

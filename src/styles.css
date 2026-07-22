@@ -30,6 +30,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
@@ -86,6 +87,11 @@
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: #f5f3ee;
   --border: rgba(255, 255, 255, 0.16);
+  /* Structural divider for comparison tables — section bands, column splits and
+     the outer frame. Derived from --foreground so every palette (light, dark,
+     bright, and the gold variants) gets a correctly-contrasting line without
+     each one having to declare its own value. */
+  --border-strong: color-mix(in oklab, var(--foreground) 30%, transparent);
   --input: rgba(255, 255, 255, 0.2);
   --ring: #ffffff;
 
