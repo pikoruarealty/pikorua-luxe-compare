@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // This project is dual-deployed: wrangler.jsonc drives `wrangler deploy` to
+  // Cloudflare, while the Nitro build below targets Vercel. VERCEL is set
+  // automatically in Vercel's build environment.
+  nitro: process.env.VERCEL ? { preset: "vercel" } : undefined,
 });

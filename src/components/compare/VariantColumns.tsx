@@ -47,17 +47,25 @@ export function VariantValueCell({ variants, activeIdx, expanded, render, onSele
   return (
     <div className={`flex items-stretch ${GAP}`}>
       {variants.map((v, i) => {
+        const isActive = i === activeIdx;
+
+        // On a phone a property column is ~100px wide. Splitting that into
+        // three sub-columns puts two characters per line and the values
+        // collide, so below md only the active layout is ever rendered —
+        // switching happens through the chips in the group header instead.
         if (expanded) {
           return (
             <div
               key={i}
-              className={`min-w-0 flex-1 ${i > 0 ? "border-l border-border/60 pl-2" : ""}`}
+              className={`min-w-0 flex-1 ${isActive ? "" : "hidden md:block"} ${
+                i > 0 ? "md:border-l md:border-border/60 md:pl-2" : ""
+              }`}
             >
               {render(v, i)}
             </div>
           );
         }
-        if (i === activeIdx) {
+        if (isActive) {
           return (
             <div key={i} className="min-w-0 flex-1">
               {render(v, i)}
@@ -66,6 +74,8 @@ export function VariantValueCell({ variants, activeIdx, expanded, render, onSele
         }
         const label = variantLabel(v, i);
         return (
+          // Bands are desktop-only too — on mobile that width belongs to the
+          // value, not to a decoration.
           <button
             key={i}
             type="button"
@@ -73,7 +83,7 @@ export function VariantValueCell({ variants, activeIdx, expanded, render, onSele
             tabIndex={-1}
             aria-hidden={!onSelect}
             title={`Show ${label}`}
-            className={`${STRIP} shrink-0 self-stretch border-x border-border/50 bg-[repeating-linear-gradient(135deg,var(--muted)_0px,var(--muted)_4px,transparent_4px,transparent_8px)] opacity-70 transition-opacity hover:opacity-100`}
+            className={`${STRIP} hidden shrink-0 self-stretch border-x border-border/50 bg-[repeating-linear-gradient(135deg,var(--muted)_0px,var(--muted)_4px,transparent_4px,transparent_8px)] opacity-70 transition-opacity hover:opacity-100 md:block`}
           />
         );
       })}
@@ -108,7 +118,31 @@ export function VariantSwitcher({
 
   return (
     <div className="min-w-0">
-      <div className={`flex items-stretch ${GAP}`}>
+      {/* Mobile: one compact row of numbered chips. Only the active layout is
+          rendered in the cells below, so these chips are how you switch. */}
+      <div className="flex flex-wrap gap-1 md:hidden">
+        {variants.map((v, i) => {
+          const label = variantLabel(v, i);
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(i)}
+              aria-pressed={i === activeIdx}
+              aria-label={`Show ${label} for ${property.name}`}
+              className={`h-6 min-w-6 rounded-md px-1.5 text-[10px] font-bold transition-colors ${
+                i === activeIdx
+                  ? "bg-foreground text-background"
+                  : "border border-border-strong text-muted-foreground"
+              }`}
+            >
+              {shortLabel(label)}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={`hidden items-stretch md:flex ${GAP}`}>
         {variants.map((v, i) => {
           const label = variantLabel(v, i);
           const isActive = i === activeIdx;
@@ -150,12 +184,14 @@ export function VariantSwitcher({
       </div>
 
       {/* Says outright what the strips mean — the shapes alone weren't telling
-          anyone that more layouts were sitting beside the active one. */}
+          anyone that more layouts were sitting beside the active one. Hidden on
+          mobile: side-by-side layouts don't fit there, so offering it would
+          promise something the phone layout can't deliver. */}
       <button
         type="button"
         onClick={onToggleExpand}
         aria-pressed={expanded}
-        className="mt-1 w-full truncate text-left text-[9px] font-medium tracking-wide text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+        className="mt-1 hidden w-full truncate text-left text-[9px] font-medium tracking-wide text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground md:block"
       >
         {expanded
           ? `Collapse to one layout`
