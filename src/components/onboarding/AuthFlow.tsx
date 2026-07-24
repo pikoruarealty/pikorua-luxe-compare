@@ -6,7 +6,7 @@ import { useOnboarding, type UserProfile } from "@/context/OnboardingContext";
 import { sendOtp, verifyOtp } from "@/lib/otp.functions";
 import { upsertProfileAfterOtp } from "@/lib/profile.functions";
 
-type Step = "details" | "phone" | "otp" | "profession";
+type Step = "details" | "phone" | "profession";
 
 const COUNTRIES = [
   { code: "+91", flag: "🇮🇳", label: "India" },
@@ -28,7 +28,7 @@ const PROFESSIONS: Array<{
   { key: "other", label: "Other", Icon: UserIcon, needsBiz: false },
 ];
 
-const STEPS: Step[] = ["details", "phone", "otp", "profession"];
+const STEPS: Step[] = ["details", "phone", "profession"];
 
 export function AuthFlow() {
   const { setUserProfile, setPhase, authOnly, finishGatedAuth } = useOnboarding();
@@ -67,11 +67,11 @@ export function AuthFlow() {
 
   // OTP resend countdown
   useEffect(() => {
-    if (step !== "otp") return;
+    if (step !== "phone" || !sessionId) return;
     if (resendIn <= 0) return;
     const t = setTimeout(() => setResendIn((v) => v - 1), 1000);
     return () => clearTimeout(t);
-  }, [step, resendIn]);
+  }, [step, sessionId, resendIn]);
 
   const fullPhoneDigits = () => `${country.code.replace("+", "")}${phone.replace(/\D/g, "")}`;
 
@@ -95,7 +95,6 @@ export function AuthFlow() {
       setSessionId(result.sessionId);
       setOtpDigits(["", "", "", "", "", ""]);
       setResendIn(30);
-      setStep("otp");
       setTimeout(() => otpRefs.current[0]?.focus(), 50);
     } catch {
       setPhoneError("Couldn't send the code. Please check the number and try again.");
@@ -156,6 +155,16 @@ export function AuthFlow() {
     } finally {
       setSending(false);
     }
+  };
+
+  // Lets a visitor undo "send OTP" without a separate back-navigable step —
+  // returns to the plain phone-entry view on the same screen.
+  const changeNumber = () => {
+    setSessionId("");
+    setVerificationToken("");
+    setOtpDigits(["", "", "", "", "", ""]);
+    setOtpError("");
+    setPhoneError("");
   };
 
   const [completeError, setCompleteError] = useState("");
@@ -275,120 +284,134 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-foreground">
-              One last step — verify your number
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              We'll send a one-time code to confirm it's you.
-            </p>
+            {!sessionId ? (
+              <>
+                <h2 className="font-display text-3xl text-foreground">
+                  One last step. Verify your number
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  We'll send a one-time code to confirm it's you.
+                </p>
 
-            <div className="mt-8">
-              <label className="mb-2 block text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
-                Phone number
-              </label>
-              <div className="flex gap-2">
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setCountryOpen((o) => !o)}
-                    className="flex h-12 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-foreground hover:border-champagne/40"
-                  >
-                    <span>{country.flag}</span>
-                    <span>{country.code}</span>
-                    <span className="text-muted-foreground">▾</span>
-                  </button>
-                  {countryOpen && (
-                    <div className="absolute top-full left-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
-                      {COUNTRIES.map((c) => (
-                        <button
-                          key={c.code}
-                          onClick={() => {
-                            setCountry(c);
-                            setCountryOpen(false);
-                          }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
-                        >
-                          <span>{c.flag}</span>
-                          <span>{c.code}</span>
-                          <span className="text-muted-foreground">{c.label}</span>
-                        </button>
-                      ))}
+                <div className="mt-8">
+                  <label className="mb-2 block text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+                    Phone number
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setCountryOpen((o) => !o)}
+                        className="flex h-12 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-foreground hover:border-champagne/40"
+                      >
+                        <span>{country.flag}</span>
+                        <span>{country.code}</span>
+                        <span className="text-muted-foreground">▾</span>
+                      </button>
+                      {countryOpen && (
+                        <div className="absolute top-full left-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
+                          {COUNTRIES.map((c) => (
+                            <button
+                              key={c.code}
+                              onClick={() => {
+                                setCountry(c);
+                                setCountryOpen(false);
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
+                            >
+                              <span>{c.flag}</span>
+                              <span>{c.code}</span>
+                              <span className="text-muted-foreground">{c.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    <input
+                      inputMode="numeric"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                      placeholder="98765 43210"
+                      className="h-12 flex-1 rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
+                    />
+                  </div>
+                  {phoneError && (
+                    <p className="mt-2 text-xs text-red-600 dark:text-red-400">{phoneError}</p>
                   )}
                 </div>
-                <input
-                  inputMode="numeric"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                  placeholder="98765 43210"
-                  className="h-12 flex-1 rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
-                />
-              </div>
-              {phoneError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{phoneError}</p>}
-            </div>
 
-            <div className="mt-auto pt-10">
-              <GoldButton onClick={handleSendOtp} loading={sending}>
-                Send OTP
-              </GoldButton>
-            </div>
-          </motion.div>
-        )}
+                <div className="mt-auto pt-10">
+                  <GoldButton onClick={handleSendOtp} loading={sending}>
+                    Send OTP
+                  </GoldButton>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="font-display text-3xl text-foreground">Enter the code we sent</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Sent to {country.code} {phone}{" "}
+                  <button
+                    type="button"
+                    onClick={changeNumber}
+                    className="text-champagne underline underline-offset-2"
+                  >
+                    Change number
+                  </button>
+                </p>
 
-        {step === "otp" && (
-          <motion.div
-            key="otp"
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={transition}
-            className="flex flex-1 flex-col"
-          >
-            <h2 className="font-display text-3xl text-foreground">Enter the code we sent</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Sent to {country.code} {phone}
-            </p>
+                <motion.div
+                  key={shake}
+                  animate={shake ? { x: [0, -8, 8, -8, 8, 0] } : {}}
+                  transition={{ duration: 0.4 }}
+                  className="mt-10 flex justify-center gap-2"
+                >
+                  {otpDigits.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => {
+                        otpRefs.current[i] = el;
+                      }}
+                      value={d}
+                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKey(i, e)}
+                      inputMode="numeric"
+                      maxLength={1}
+                      disabled={verifying || Boolean(verificationToken)}
+                      className="h-[52px] w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne disabled:opacity-60"
+                    />
+                  ))}
+                </motion.div>
 
-            <motion.div
-              key={shake}
-              animate={shake ? { x: [0, -8, 8, -8, 8, 0] } : {}}
-              transition={{ duration: 0.4 }}
-              className="mt-10 flex justify-center gap-2"
-            >
-              {otpDigits.map((d, i) => (
-                <input
-                  key={i}
-                  ref={(el) => {
-                    otpRefs.current[i] = el;
-                  }}
-                  value={d}
-                  onChange={(e) => handleOtpChange(i, e.target.value)}
-                  onKeyDown={(e) => handleOtpKey(i, e)}
-                  inputMode="numeric"
-                  maxLength={1}
-                  disabled={verifying}
-                  className="h-[52px] w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne"
-                />
-              ))}
-            </motion.div>
+                {otpError && (
+                  <p className="mt-4 text-center text-xs text-red-600 dark:text-red-400">
+                    {otpError}
+                  </p>
+                )}
+                {verifying && (
+                  <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Verifying…
+                  </p>
+                )}
 
-            {otpError && <p className="mt-4 text-center text-xs text-red-600 dark:text-red-400">{otpError}</p>}
-            {verifying && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" /> Verifying…
-              </p>
+                {verificationToken ? (
+                  <div className="mt-auto pt-10">
+                    <GoldButton onClick={() => setStep("profession")}>Continue →</GoldButton>
+                  </div>
+                ) : (
+                  <div className="mt-auto pt-10 text-center text-xs text-muted-foreground">
+                    Didn't receive it?{" "}
+                    <button
+                      disabled={resendIn > 0 || sending}
+                      onClick={handleResend}
+                      className="text-champagne disabled:text-muted-foreground"
+                    >
+                      {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-
-            <div className="mt-auto pt-10 text-center text-xs text-muted-foreground">
-              Didn't receive it?{" "}
-              <button
-                disabled={resendIn > 0 || sending}
-                onClick={handleResend}
-                className="text-champagne disabled:text-muted-foreground"
-              >
-                {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
-              </button>
-            </div>
           </motion.div>
         )}
 
