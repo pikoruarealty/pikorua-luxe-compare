@@ -31,7 +31,7 @@ const PROFESSIONS: Array<{
 const STEPS: Step[] = ["details", "phone", "profession"];
 
 export function AuthFlow() {
-  const { setUserProfile, setPhase, authOnly, finishGatedAuth } = useOnboarding();
+  const { setUserProfile, setQuizAnswers, setPhase, authOnly, finishGatedAuth } = useOnboarding();
   const [step, setStep] = useState<Step>("details");
 
   // Details
@@ -191,10 +191,22 @@ export function AuthFlow() {
         uid: saved.id,
       };
       setUserProfile(profile);
+      // A returning visitor whose phone matched an existing profile with
+      // saved preferences shouldn't be marched through the quiz again —
+      // show what they told us last time instead, with a plain edit option.
+      const returningWithPrefs =
+        saved.quizAnswers &&
+        ((saved.quizAnswers.bhk?.length ?? 0) > 0 ||
+          (saved.quizAnswers.propertyType?.length ?? 0) > 0 ||
+          Boolean(saved.quizAnswers.budgetRange) ||
+          Boolean(saved.quizAnswers.city));
       // Shared-link recipients skip the welcome-then-quiz march and land on
       // the comparison they were actually sent.
       if (authOnly) finishGatedAuth();
-      else setPhase("welcome");
+      else if (returningWithPrefs) {
+        setQuizAnswers(saved.quizAnswers);
+        setPhase("review-preferences");
+      } else setPhase("welcome");
     } catch (err) {
       setCompleteError(err instanceof Error ? err.message : "Couldn't save profile. Try again.");
     } finally {
