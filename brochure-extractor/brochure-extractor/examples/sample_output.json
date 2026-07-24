@@ -1,0 +1,609 @@
+{
+  "property": {
+    "basics": {
+      "property_name": "Ikebana",
+      "developer": "Gala Group",
+      "category": "Apartment",
+      "status": "Near Possession",
+      "possession": "9 Months",
+      "possession_confirmed_as_of": "12-03-2026",
+      "location": "Sindhu Bhavan Road",
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "tagline": "Where light lives",
+      "expert_note": null
+    },
+    "project_structure": {
+      "plot_size": "5400 sq ft",
+      "available_bhk_types": [
+        "4 BHK",
+        "5 BHK"
+      ],
+      "total_towers": 3,
+      "total_floors": 24,
+      "units_per_floor": 4,
+      "total_units": 96
+    },
+    "rera_approvals": {
+      "rera_id": "PR/GJ/AHMEDABAD/AUDA/RAA12345/EX1",
+      "rera_link": "https://gujrera.gujarat.gov.in/project/12345",
+      "proposed_start_date": "Jan 2025"
+    },
+    "construction_amenities": {
+      "parking_levels": null,
+      "podium_structure": null,
+      "lifts_per_tower": 3,
+      "open_space": null,
+      "geyser_heat_pump": null,
+      "vrv_ac": null,
+      "window_glasses": null,
+      "bath_sanitary_fittings": null,
+      "flooring": null,
+      "density_units_per_acre": null,
+      "construction_quality": null,
+      "internal_ceiling_height": null,
+      "clubhouse_size": "15000 sq ft"
+    },
+    "developer_info": {
+      "experience_years": null,
+      "total_delivered_projects": null,
+      "ongoing_projects": null,
+      "background": null,
+      "notable_delivered_projects": []
+    },
+    "configurations": [
+      {
+        "bhk_type": "4 BHK",
+        "variant_name": "Type A",
+        "carpet_area": "2450 sq ft",
+        "built_up_area": null,
+        "super_built_up_area": "3200 sq ft",
+        "bathrooms": 4,
+        "balconies": 2,
+        "servant_room": "Yes",
+        "price": "₹ 3.75 Cr",
+        "price_per_sqft": null,
+        "floor_plan_page": 12
+      },
+      {
+        "bhk_type": "4 BHK",
+        "variant_name": "Type B",
+        "carpet_area": "2700 sq ft",
+        "built_up_area": null,
+        "super_built_up_area": null,
+        "bathrooms": 4,
+        "balconies": 2,
+        "servant_room": "Yes",
+        "price": null,
+        "price_per_sqft": null,
+        "floor_plan_page": 13
+      }
+    ],
+    "amenities": [
+      "Gym",
+      "Yoga Deck",
+      "Spa",
+      "Infinity Pool"
+    ],
+    "highlights": [
+      "Handover within 9 months"
+    ],
+    "images": {
+      "cover": null,
+      "living_room": null,
+      "master_bedroom": null,
+      "pool": null,
+      "clubhouse": null
+    }
+  },
+  "field_meta": {
+    "basics.property_name": {
+      "confidence": 0.98,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": "IKEBANA",
+      "agreement": 2,
+      "alternatives": []
+    },
+    "basics.developer": {
+      "confidence": 0.9,
+      "source": {
+        "file": "rera-certificate.pdf",
+        "page": 1
+      },
+      "snippet": "Gala Group",
+      "agreement": 1,
+      "alternatives": [
+        {
+          "value": "Gala",
+          "confidence": 0.5,
+          "source": {
+            "file": "ikebana-brochure.pdf",
+            "page": 1
+          }
+        }
+      ]
+    },
+    "basics.category": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "basics.status": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "basics.possession": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "basics.possession_confirmed_as_of": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "basics.location": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "basics.city": {
+      "confidence": 0.95,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": "Ahmedabad",
+      "agreement": 2,
+      "alternatives": []
+    },
+    "basics.state": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "basics.tagline": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "project_structure.plot_size": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "project_structure.total_towers": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "project_structure.total_floors": {
+      "confidence": 0.93,
+      "source": {
+        "file": "rera-certificate.pdf",
+        "page": 1
+      },
+      "snippet": "No. of floors: 24",
+      "agreement": 1,
+      "alternatives": [
+        {
+          "value": 25,
+          "confidence": 0.55,
+          "source": {
+            "file": "ikebana-brochure.pdf",
+            "page": 4
+          }
+        }
+      ]
+    },
+    "project_structure.units_per_floor": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "project_structure.total_units": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 2,
+      "alternatives": []
+    },
+    "rera_approvals.rera_id": {
+      "confidence": 0.97,
+      "source": {
+        "file": "rera-certificate.pdf",
+        "page": 1
+      },
+      "snippet": "PR/GJ/...",
+      "agreement": 1,
+      "alternatives": []
+    },
+    "rera_approvals.rera_link": {
+      "confidence": 0.5,
+      "source": {
+        "file": "rera-certificate.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "rera_approvals.proposed_start_date": {
+      "confidence": 0.5,
+      "source": {
+        "file": "rera-certificate.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "construction_amenities.lifts_per_tower": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "construction_amenities.clubhouse_size": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].bhk_type": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].variant_name": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].carpet_area": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].super_built_up_area": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].bathrooms": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].balconies": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].servant_room": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].price": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[0].floor_plan_page": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].bhk_type": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].variant_name": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].carpet_area": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].bathrooms": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].balconies": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].servant_room": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    },
+    "configurations[1].floor_plan_page": {
+      "confidence": 0.5,
+      "source": {
+        "file": "ikebana-brochure.pdf",
+        "page": 1
+      },
+      "snippet": null,
+      "agreement": 1,
+      "alternatives": []
+    }
+  },
+  "conflicts": [
+    {
+      "field": "basics.developer",
+      "chosen": "Gala Group",
+      "rejected": [
+        {
+          "value": "Gala",
+          "confidence": 0.5,
+          "source": {
+            "file": "ikebana-brochure.pdf",
+            "page": 1
+          }
+        }
+      ]
+    },
+    {
+      "field": "project_structure.total_floors",
+      "chosen": 24,
+      "rejected": [
+        {
+          "value": 25,
+          "confidence": 0.55,
+          "source": {
+            "file": "ikebana-brochure.pdf",
+            "page": 4
+          }
+        }
+      ]
+    }
+  ],
+  "needs_review": [],
+  "missing_required": [],
+  "source_files": [
+    "ikebana-brochure.pdf",
+    "rera-certificate.pdf"
+  ],
+  "completeness": {
+    "fields_filled": 21,
+    "fields_total": 38,
+    "percent": 55.3,
+    "configurations_found": 2,
+    "amenities_found": 4
+  },
+  "form_payload": {
+    "property_name": "Ikebana",
+    "developer": "Gala Group",
+    "category": "Apartment",
+    "status": "Near Possession",
+    "possession": "9 Months",
+    "possession_confirmed_as_of": "12-03-2026",
+    "location": "Sindhu Bhavan Road",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "tagline": "Where light lives",
+    "expert_note": null,
+    "plot_size": "5400 sq ft",
+    "available_bhk_types": [
+      "4 BHK",
+      "5 BHK"
+    ],
+    "total_towers": 3,
+    "total_floors": 24,
+    "units_per_floor": 4,
+    "total_units": 96,
+    "rera_id": "PR/GJ/AHMEDABAD/AUDA/RAA12345/EX1",
+    "rera_link": "https://gujrera.gujarat.gov.in/project/12345",
+    "proposed_start_date": "Jan 2025",
+    "parking_levels": null,
+    "podium_structure": null,
+    "lifts_per_tower": 3,
+    "open_space": null,
+    "geyser_heat_pump": null,
+    "vrv_ac": null,
+    "window_glasses": null,
+    "bath_sanitary_fittings": null,
+    "flooring": null,
+    "density_units_per_acre": null,
+    "construction_quality": null,
+    "internal_ceiling_height": null,
+    "clubhouse_size": "15000 sq ft",
+    "experience_years": null,
+    "total_delivered_projects": null,
+    "ongoing_projects": null,
+    "background": null,
+    "notable_delivered_projects": [],
+    "configurations": [
+      {
+        "bhk_type": "4 BHK",
+        "variant_name": "Type A",
+        "carpet_area": "2450 sq ft",
+        "built_up_area": null,
+        "super_built_up_area": "3200 sq ft",
+        "bathrooms": 4,
+        "balconies": 2,
+        "servant_room": "Yes",
+        "price": "₹ 3.75 Cr",
+        "price_per_sqft": null,
+        "floor_plan_page": 12
+      },
+      {
+        "bhk_type": "4 BHK",
+        "variant_name": "Type B",
+        "carpet_area": "2700 sq ft",
+        "built_up_area": null,
+        "super_built_up_area": null,
+        "bathrooms": 4,
+        "balconies": 2,
+        "servant_room": "Yes",
+        "price": null,
+        "price_per_sqft": null,
+        "floor_plan_page": 13
+      }
+    ],
+    "amenities": [
+      "Gym",
+      "Yoga Deck",
+      "Spa",
+      "Infinity Pool"
+    ],
+    "highlights": [
+      "Handover within 9 months"
+    ],
+    "images": {
+      "cover": null,
+      "living_room": null,
+      "master_bedroom": null,
+      "pool": null,
+      "clubhouse": null
+    }
+  }
+}

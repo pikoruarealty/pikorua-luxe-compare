@@ -14,8 +14,12 @@ export interface ConfigDetail {
   type?: string;
   area: string | null; // super built-up sqft
   carpet: string | null; // carpet sqft
+  builtUpArea?: string | null;
   price: string | null; // price in Cr
   rate: string | null; // basic rate per sqft
+  bathrooms?: string | null;
+  balconies?: string | null;
+  servantRoom?: string | null; // "Yes" / "No"
   livingArea?: string | null;
   kitchen?: string | null;
   bedroom1?: string | null; // Master Bedroom 1
