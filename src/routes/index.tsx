@@ -247,11 +247,7 @@ function Index() {
                 </div>
                 <button
                   type="submit"
-                  className="rounded-full px-5 py-3 text-[12px] font-semibold tracking-luxury transition hover:brightness-110 sm:px-7"
-                  style={{
-                    background: "linear-gradient(135deg, var(--brand) 0%, var(--brand-soft) 100%)",
-                    color: "var(--brand-ink)",
-                  }}
+                  className="foil rounded-full px-5 py-3 text-[12px] font-semibold tracking-luxury sm:px-7"
                 >
                   Explore
                 </button>
@@ -438,12 +434,20 @@ function Index() {
         <div className="container-lux relative z-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] tracking-luxury text-champagne">The Suite</p>
-              <h2 className="mt-2 font-display text-[32px] leading-tight text-ivory sm:text-[40px]">
+              <div className="flex items-center gap-3">
+                <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
+                <p className="font-label text-[10px] font-semibold tracking-luxury text-champagne sm:text-[11px]">
+                  The Suite
+                </p>
+              </div>
+              <h2
+                className="mt-4 font-display leading-[1.02] tracking-[-0.01em] text-ivory"
+                style={{ fontSize: "var(--step-3)" }}
+              >
                 Compare, <span className="gold-text">side by side</span>
               </h2>
             </div>
-            <p className="pb-1 text-[14px] text-muted-foreground">
+            <p className="max-w-xs pb-1 text-[14px] leading-relaxed text-muted-foreground">
               Pick two or three residences. Every detail lines up below.
             </p>
           </div>
@@ -472,20 +476,32 @@ function Index() {
         className="relative scroll-mt-28 overflow-hidden py-16 sm:py-24"
       >
         <div className="container-lux relative z-10">
-          <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-b border-champagne/15 pb-6">
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-b border-[var(--rule)] pb-6">
             <div>
-              <h2 className="font-display text-[36px] leading-tight text-ivory sm:text-[48px]">
+              <div className="flex items-center gap-3">
+                <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
+                <p className="font-label text-[10px] font-semibold tracking-luxury text-champagne sm:text-[11px]">
+                  The Collection
+                </p>
+              </div>
+              <h2
+                className="mt-4 font-display leading-[1.02] tracking-[-0.01em] text-ivory"
+                style={{ fontSize: "var(--step-3)" }}
+              >
                 Residences in <span className="gold-text">focus</span>
               </h2>
-              <p className="mt-2 text-[15px] text-muted-foreground">
+              <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
                 Hover a residence to expand it — "Add to Compare" sends it to the Suite.
               </p>
             </div>
             <div className="flex items-baseline gap-3">
-              <span className="font-display text-[40px] text-champagne leading-none">
+              <span
+                className="font-display leading-none text-champagne tabular-nums"
+                style={{ fontSize: "var(--step-4)" }}
+              >
                 {searching || filtersActive ? visibleCount : properties.length}
               </span>
-              <span className="text-[11px] tracking-luxury text-muted-foreground">
+              <span className="font-label text-[11px] tracking-luxury text-muted-foreground">
                 {searching || filtersActive ? "matching residences" : "curated residences"}
               </span>
             </div>

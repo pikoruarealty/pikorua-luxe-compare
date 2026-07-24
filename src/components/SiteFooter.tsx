@@ -12,13 +12,18 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           {/* Brand */}
           <div>
-            <Link to="/" className="inline-flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full gold-border">
+            <Link
+              to="/"
+              className="group inline-flex items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-full gold-border transition-transform duration-500 group-hover:rotate-[8deg]">
                 <span className="font-display text-base gold-text">P</span>
               </span>
               <div className="leading-tight">
-                <p className="font-display text-xl text-ivory">PIKORUA</p>
-                <p className="text-[9px] tracking-luxury text-champagne">Property Consultant</p>
+                <p className="font-display text-xl leading-none text-ivory">PIKORUA</p>
+                <p className="mt-1 font-label text-[9px] tracking-luxury text-champagne">
+                  Property Consultant
+                </p>
               </div>
             </Link>
             <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
@@ -29,7 +34,7 @@ export function SiteFooter() {
 
           {/* Explore */}
           <div>
-            <p className="text-[10px] tracking-luxury text-champagne">Explore</p>
+            <p className="font-label text-[10px] tracking-luxury text-champagne">Explore</p>
             <ul className="mt-4 space-y-3 text-[13px]">
               <li>
                 <a href="/#suite" className="text-muted-foreground transition hover:text-champagne">
@@ -57,7 +62,7 @@ export function SiteFooter() {
 
           {/* Contact */}
           <div>
-            <p className="text-[10px] tracking-luxury text-champagne">Speak with us</p>
+            <p className="font-label text-[10px] tracking-luxury text-champagne">Speak with us</p>
             <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
               Questions about a residence, pricing, or possession? Our advisors reply within the
               hour.
@@ -78,7 +83,7 @@ export function SiteFooter() {
           <p className="text-[11px] text-muted-foreground">
             © {new Date().getFullYear()} Pikorua Realty. All rights reserved.
           </p>
-          <p className="text-[10px] tracking-luxury text-muted-foreground">
+          <p className="font-label text-[10px] tracking-luxury text-muted-foreground">
             Compare · Decide · Reside
           </p>
         </div>

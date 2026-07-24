@@ -88,7 +88,8 @@ export function OnboardingOverlay() {
 
   // Lock body scroll while overlay card is visible
   useEffect(() => {
-    const active = phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz";
+    const active =
+      phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz";
     if (!active) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -97,7 +98,9 @@ export function OnboardingOverlay() {
     };
   }, [phase]);
 
-  const active = !isAdminRoute && (phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz");
+  const active =
+    !isAdminRoute &&
+    (phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz");
 
   return (
     <AnimatePresence>

@@ -22,6 +22,7 @@ export function SiteHeader() {
   const hydrated = useHydrated();
   const favCount = useFavoritesStore((s) => s.favorites.length);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -29,6 +30,15 @@ export function SiteHeader() {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  // Scroll-aware chrome — the bar compacts and its glass deepens once the page
+  // leaves the very top, so the header reads as a thin editorial rule in motion.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Scrollspy — highlight Suite/Collection as those sections pass the viewport.
   useEffect(() => {
@@ -71,15 +81,29 @@ export function SiteHeader() {
     : null;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-[var(--glass-border)] bg-lux-black/85 backdrop-blur-md [transform:translateZ(0)]">
-      <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-          <span className="grid h-9 w-9 place-items-center rounded-full gold-border">
+    <header
+      className={`fixed inset-x-0 top-0 z-40 border-b border-[var(--glass-border)] backdrop-blur-md [transform:translateZ(0)] transition-shadow duration-300 ${
+        scrolled ? "bg-lux-black/90 shadow-[0_12px_34px_-20px_rgba(0,0,0,0.5)]" : "bg-lux-black/80"
+      }`}
+    >
+      <div
+        className={`mx-auto flex max-w-7xl items-center justify-between px-4 transition-[height] duration-300 sm:px-6 ${
+          scrolled ? "h-[58px]" : "h-[68px]"
+        }`}
+      >
+        <Link
+          to="/"
+          className="group flex items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          onClick={() => setMenuOpen(false)}
+        >
+          <span className="grid h-9 w-9 place-items-center rounded-full gold-border transition-transform duration-500 group-hover:rotate-[8deg]">
             <span className="font-display text-sm gold-text">P</span>
           </span>
           <div className="leading-tight">
-            <p className="font-display text-lg text-ivory">PIKORUA</p>
-            <p className="text-[9px] tracking-luxury text-champagne">Property Consultant</p>
+            <p className="font-display text-lg leading-none text-ivory">PIKORUA</p>
+            <p className="mt-1 font-label text-[9px] tracking-luxury text-champagne">
+              Property Consultant
+            </p>
           </div>
         </Link>
 
@@ -135,7 +159,7 @@ export function SiteHeader() {
             onClick={toggle}
             aria-label="Toggle theme"
             title={theme === "dark" ? "Switch to light" : "Switch to dark"}
-            className="grid h-8 w-8 place-items-center rounded-full border border-champagne/30 text-ivory/80 transition hover:border-champagne hover:text-champagne"
+            className="grid h-8 w-8 place-items-center rounded-full border border-champagne/30 text-ivory/80 transition hover:border-champagne hover:text-champagne focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50"
           >
             {hydrated && theme === "dark" ? (
               <Sun className="h-3.5 w-3.5" />
@@ -195,7 +219,7 @@ export function SiteHeader() {
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
-            className="grid h-9 w-9 place-items-center rounded-full border border-champagne/30 text-ivory transition hover:border-champagne hover:text-champagne"
+            className="grid h-9 w-9 place-items-center rounded-full border border-champagne/30 text-ivory transition hover:border-champagne hover:text-champagne focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50"
           >
             {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
