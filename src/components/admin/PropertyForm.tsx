@@ -24,11 +24,15 @@ export function PropertyForm({
   submitLabel,
   onSubmit,
   submitting,
+  hidePublishToggle,
 }: {
   defaultValues?: PropertyFormValues;
   submitLabel: string;
   onSubmit: (values: PropertyFormValues) => void;
   submitting?: boolean;
+  /** Developer submissions don't control publish state directly — that's
+   *  decided by the owner on approval, so the toggle would be misleading. */
+  hidePublishToggle?: boolean;
 }) {
   const form = useForm<PropertyFormValues>({
     // Cast needed: the schema's `.default()`s make its input type wider than its
@@ -83,10 +87,12 @@ export function PropertyForm({
         <Field label="Expert note">
           <Textarea {...register("expertNote")} rows={3} />
         </Field>
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input type="checkbox" {...register("isPublished")} className="h-4 w-4" />
-          Visible on the public website
-        </label>
+        {!hidePublishToggle && (
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input type="checkbox" {...register("isPublished")} className="h-4 w-4" />
+            Visible on the public website
+          </label>
+        )}
       </Section>
 
       {isPlot && (
@@ -309,8 +315,12 @@ export function PropertyForm({
 const VARIANT_FIELDS = [
   { name: "area", label: "Super built-up (sq ft)" },
   { name: "carpet", label: "Carpet (sq ft)" },
+  { name: "builtUpArea", label: "Built-up (sq ft)" },
   { name: "price", label: "Price (Cr)" },
   { name: "rate", label: "Rate (per sq ft)" },
+  { name: "bathrooms", label: "Bathrooms" },
+  { name: "balconies", label: "Balconies" },
+  { name: "servantRoom", label: "Servant room" },
   { name: "livingArea", label: "Drawing / Living / Dining" },
   { name: "kitchen", label: "Kitchen" },
   { name: "bedroom1", label: "Bedroom 1" },

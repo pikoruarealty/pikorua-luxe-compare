@@ -6,15 +6,17 @@ import { propertyFormSchema, type PropertyFormValues } from "./property-schema";
 import { slug as slugify } from "./slug";
 import type { PropertyRowInsert } from "./property-write.server";
 
-/** JSONB columns are typed as Json; our richer shapes serialise cleanly into them. */
-const toDbRow = (row: PropertyRowInsert) => ({
+/** JSONB columns are typed as Json; our richer shapes serialise cleanly into them.
+ *  Exported for admin-submissions.functions.ts, which applies an approved
+ *  submission's payload the same way this file writes a direct admin edit. */
+export const toDbRow = (row: PropertyRowInsert) => ({
   ...row,
   configurations: row.configurations as unknown as Json,
   gallery: row.gallery as unknown as Json,
 });
 
 /** Append -2, -3 … until the slug is free (ignoring the row being edited). */
-async function uniqueSlug(
+export async function uniqueSlug(
   supabaseAdmin: {
     from: (t: string) => {
       select: (c: string) => {

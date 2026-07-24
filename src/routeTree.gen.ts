@@ -9,28 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AccountRouteImport } from './routes/account'
-import { Route as CompareRouteImport } from './routes/compare'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
-import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as ResidenceIdRouteImport } from './routes/residence.$id'
+import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
+import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminPropertiesIndexRouteImport } from './routes/admin.properties.index'
-import { Route as AdminPropertiesPropertyIdRouteImport } from './routes/admin.properties.$propertyId'
+import { Route as DeveloperPropertiesNewRouteImport } from './routes/developer.properties.new'
+import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.properties.$id'
 import { Route as AdminPropertiesNewRouteImport } from './routes/admin.properties.new'
+import { Route as AdminPropertiesPropertyIdRouteImport } from './routes/admin.properties.$propertyId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountRoute = AccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompareRoute = CompareRouteImport.update({
@@ -38,9 +36,19 @@ const CompareRoute = CompareRouteImport.update({
   path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperIndexRoute = DeveloperIndexRouteImport.update({
+  id: '/developer/',
+  path: '/developer/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -48,19 +56,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminCustomersRoute = AdminCustomersRouteImport.update({
-  id: '/admin/customers',
-  path: '/admin/customers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminDevelopersRoute = AdminDevelopersRouteImport.update({
-  id: '/admin/developers',
-  path: '/admin/developers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/admin/login',
-  path: '/admin/login',
+const ResidenceIdRoute = ResidenceIdRouteImport.update({
+  id: '/residence/$id',
+  path: '/residence/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
@@ -68,14 +66,39 @@ const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
   path: '/admin/submissions',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResidenceIdRoute = ResidenceIdRouteImport.update({
-  id: '/residence/$id',
-  path: '/residence/$id',
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDevelopersRoute = AdminDevelopersRouteImport.update({
+  id: '/admin/developers',
+  path: '/admin/developers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/admin/customers',
+  path: '/admin/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPropertiesIndexRoute = AdminPropertiesIndexRouteImport.update({
   id: '/admin/properties/',
   path: '/admin/properties/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperPropertiesNewRoute = DeveloperPropertiesNewRouteImport.update({
+  id: '/developer/properties/new',
+  path: '/developer/properties/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperPropertiesIdRoute = DeveloperPropertiesIdRouteImport.update({
+  id: '/developer/properties/$id',
+  path: '/developer/properties/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPropertiesNewRoute = AdminPropertiesNewRouteImport.update({
+  id: '/admin/properties/new',
+  path: '/admin/properties/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPropertiesPropertyIdRoute =
@@ -84,11 +107,6 @@ const AdminPropertiesPropertyIdRoute =
     path: '/admin/properties/$propertyId',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AdminPropertiesNewRoute = AdminPropertiesNewRouteImport.update({
-  id: '/admin/properties/new',
-  path: '/admin/properties/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,8 +119,11 @@ export interface FileRoutesByFullPath {
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/developer/': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
+  '/developer/properties/new': typeof DeveloperPropertiesNewRoute
   '/admin/properties/': typeof AdminPropertiesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -116,8 +137,11 @@ export interface FileRoutesByTo {
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin': typeof AdminIndexRoute
+  '/developer': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
+  '/developer/properties/new': typeof DeveloperPropertiesNewRoute
   '/admin/properties': typeof AdminPropertiesIndexRoute
 }
 export interface FileRoutesById {
@@ -132,8 +156,11 @@ export interface FileRoutesById {
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/developer/': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
+  '/developer/properties/new': typeof DeveloperPropertiesNewRoute
   '/admin/properties/': typeof AdminPropertiesIndexRoute
 }
 export interface FileRouteTypes {
@@ -149,8 +176,11 @@ export interface FileRouteTypes {
     | '/admin/submissions'
     | '/residence/$id'
     | '/admin/'
+    | '/developer/'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/properties/$id'
+    | '/developer/properties/new'
     | '/admin/properties/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -164,8 +194,11 @@ export interface FileRouteTypes {
     | '/admin/submissions'
     | '/residence/$id'
     | '/admin'
+    | '/developer'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/properties/$id'
+    | '/developer/properties/new'
     | '/admin/properties'
   id:
     | '__root__'
@@ -179,8 +212,11 @@ export interface FileRouteTypes {
     | '/admin/submissions'
     | '/residence/$id'
     | '/admin/'
+    | '/developer/'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/properties/$id'
+    | '/developer/properties/new'
     | '/admin/properties/'
   fileRoutesById: FileRoutesById
 }
@@ -195,25 +231,21 @@ export interface RootRouteChildren {
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
   ResidenceIdRoute: typeof ResidenceIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  DeveloperIndexRoute: typeof DeveloperIndexRoute
   AdminPropertiesPropertyIdRoute: typeof AdminPropertiesPropertyIdRoute
   AdminPropertiesNewRoute: typeof AdminPropertiesNewRoute
+  DeveloperPropertiesIdRoute: typeof DeveloperPropertiesIdRoute
+  DeveloperPropertiesNewRoute: typeof DeveloperPropertiesNewRoute
   AdminPropertiesIndexRoute: typeof AdminPropertiesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account': {
-      id: '/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AccountRouteImport
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compare': {
@@ -223,11 +255,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer/': {
+      id: '/developer/'
+      path: '/developer'
+      fullPath: '/developer/'
+      preLoaderRoute: typeof DeveloperIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -237,25 +283,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/customers': {
-      id: '/admin/customers'
-      path: '/admin/customers'
-      fullPath: '/admin/customers'
-      preLoaderRoute: typeof AdminCustomersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/developers': {
-      id: '/admin/developers'
-      path: '/admin/developers'
-      fullPath: '/admin/developers'
-      preLoaderRoute: typeof AdminDevelopersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/admin/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
+    '/residence/$id': {
+      id: '/residence/$id'
+      path: '/residence/$id'
+      fullPath: '/residence/$id'
+      preLoaderRoute: typeof ResidenceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/submissions': {
@@ -265,11 +297,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSubmissionsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/residence/$id': {
-      id: '/residence/$id'
-      path: '/residence/$id'
-      fullPath: '/residence/$id'
-      preLoaderRoute: typeof ResidenceIdRouteImport
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/developers': {
+      id: '/admin/developers'
+      path: '/admin/developers'
+      fullPath: '/admin/developers'
+      preLoaderRoute: typeof AdminDevelopersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/admin/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/properties/': {
@@ -279,11 +325,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPropertiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/properties/$propertyId': {
-      id: '/admin/properties/$propertyId'
-      path: '/admin/properties/$propertyId'
-      fullPath: '/admin/properties/$propertyId'
-      preLoaderRoute: typeof AdminPropertiesPropertyIdRouteImport
+    '/developer/properties/new': {
+      id: '/developer/properties/new'
+      path: '/developer/properties/new'
+      fullPath: '/developer/properties/new'
+      preLoaderRoute: typeof DeveloperPropertiesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer/properties/$id': {
+      id: '/developer/properties/$id'
+      path: '/developer/properties/$id'
+      fullPath: '/developer/properties/$id'
+      preLoaderRoute: typeof DeveloperPropertiesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/properties/new': {
@@ -291,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/properties/new'
       fullPath: '/admin/properties/new'
       preLoaderRoute: typeof AdminPropertiesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/properties/$propertyId': {
+      id: '/admin/properties/$propertyId'
+      path: '/admin/properties/$propertyId'
+      fullPath: '/admin/properties/$propertyId'
+      preLoaderRoute: typeof AdminPropertiesPropertyIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -307,8 +367,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSubmissionsRoute: AdminSubmissionsRoute,
   ResidenceIdRoute: ResidenceIdRoute,
   AdminIndexRoute: AdminIndexRoute,
+  DeveloperIndexRoute: DeveloperIndexRoute,
   AdminPropertiesPropertyIdRoute: AdminPropertiesPropertyIdRoute,
   AdminPropertiesNewRoute: AdminPropertiesNewRoute,
+  DeveloperPropertiesIdRoute: DeveloperPropertiesIdRoute,
+  DeveloperPropertiesNewRoute: DeveloperPropertiesNewRoute,
   AdminPropertiesIndexRoute: AdminPropertiesIndexRoute,
 }
 export const routeTree = rootRouteImport
