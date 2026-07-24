@@ -90,14 +90,13 @@ export function PropertyQuiz({
       budgetSub,
     };
     completeOnboarding(answers);
-    if (!editMode) {
-      // Land straight on the property picker once the overlay unmounts and
-      // body scroll unlocks, instead of leaving the visitor wherever the
-      // pre-quiz scroll happened to stop.
-      window.setTimeout(() => {
-        document.getElementById("suite")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 60);
-    }
+    // Land straight on the property picker once the overlay unmounts and body
+    // scroll unlocks, instead of leaving the visitor wherever the pre-quiz
+    // scroll happened to stop. A no-op on routes without a #suite section
+    // (e.g. editing preferences from the Account page).
+    window.setTimeout(() => {
+      document.getElementById("suite")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
   };
 
   const showBudgetComplete = budgetRange === "₹ 21 Cr +" || (budgetRange && budgetSub);

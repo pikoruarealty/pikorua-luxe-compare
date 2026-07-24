@@ -6,6 +6,7 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { AuthFlow } from "./AuthFlow";
 import { WelcomeCard } from "./WelcomeCard";
 import { PropertyQuiz } from "./PropertyQuiz";
+import { ReviewPreferences } from "./ReviewPreferences";
 
 export function OnboardingOverlay() {
   const { phase, setPhase, quizAnswers, quizEditMode, cancelQuizEdit, hydrated } = useOnboarding();
@@ -87,7 +88,7 @@ export function OnboardingOverlay() {
 
   // Lock body scroll while overlay card is visible
   useEffect(() => {
-    const active = phase === "auth" || phase === "welcome" || phase === "quiz";
+    const active = phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz";
     if (!active) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -96,7 +97,7 @@ export function OnboardingOverlay() {
     };
   }, [phase]);
 
-  const active = !isAdminRoute && (phase === "auth" || phase === "welcome" || phase === "quiz");
+  const active = !isAdminRoute && (phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz");
 
   return (
     <AnimatePresence>
@@ -150,6 +151,7 @@ export function OnboardingOverlay() {
             <div className="relative flex flex-1 flex-col" style={{ zIndex: 1 }}>
               {phase === "auth" && <AuthFlow />}
               {phase === "welcome" && <WelcomeCard />}
+              {phase === "review-preferences" && <ReviewPreferences />}
               {phase === "quiz" && (
                 <PropertyQuiz
                   initialAnswers={quizEditMode ? (quizAnswers ?? undefined) : undefined}
