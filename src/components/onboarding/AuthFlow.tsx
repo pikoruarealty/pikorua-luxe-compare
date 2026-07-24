@@ -195,21 +195,32 @@ export function AuthFlow() {
 
   const activeIdx = STEPS.indexOf(step);
   const showBiz = profession === "business" || profession === "investor";
+  // OTP already sent for this session — going back to re-edit the number
+  // shouldn't silently resend it, just let the visitor change it and send again.
+  const goBack = () => {
+    if (activeIdx > 0) setStep(STEPS[activeIdx - 1]);
+  };
 
   const transition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
     <div className="flex h-full flex-col">
-      {/* Step dots */}
-      <div className="mb-8 flex justify-center gap-2">
-        {STEPS.map((_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 w-1.5 rounded-full transition-colors ${
-              i <= activeIdx ? "bg-champagne" : "bg-border"
-            }`}
-          />
-        ))}
+      {/* Back button + step dots */}
+      <div className="mb-8 flex items-center gap-3">
+        <div className="flex w-16 shrink-0 justify-start">
+          {activeIdx > 0 && <BackBtn onClick={goBack} />}
+        </div>
+        <div className="flex flex-1 justify-center gap-2">
+          {STEPS.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                i <= activeIdx ? "bg-champagne" : "bg-border"
+              }`}
+            />
+          ))}
+        </div>
+        <div className="w-16 shrink-0" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -472,6 +483,17 @@ function FieldInput({
         className="h-12 w-full rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
       />
     </div>
+  );
+}
+
+function BackBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+    >
+      ← Back
+    </button>
   );
 }
 
