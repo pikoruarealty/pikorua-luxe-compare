@@ -488,26 +488,26 @@ function PropertyPicker({
 
   return (
     <>
-      <DialogHeader className="shrink-0 border-b border-border/60 px-6 pb-3 pt-5">
-        <div className="flex items-end justify-between gap-4 pr-10">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+      <DialogHeader className="shrink-0 border-b border-border/60 px-4 pb-2 pt-3 sm:px-6 sm:pb-3 sm:pt-5">
+        <div className="flex items-center justify-between gap-3 pr-8 sm:items-end sm:gap-4 sm:pr-10">
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:text-[10px] sm:tracking-[0.28em]">
               Select property {indexLabel}
             </p>
-            <DialogTitle className="mt-1 font-display text-[20px] text-foreground">
+            <DialogTitle className="mt-0.5 font-display text-[15px] leading-tight text-foreground sm:mt-1 sm:text-[20px]">
               Choose from your matched residences
             </DialogTitle>
           </div>
           <ScrollCounter position={position} total={total} progress={progress} />
         </div>
 
-        <div className="relative mt-3">
+        <div className="relative mt-2 sm:mt-3">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name, developer or location…"
-            className="w-full rounded-full border border-border bg-background py-2.5 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne"
+            className="w-full rounded-full border border-border bg-background py-2 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne sm:py-2.5"
           />
         </div>
 
@@ -524,9 +524,9 @@ function PropertyPicker({
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="min-h-0 flex-1 snap-y snap-mandatory scroll-smooth overflow-y-auto px-5 py-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="min-h-0 flex-1 snap-y snap-mandatory scroll-smooth overflow-y-auto px-4 py-4 [scrollbar-width:none] sm:px-5 sm:py-5 [&::-webkit-scrollbar]:hidden"
         >
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 sm:gap-5">
             {filtered.map((p) => (
               <div key={p.id} className="snap-start">
                 <PickerCard property={p} onPick={onPick} />
@@ -552,12 +552,12 @@ function ScrollCounter({
   const r = 15;
   const circ = 2 * Math.PI * r;
   return (
-    <div className="flex shrink-0 items-center gap-3">
-      <p className="text-[12px] tabular-nums whitespace-nowrap text-muted-foreground">
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+      <p className="hidden text-[12px] tabular-nums whitespace-nowrap text-muted-foreground sm:block">
         <span className="font-semibold text-foreground">{position}</span> of {total}
       </p>
-      <div className="relative grid h-11 w-11 place-items-center">
-        <svg className="h-11 w-11 -rotate-90" viewBox="0 0 36 36">
+      <div className="relative grid h-8 w-8 shrink-0 place-items-center sm:h-11 sm:w-11">
+        <svg className="h-8 w-8 -rotate-90 sm:h-11 sm:w-11" viewBox="0 0 36 36">
           <circle cx="18" cy="18" r={r} fill="none" strokeWidth="2.5" className="stroke-border" />
           <circle
             cx="18"
@@ -570,7 +570,9 @@ function ScrollCounter({
             style={{ strokeDasharray: circ, strokeDashoffset: circ * (1 - progress) }}
           />
         </svg>
-        <span className="absolute text-[10px] font-semibold text-champagne">{position}</span>
+        <span className="absolute text-[8px] font-semibold text-champagne sm:text-[10px]">
+          {position}
+        </span>
       </div>
     </div>
   );
@@ -592,7 +594,7 @@ function PickerCard({ property: p, onPick }: { property: Property; onPick: (id: 
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-lg sm:flex-row sm:min-h-[48vh]">
-      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:w-[55%]">
+      <div className="relative h-36 w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:h-auto sm:w-[55%]">
         <AnimatePresence initial={false} mode="sync">
           <motion.img
             key={images[idx]}
@@ -648,20 +650,20 @@ function PickerCard({ property: p, onPick }: { property: Property; onPick: (id: 
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
+      <div className="flex flex-1 flex-col gap-2.5 p-3.5 sm:gap-4 sm:p-6">
         <div>
-          <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-            <span className="inline-block h-px w-5 bg-champagne" /> {p.developer}
+          <p className="inline-flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:gap-2 sm:text-[10px] sm:tracking-[0.28em]">
+            <span className="inline-block h-px w-4 bg-champagne sm:w-5" /> {p.developer}
           </p>
-          <h3 className="mt-2 font-display text-[22px] leading-[1.05] tracking-[-0.01em] text-foreground sm:text-[26px]">
+          <h3 className="mt-1 font-display text-[17px] leading-[1.05] tracking-[-0.01em] text-foreground sm:mt-2 sm:text-[26px]">
             {p.name}
           </h3>
-          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:mt-2 sm:text-[11px] sm:tracking-[0.28em]">
             {p.configuration}
           </p>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-1.5 sm:space-y-2.5">
           <DetailRow
             icon={<MapPin className="h-3.5 w-3.5" />}
             label="Location"
@@ -678,7 +680,7 @@ function PickerCard({ property: p, onPick }: { property: Property; onPick: (id: 
         <button
           type="button"
           onClick={() => onPick(p.id)}
-          className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-5 py-3.5 text-[11px] font-semibold tracking-[0.26em] text-foreground transition hover:border-champagne hover:bg-champagne hover:text-lux-black"
+          className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-[10px] font-semibold tracking-[0.2em] text-foreground transition hover:border-champagne hover:bg-champagne hover:text-lux-black sm:py-3.5 sm:text-[11px] sm:tracking-[0.26em]"
         >
           <Plus className="h-3.5 w-3.5" /> ADD TO COMPARE
         </button>
@@ -697,15 +699,17 @@ function DetailRow({
   value: string;
 }) {
   return (
-    <div className="flex items-start gap-2.5">
-      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground">
+    <div className="flex items-start gap-2 sm:gap-2.5">
+      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-border text-muted-foreground sm:h-7 sm:w-7">
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="text-[8px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:tracking-[0.28em]">
           {label}
         </p>
-        <p className="mt-0.5 text-[12px] font-medium text-foreground truncate">{value}</p>
+        <p className="mt-0.5 text-[11px] font-medium text-foreground truncate sm:text-[12px]">
+          {value}
+        </p>
       </div>
     </div>
   );

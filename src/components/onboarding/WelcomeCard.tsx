@@ -23,7 +23,7 @@ export function WelcomeCard() {
 
       <h2 className="mt-6 font-display text-4xl text-foreground">Welcome, {firstName}.</h2>
       <p className="mt-3 font-display text-2xl text-champagne" style={{ fontStyle: "normal" }}>
-        Your private collection awaits.
+        Compare confidently. Decide clearly.
       </p>
 
       <motion.div
@@ -42,7 +42,7 @@ export function WelcomeCard() {
           onClick={() => setPhase("site-preview")}
           className="flex h-12 w-full items-center justify-center rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
         >
-          Explore the collection →
+          Start comparing →
         </button>
       </div>
     </motion.div>
