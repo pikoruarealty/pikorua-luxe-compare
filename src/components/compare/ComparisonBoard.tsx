@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type RefObject } from "react";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Plus,
@@ -15,6 +16,7 @@ import {
   CalendarDays,
   Search,
   Eye,
+  SearchX,
 } from "lucide-react";
 import { useProperties, usePropertyLookup } from "@/context/PropertiesContext";
 import { MAX_COMPARE, MIN_COMPARE, useCompareStore } from "@/stores/compare-store";
@@ -33,6 +35,7 @@ import { CONFIG_KEYS } from "@/types/property";
 import { toast } from "sonner";
 import { PhotoSlideshow } from "@/components/compare/PhotoSlideshow";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { saveQuizAnswers } from "@/lib/profile.functions";
 import { allowedConfigKeys, matchesPreferences, parseBudget } from "@/lib/preference-filter";
 import { VariantSwitcher, VariantValueCell, variantsOf } from "@/components/compare/VariantColumns";
 import { useVariantViewStore, variantKey } from "@/stores/variant-view-store";
@@ -111,7 +114,17 @@ export function ComparisonBoard({
   slotsRef?: RefObject<HTMLDivElement | null>;
 } = {}) {
   const hydrated = useHydrated();
-  const { quizAnswers, requestAuth } = useOnboarding();
+  const { quizAnswers, setQuizAnswers, requestAuth } = useOnboarding();
+  const saveQuizAnswersFn = useServerFn(saveQuizAnswers);
+  const clearFilters = () => {
+    setQuizAnswers(null);
+    try {
+      window.localStorage.removeItem("pikorua:quiz-answers");
+    } catch {
+      // ignore
+    }
+    saveQuizAnswersFn({ data: { answers: null } }).catch(() => {});
+  };
   const { selected: rawSelected, toggle, remove, clear } = useCompareStore();
   const allProperties = useProperties();
   const getPropertyById = usePropertyLookup();
@@ -253,6 +266,7 @@ export function ComparisonBoard({
               currentSelected={selected}
               pickable={pickable}
               noMatches={noMatches}
+              onClearFilters={clearFilters}
             />
           ))}
         </div>
@@ -302,6 +316,7 @@ function SlotCard({
   currentSelected,
   pickable,
   noMatches,
+  onClearFilters,
 }: {
   slot: Property | null;
   index: number;
@@ -310,6 +325,7 @@ function SlotCard({
   currentSelected: string[];
   pickable: Property[];
   noMatches: boolean;
+  onClearFilters: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -374,6 +390,7 @@ function SlotCard({
             available={available}
             indexLabel={String.fromCharCode(65 + index)}
             noMatches={noMatches}
+            onClearFilters={onClearFilters}
             onPick={(id) => {
               onPick(id);
               setOpen(false);
@@ -389,11 +406,13 @@ function PropertyPicker({
   available,
   indexLabel,
   noMatches,
+  onClearFilters,
   onPick,
 }: {
   available: Property[];
   indexLabel: string;
   noMatches: boolean;
+  onClearFilters: () => void;
   onPick: (id: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -423,6 +442,40 @@ function PropertyPicker({
     setPosition(Math.min(total, Math.max(1, Math.round(p * (total - 1)) + 1)));
   };
 
+  // Preferences ruling out every property is a real result, not an error to
+  // paper over with the unfiltered catalogue — show it plainly and let the
+  // visitor clear their filters instead of silently ignoring them.
+  if (noMatches) {
+    return (
+      <>
+        <DialogHeader className="border-b border-border/60 px-6 pb-4 pt-6">
+          <DialogTitle className="font-display text-[22px] text-foreground">
+            Select property {indexLabel}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
+          <div className="grid h-14 w-14 place-items-center rounded-full border border-border text-muted-foreground">
+            <SearchX className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-display text-2xl text-foreground">No residences found</p>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+              Nothing matches your current preferences. Loosen a filter or clear them to see the
+              full collection.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="mt-2 inline-flex items-center gap-2 rounded-full bg-champagne px-6 py-2.5 text-xs font-medium tracking-wide text-lux-black transition-opacity hover:opacity-90"
+          >
+            <X className="h-3.5 w-3.5" /> Clear filters
+          </button>
+        </div>
+      </>
+    );
+  }
+
   if (available.length === 0) {
     return (
       <>
@@ -448,17 +501,11 @@ function PropertyPicker({
               Select property {indexLabel}
             </p>
             <DialogTitle className="mt-1 font-display text-[20px] text-foreground">
-              {noMatches ? "Choose from the full collection" : "Choose from your matched residences"}
+              Choose from your matched residences
             </DialogTitle>
           </div>
           <ScrollCounter position={position} total={total} progress={progress} />
         </div>
-
-        {noMatches && (
-          <p className="mt-3 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-[12px] text-muted-foreground">
-            No residences match your current preferences. Showing every residence instead.
-          </p>
-        )}
 
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
