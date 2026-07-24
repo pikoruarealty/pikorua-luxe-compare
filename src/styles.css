@@ -43,10 +43,14 @@
   --color-antique: var(--antique-gold);
   --color-muted-gold: var(--muted-gold);
 
+  /* Plus Jakarta Sans (geometric sans) is the display face; Inter carries body
+     copy. --font-label mirrors the display family for small uppercase labels. */
   --font-display:
     "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-label:
+    "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* =========================================================
@@ -58,6 +62,50 @@
 
 :root {
   --radius: 0.75rem;
+
+  /* ===== Editorial foundation tokens (Phase 1) ===== */
+  /* Fluid modular type scale — min size on phones, max on wide screens. */
+  --step--1: clamp(0.83rem, 0.79rem + 0.18vw, 0.94rem);
+  --step-0: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --step-1: clamp(1.2rem, 1.09rem + 0.55vw, 1.55rem);
+  --step-2: clamp(1.5rem, 1.28rem + 1.1vw, 2.2rem);
+  --step-3: clamp(1.85rem, 1.45rem + 2vw, 3.1rem);
+  --step-4: clamp(2.3rem, 1.6rem + 3.4vw, 4.5rem);
+  --step-5: clamp(2.9rem, 1.7rem + 5.6vw, 6.5rem);
+
+  /* 8pt spacing scale, an editorial section rhythm, and a prose reading measure. */
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --space-section: clamp(4rem, 3rem + 6vw, 9rem);
+  --measure: 66ch;
+
+  /* Metallic "foil" accent — for primary CTAs and the wordmark, so gold reads
+     as a material with a sheen rather than a flat fill. Resolves against the
+     active palette's --brand tokens. */
+  --gradient-foil: linear-gradient(
+    135deg,
+    var(--brand-soft) 0%,
+    var(--brand) 45%,
+    var(--brand-strong, var(--brand)) 100%
+  );
+
+  /* Editorial hairline — a single authoritative divider tone that tracks the
+     active foreground, so rules read as drawn ink on any palette. */
+  --rule: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --rule-strong: color-mix(in oklab, var(--foreground) 20%, transparent);
+
+  /* Layered "lit from above" lift for cards and raised surfaces — a longer,
+     softer cast than --shadow-deep, with a faint top highlight. */
+  --shadow-lift:
+    0 1px 0 0 color-mix(in oklab, var(--foreground) 5%, transparent) inset,
+    0 2px 6px -3px color-mix(in oklab, var(--foreground) 14%, transparent),
+    0 20px 48px -24px color-mix(in oklab, var(--foreground) 26%, transparent);
 
   /* Ink palette (dark theme defaults) */
   --lux-black: #090909;
@@ -343,7 +391,8 @@ html.theme-anim * {
     -moz-osx-font-smoothing: grayscale;
     font-family: inherit;
   }
-  /* Plus Jakarta Sans (geometric sans) needs tighter tracking than a serif at display sizes */
+  /* Titles & headings use Plus Jakarta Sans (--font-display); body/content uses
+     Inter (--font-body). The geometric sans wants tighter display tracking. */
   h1,
   h2,
   h3,
@@ -351,6 +400,7 @@ html.theme-anim * {
   h5,
   h6,
   .font-display {
+    font-family: var(--font-display);
     font-weight: 700 !important;
     letter-spacing: -0.02em;
   }
@@ -360,14 +410,6 @@ html.theme-anim * {
   strong,
   b {
     font-weight: 700;
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
-    font-weight: 500;
   }
   ::selection {
     background: var(--foreground);
@@ -403,6 +445,45 @@ html.theme-anim * {
 @utility tracking-luxury {
   letter-spacing: 0.22em;
   text-transform: uppercase;
+}
+
+/* Metallic gold CTA surface — a foil gradient with a lit top edge and a soft
+   colored cast, so primary actions read as a precious material rather than a
+   flat fill. Text uses --brand-ink for contrast on the gold. */
+@utility foil {
+  background: var(--gradient-foil);
+  color: var(--brand-ink);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 45%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, black 22%, transparent),
+    0 10px 30px -12px color-mix(in oklab, var(--brand) 60%, transparent);
+  transition:
+    filter 0.4s ease,
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.foil:hover {
+  filter: brightness(1.05) saturate(1.04);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 55%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, black 24%, transparent),
+    0 16px 42px -14px color-mix(in oklab, var(--brand) 72%, transparent);
+}
+.foil:active {
+  transform: translateY(1px);
+}
+
+/* Editorial hairline rule — a drawn-ink divider on the active palette. */
+@utility hairline {
+  border: 0;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* Small uppercase UI / eyebrow labels stay in the geometric sans (Plus Jakarta),
+   which reads cleaner than a high-contrast serif at label sizes. */
+@utility font-label {
+  font-family: var(--font-label);
 }
 
 @utility container-lux {
