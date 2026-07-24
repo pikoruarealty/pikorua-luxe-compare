@@ -115,7 +115,16 @@ function buildBuckets(properties: Property[], answers: QuizAnswers) {
 
 export function SuggestedProperties() {
   const { quizAnswers } = useOnboarding();
-  const properties = useProperties();
+  const allProperties = useProperties();
+  const hydrated = useHydrated();
+  const { selected: rawSelected } = useCompareStore();
+  // A property already sitting in the comparison suite above has nothing to
+  // gain from also showing up as a "suggestion" right below it.
+  const selected = hydrated ? rawSelected : [];
+  const properties = useMemo(
+    () => (selected.length ? allProperties.filter((p) => !selected.includes(p.id)) : allProperties),
+    [allProperties, selected],
+  );
 
   const buckets = useMemo(() => {
     if (!quizAnswers) {

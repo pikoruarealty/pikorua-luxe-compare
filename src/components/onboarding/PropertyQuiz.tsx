@@ -104,11 +104,17 @@ export function PropertyQuiz({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] tracking-[0.22em] text-champagne uppercase">
+        <div className="flex items-center gap-3">
+          <div className="flex w-16 shrink-0 justify-start">
+            {q > 1 && <BackBtn onClick={() => setQ((prev) => (prev - 1) as 1 | 2 | 3 | 4)} />}
+          </div>
+          <p className="flex-1 text-center text-[11px] tracking-[0.22em] text-champagne uppercase">
             Question {q} of 4
           </p>
-          {q > 1 && <BackBtn onClick={() => setQ((prev) => (prev - 1) as 1 | 2 | 3 | 4)} />}
+          {/* Matches the Back button's width so the close (X) button in the
+              top-right corner never collides with it — this row used to put
+              Back on the right, directly under that button. */}
+          <div className="w-16 shrink-0" />
         </div>
         <div className="mt-2 h-px w-full overflow-hidden bg-border">
           <motion.div

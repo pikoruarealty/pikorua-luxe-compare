@@ -19,7 +19,11 @@ export function parseBudget(label: string | undefined): [number, number] | null 
   }
   const nums = clean.match(/[\d.]+/g)?.map(parseFloat) ?? [];
   if (nums.length === 0) return null;
-  if (nums.length === 1) return [nums[0], nums[0]];
+  // A single-value sub-budget ("₹ 5 Cr", "₹ 10 Cr") is a rough target, not an
+  // exact price — real listings almost never land on a round number. Treat it
+  // as a fixed ±Cr window instead of requiring an exact match: 5 Cr becomes
+  // 4-5.5 Cr, 10 Cr becomes 9-10.5, same flat offset at any budget level.
+  if (nums.length === 1) return [Math.max(0, nums[0] - 1), nums[0] + 0.5];
   return [Math.min(...nums), Math.max(...nums)];
 }
 

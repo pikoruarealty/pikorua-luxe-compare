@@ -141,7 +141,16 @@ const HEADINGS = [
 
 export function SuggestedComparisons() {
   const { quizAnswers } = useOnboarding();
-  const properties = useProperties();
+  const allProperties = useProperties();
+  const hydrated = useHydrated();
+  const { selected: rawSelected } = useCompareStore();
+  // A pair suggesting a property already in the comparison suite above is
+  // redundant — leave it out until that property is removed from the suite.
+  const selected = hydrated ? rawSelected : [];
+  const properties = useMemo(
+    () => (selected.length ? allProperties.filter((p) => !selected.includes(p.id)) : allProperties),
+    [allProperties, selected],
+  );
   const pairs = useMemo(
     () => buildPairs(properties, quizAnswers ?? null),
     [properties, quizAnswers],
