@@ -252,6 +252,7 @@ export function ComparisonBoard({
               }}
               currentSelected={selected}
               pickable={pickable}
+              noMatches={noMatches}
             />
           ))}
         </div>
@@ -300,6 +301,7 @@ function SlotCard({
   onPick,
   currentSelected,
   pickable,
+  noMatches,
 }: {
   slot: Property | null;
   index: number;
@@ -307,6 +309,7 @@ function SlotCard({
   onPick: (id: string) => void;
   currentSelected: string[];
   pickable: Property[];
+  noMatches: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -370,6 +373,7 @@ function SlotCard({
           <PropertyPicker
             available={available}
             indexLabel={String.fromCharCode(65 + index)}
+            noMatches={noMatches}
             onPick={(id) => {
               onPick(id);
               setOpen(false);
@@ -384,10 +388,12 @@ function SlotCard({
 function PropertyPicker({
   available,
   indexLabel,
+  noMatches,
   onPick,
 }: {
   available: Property[];
   indexLabel: string;
+  noMatches: boolean;
   onPick: (id: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -442,11 +448,17 @@ function PropertyPicker({
               Select property {indexLabel}
             </p>
             <DialogTitle className="mt-1 font-display text-[20px] text-foreground">
-              Choose from your matched residences
+              {noMatches ? "Choose from the full collection" : "Choose from your matched residences"}
             </DialogTitle>
           </div>
           <ScrollCounter position={position} total={total} progress={progress} />
         </div>
+
+        {noMatches && (
+          <p className="mt-3 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-[12px] text-muted-foreground">
+            No residences match your current preferences. Showing every residence instead.
+          </p>
+        )}
 
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
