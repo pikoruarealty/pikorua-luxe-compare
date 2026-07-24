@@ -106,14 +106,14 @@ export function PropertyQuiz({
     <div className="flex h-full flex-col">
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] tracking-[0.22em] text-[#C8A45D] uppercase">
+          <p className="text-[11px] tracking-[0.22em] text-champagne uppercase">
             Question {q} of 4
           </p>
           {q > 1 && <BackBtn onClick={() => setQ((prev) => (prev - 1) as 1 | 2 | 3 | 4)} />}
         </div>
-        <div className="mt-2 h-px w-full overflow-hidden bg-white/10">
+        <div className="mt-2 h-px w-full overflow-hidden bg-border">
           <motion.div
-            className="h-full bg-[#C8A45D]"
+            className="h-full bg-champagne"
             initial={false}
             animate={{ width: `${(q / 4) * 100}%` }}
             transition={transition}
@@ -132,13 +132,13 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[24px] leading-tight text-[#F7F3EA]">
+              <h3 className="font-display text-[24px] leading-tight text-foreground">
                 Where are you looking?
               </h3>
-              <p className="mt-1.5 text-[13px] text-[#F7F3EA]/55">Pick a state, then a city.</p>
+              <p className="mt-1.5 text-[13px] text-muted-foreground">Pick a state, then a city.</p>
 
               <div className="mt-5">
-                <p className="text-[11px] tracking-[0.22em] text-[#F7F3EA]/40 uppercase">State</p>
+                <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">State</p>
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   {locationGroups.map(({ state }) => {
                     const selected = selectedState === state;
@@ -148,8 +148,8 @@ export function PropertyQuiz({
                         onClick={() => selectState(state)}
                         className={`rounded-full border px-4 py-2 text-[13px] transition-all ${
                           selected
-                            ? "border-[#C8A45D] bg-[#C8A45D]/10 text-[#C8A45D]"
-                            : "border-white/10 bg-[#1C1E22] text-[#F7F3EA] hover:border-white/25"
+                            ? "border-champagne bg-champagne/10 text-champagne"
+                            : "border-border bg-background text-foreground hover:border-foreground/30"
                         }`}
                       >
                         {state}
@@ -161,7 +161,7 @@ export function PropertyQuiz({
 
               {selectedState && (
                 <div className="mt-5">
-                  <p className="text-[11px] tracking-[0.22em] text-[#F7F3EA]/40 uppercase">City</p>
+                  <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">City</p>
                   <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                     {citiesForState.map((city) => {
                       const selected = selectedCity === city;
@@ -171,14 +171,13 @@ export function PropertyQuiz({
                           onClick={() => setSelectedCity(city)}
                           className={`relative rounded-[16px] border p-3 text-center transition-all hover:scale-[1.03] ${
                             selected
-                              ? "border-[#C8A45D] bg-[#C8A45D]/8"
-                              : "border-white/10 bg-[#1C1E22] hover:border-white/25"
+                              ? "border-champagne bg-champagne/10"
+                              : "border-border bg-background hover:border-foreground/30"
                           }`}
-                          style={selected ? { backgroundColor: "rgba(200,164,93,0.08)" } : {}}
                         >
                           {selected && <Checkmark />}
-                          <MapIcon className="mx-auto h-5 w-5 text-[#C8A45D]" />
-                          <div className="mt-1.5 text-[13px] text-[#F7F3EA]">{city}</div>
+                          <MapIcon className="mx-auto h-5 w-5 text-champagne" />
+                          <div className="mt-1.5 text-[13px] text-foreground">{city}</div>
                         </button>
                       );
                     })}
@@ -203,10 +202,10 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[24px] leading-tight text-[#F7F3EA]">
+              <h3 className="font-display text-[24px] leading-tight text-foreground">
                 What are you looking for?
               </h3>
-              <p className="mt-1.5 text-[13px] text-[#F7F3EA]/55">Select all that interest you.</p>
+              <p className="mt-1.5 text-[13px] text-muted-foreground">Select all that interest you.</p>
 
               <div className="mt-5 grid grid-cols-3 gap-2.5">
                 {PROPERTY_TYPES.map(({ label, Icon }, i) => {
@@ -217,17 +216,14 @@ export function PropertyQuiz({
                       onClick={() => toggleType(label)}
                       className={`relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-[18px] border text-center transition-all hover:scale-[1.03] ${
                         selected
-                          ? "border-[#C8A45D] bg-[#C8A45D]/8"
-                          : "border-white/10 bg-[#1C1E22] hover:border-white/25"
+                          ? "border-champagne bg-champagne/10"
+                          : "border-border bg-background hover:border-foreground/30"
                       }`}
-                      style={{
-                        ...(selected ? { backgroundColor: "rgba(200,164,93,0.08)" } : {}),
-                        ...(i === 3 ? { gridColumnStart: 1 } : {}),
-                      }}
+                      style={i === 3 ? { gridColumnStart: 1 } : {}}
                     >
                       {selected && <Checkmark />}
-                      <Icon className="h-8 w-8 text-[#C8A45D]" />
-                      <div className="text-[13px] text-[#F7F3EA]">{label}</div>
+                      <Icon className="h-8 w-8 text-champagne" />
+                      <div className="text-[13px] text-foreground">{label}</div>
                     </button>
                   );
                 })}
@@ -250,10 +246,10 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[24px] leading-tight text-[#F7F3EA]">
+              <h3 className="font-display text-[24px] leading-tight text-foreground">
                 What configuration are you looking for?
               </h3>
-              <p className="mt-1.5 text-[13px] text-[#F7F3EA]/55">
+              <p className="mt-1.5 text-[13px] text-muted-foreground">
                 Choose up to {MAX_BHK} options.
               </p>
 
@@ -267,18 +263,17 @@ export function PropertyQuiz({
                       onClick={() => toggleBhk(n)}
                       className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-[18px] border text-center transition-all hover:scale-[1.03] ${
                         selected
-                          ? "border-[#C8A45D] bg-[#C8A45D]/8"
+                          ? "border-champagne bg-champagne/10"
                           : disabled
-                            ? "border-white/5 bg-[#1C1E22] opacity-40"
-                            : "border-white/10 bg-[#1C1E22] hover:border-white/25"
+                            ? "border-border bg-background opacity-40"
+                            : "border-border bg-background hover:border-foreground/30"
                       }`}
-                      style={selected ? { backgroundColor: "rgba(200,164,93,0.08)" } : {}}
                     >
                       {selected && <Checkmark />}
-                      <div className="font-display text-[36px] leading-none text-[#C8A45D]">
+                      <div className="font-display text-[36px] leading-none text-champagne">
                         {n}
                       </div>
-                      <div className="text-[12px] text-[#F7F3EA]/70">BHK</div>
+                      <div className="text-[12px] text-muted-foreground">BHK</div>
                     </button>
                   );
                 })}
@@ -301,10 +296,10 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[22px] leading-tight text-[#F7F3EA]">
+              <h3 className="font-display text-[22px] leading-tight text-foreground">
                 What budget are you comfortable with?
               </h3>
-              <p className="mt-1.5 text-[13px] text-[#F7F3EA]/55">
+              <p className="mt-1.5 text-[13px] text-muted-foreground">
                 Choose a range that feels right — we'll refine it in a moment.
               </p>
 
@@ -321,13 +316,12 @@ export function PropertyQuiz({
                         }}
                         className={`relative flex h-11 w-full items-center justify-center rounded-[14px] border transition-all ${
                           selected
-                            ? "border-[#C8A45D] bg-[#C8A45D]/8"
-                            : "border-white/10 bg-[#1C1E22] hover:border-white/25"
+                            ? "border-champagne bg-champagne/10"
+                            : "border-border bg-background hover:border-foreground/30"
                         }`}
-                        style={selected ? { backgroundColor: "rgba(200,164,93,0.08)" } : {}}
-                      >
+                        >
                         {selected && <Checkmark />}
-                        <span className="font-display text-[16px] text-[#F7F3EA]">{r}</span>
+                        <span className="font-display text-[16px] text-foreground">{r}</span>
                       </button>
                       <motion.div
                         initial={false}
@@ -337,8 +331,8 @@ export function PropertyQuiz({
                       >
                         {subs && (
                           <div className="px-1 pt-2.5">
-                            <div className="mb-2 border-t border-white/5 pt-2">
-                              <p className="text-[10px] tracking-[0.22em] text-[#F7F3EA]/40 uppercase">
+                            <div className="mb-2 border-t border-border pt-2">
+                              <p className="text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
                                 Narrow it down:
                               </p>
                             </div>
@@ -351,8 +345,8 @@ export function PropertyQuiz({
                                     onClick={() => setBudgetSub(s)}
                                     className={`rounded-full border px-3 py-1.5 text-[12px] transition-all ${
                                       subSelected
-                                        ? "border-[#C8A45D] bg-[#C8A45D]/10 text-[#C8A45D]"
-                                        : "border-[#C8A45D]/30 bg-transparent text-[#F7F3EA]/80 hover:border-[#C8A45D]/60"
+                                        ? "border-champagne bg-champagne/10 text-champagne"
+                                        : "border-champagne/30 bg-transparent text-foreground/80 hover:border-champagne/60"
                                     }`}
                                   >
                                     {s}
@@ -385,7 +379,7 @@ export function PropertyQuiz({
 
 function Checkmark() {
   return (
-    <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#C8A45D] text-[#121416]">
+    <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-champagne text-lux-black">
       <Check className="h-3 w-3" strokeWidth={3} />
     </span>
   );
@@ -401,7 +395,7 @@ function BackBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex shrink-0 items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-medium tracking-wide text-[#F7F3EA]/70 transition-colors hover:border-white/30 hover:text-[#F7F3EA]"
+      className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
     >
       ← Back
     </button>
@@ -421,7 +415,7 @@ function NextBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#C8A45D] to-[#A8884C] text-[15px] font-medium tracking-wide text-[#121416] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-12 w-full items-center justify-center rounded-full bg-champagne text-[15px] font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>

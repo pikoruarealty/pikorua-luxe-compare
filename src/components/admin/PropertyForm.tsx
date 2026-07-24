@@ -64,6 +64,9 @@ export function PropertyForm({
           <Field label="Possession">
             <Input {...register("possession")} placeholder="e.g. 9 Months or RTMI" />
           </Field>
+          <Field label="Possession confirmed as of">
+            <Input type="date" {...register("possessionAsOf")} />
+          </Field>
           <Field label="Location">
             <Input {...register("location")} placeholder="e.g. Sindhu Bhavan Road" />
           </Field>
@@ -101,6 +104,111 @@ export function PropertyForm({
           </Grid>
         </Section>
       )}
+
+      <Section title="Project Structure">
+        <Grid>
+          <Field label="Plot size">
+            <Input {...register("plotSize")} placeholder="e.g. 5400 sq ft" />
+          </Field>
+          <Field label="Available BHK types">
+            <Input {...register("availableBhkTypes")} placeholder="e.g. 4, 5, 6 BHK" />
+          </Field>
+          <Field label="Total towers">
+            <Input {...register("totalTowers")} placeholder="e.g. 3" />
+          </Field>
+          <Field label="Total floors">
+            <Input {...register("totalFloors")} placeholder="e.g. 24" />
+          </Field>
+          <Field label="Units per floor">
+            <Input {...register("unitsPerFloor")} placeholder="e.g. 4" />
+          </Field>
+          <Field label="Total units">
+            <Input {...register("totalUnits")} placeholder="e.g. 96" />
+          </Field>
+        </Grid>
+      </Section>
+
+      <Section title="RERA & Approvals">
+        <Grid>
+          <Field label="RERA ID">
+            <Input {...register("reraId")} placeholder="e.g. PR/GJ/AHMEDABAD/..." />
+          </Field>
+          <Field label="RERA link">
+            <Input {...register("reraUrl")} placeholder="https://gujrera.gujarat.gov.in/..." />
+          </Field>
+          <Field label="Proposed start date (RERA)">
+            <Input {...register("proposedStartDateRera")} placeholder="e.g. Jan 2025" />
+          </Field>
+        </Grid>
+      </Section>
+
+      <Section title="Construction & Amenities">
+        <Grid>
+          <Field label="Parking levels">
+            <Input {...register("parkingLevels")} placeholder="e.g. 2" />
+          </Field>
+          <Field label="Podium structure">
+            <Input {...register("podiumStructure")} placeholder="e.g. 2-Level Podium" />
+          </Field>
+          <Field label="Lifts per tower">
+            <Input {...register("liftsPerTower")} placeholder="e.g. 3" />
+          </Field>
+          <Field label="Open space">
+            <Input {...register("openSpace")} placeholder="e.g. 70% Open Area" />
+          </Field>
+          <Field label="Geyser / heat pump provided">
+            <Input {...register("geyserHeatPumpProvided")} placeholder="e.g. Yes – instant geyser" />
+          </Field>
+          <Field label="VRV / AC provided">
+            <Input {...register("vrvAcProvided")} placeholder="e.g. Yes, all bedrooms" />
+          </Field>
+          <Field label="Window glasses">
+            <Input {...register("windowGlazing")} placeholder="e.g. Double-glazed soundproof" />
+          </Field>
+          <Field label="Bath & sanitary fittings">
+            <Input {...register("bathSanitaryFittings")} placeholder="e.g. Kohler, Jaguar" />
+          </Field>
+          <Field label="Flooring">
+            <Input {...register("flooringType")} placeholder="e.g. Italian marble" />
+          </Field>
+          <Field label="Density (units per acre)">
+            <Input {...register("unitsPerAcre")} placeholder="e.g. 18" />
+          </Field>
+          <Field label="Construction quality">
+            <Input {...register("constructionQuality")} placeholder="e.g. RCC framed structure" />
+          </Field>
+          <Field label="Internal ceiling height">
+            <Input {...register("internalCeilingHeight")} placeholder="e.g. 10 ft" />
+          </Field>
+          <Field label="Clubhouse size">
+            <Input {...register("clubhouseSize")} placeholder="e.g. 15,000 sq ft" />
+          </Field>
+        </Grid>
+      </Section>
+
+      <Section title="Developer">
+        <Grid>
+          <Field label="Experience (years)">
+            <Input {...register("developerExperienceYears")} placeholder="e.g. 25" />
+          </Field>
+          <Field label="Total delivered projects">
+            <Input {...register("totalDeliveredProjects")} placeholder="e.g. 40" />
+          </Field>
+          <Field label="Ongoing projects">
+            <Input {...register("ongoingProjects")} placeholder="e.g. 6" />
+          </Field>
+        </Grid>
+        <Field label="Background">
+          <Textarea {...register("developerBackground")} rows={3} />
+        </Field>
+        <Field label="Notable delivered projects">
+          <StringListEditor
+            items={watch("notableDeliveredProjects") ?? []}
+            onItemsChange={(next) => setValue("notableDeliveredProjects", next, { shouldDirty: true })}
+            placeholder="e.g. Godrej Garden City"
+          />
+        </Field>
+      </Section>
 
       <Section
         title="Configurations"

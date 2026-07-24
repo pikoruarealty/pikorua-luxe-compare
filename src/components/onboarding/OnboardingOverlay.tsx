@@ -123,26 +123,18 @@ export function OnboardingOverlay() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex w-full max-w-[480px] flex-col overflow-hidden p-5 sm:my-8 sm:p-8"
-            style={{
-              minHeight: "min(100dvh, 580px)",
-              borderRadius: 24,
-              border: "1px solid rgba(200,164,93,0.2)",
-              backgroundColor: "#1C1E22",
-            }}
+            className="relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-3xl border border-champagne/20 bg-card p-5 shadow-2xl sm:my-8 sm:p-8"
+            style={{ minHeight: "min(100dvh, 580px)" }}
           >
             <div
               aria-hidden
-              className="gemini-bg pointer-events-none absolute inset-0 overflow-hidden"
-              style={{ borderRadius: 24, zIndex: 0 }}
-            >
-              <div className="gemini-conic" />
-              <div className="gemini-blob gemini-blob-1" />
-              <div className="gemini-blob gemini-blob-2" />
-              <div className="gemini-blob gemini-blob-3" />
-              <div className="gemini-blob gemini-blob-4" />
-              <div className="gemini-grain" />
-            </div>
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 50% 0%, color-mix(in oklab, var(--color-champagne) 12%, transparent), transparent 60%)",
+                zIndex: 0,
+              }}
+            />
 
             {quizEditMode && (
               <button
@@ -150,12 +142,7 @@ export function OnboardingOverlay() {
                 onClick={dismiss}
                 aria-label="Close"
                 title="Close"
-                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:brightness-125"
-                style={{
-                  border: "1px solid rgba(200,164,93,0.3)",
-                  backgroundColor: "rgba(28,30,34,0.9)",
-                  color: "#C8A45D",
-                }}
+                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-champagne/30 bg-card/90 text-champagne transition-colors hover:brightness-110"
               >
                 <X className="h-4 w-4" />
               </button>

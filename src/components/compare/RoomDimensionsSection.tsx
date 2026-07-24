@@ -4,6 +4,8 @@ import { CONFIG_KEYS } from "@/types/property";
 import { Section } from "./Section";
 import { VariantSwitcher, VariantValueCell, variantsOf } from "@/components/compare/VariantColumns";
 import { useVariantViewStore, variantKey } from "@/stores/variant-view-store";
+import { AreaUnitToggle } from "@/components/compare/AreaUnitToggle";
+import { BareAreaValue, RoomFieldValue } from "@/components/compare/RoomFieldValue";
 
 type RoomKey =
   | "livingArea"
@@ -62,6 +64,9 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
       title="Every square foot, accounted for"
       description="Configuration-wise areas and room dimensions, straight from the developers' unit plans."
     >
+      <div className="mb-6">
+        <AreaUnitToggle />
+      </div>
       <div className="space-y-10">
         {configKeys.map((cfgKey) => {
           const rows = rowsFor(cfgKey).filter(({ key }) =>
@@ -163,18 +168,21 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                                 onSelect={(idx) => setActive(variantKey(cfgKey, p.id), idx)}
                                 render={(v) => {
                                   const val = (v[key as keyof typeof v] as string | null) ?? null;
-                                  const withUnit =
-                                    val && (key === "area" || key === "carpet")
-                                      ? `${val} sq ft`
-                                      : val;
+                                  if (!val) {
+                                    return (
+                                      <p className="text-[12px] leading-snug text-muted-foreground/60 sm:text-[14px]">
+                                        {DASH}
+                                      </p>
+                                    );
+                                  }
                                   return (
-                                    <p
-                                      className={`text-[12px] leading-snug sm:text-[14px] ${
-                                        val ? "text-ivory/90" : "text-muted-foreground/60"
-                                      }`}
-                                    >
-                                      {withUnit ?? DASH}
-                                    </p>
+                                    <div className="text-[12px] leading-snug text-ivory/90 sm:text-[14px]">
+                                      {key === "area" || key === "carpet" ? (
+                                        <BareAreaValue value={val} />
+                                      ) : (
+                                        <RoomFieldValue value={val} />
+                                      )}
+                                    </div>
                                   );
                                 }}
                               />

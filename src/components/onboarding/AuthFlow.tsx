@@ -206,7 +206,7 @@ export function AuthFlow() {
           <span
             key={i}
             className={`h-1.5 w-1.5 rounded-full transition-colors ${
-              i <= activeIdx ? "bg-[#C8A45D]" : "bg-white/20"
+              i <= activeIdx ? "bg-champagne" : "bg-border"
             }`}
           />
         ))}
@@ -222,10 +222,10 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-[#F7F3EA]">
+            <h2 className="font-display text-3xl text-foreground">
               Tell us a little about yourself
             </h2>
-            <p className="mt-2 text-sm text-[#F7F3EA]/60">
+            <p className="mt-2 text-sm text-muted-foreground">
               A private profile, just for your Pikorua experience.
             </p>
 
@@ -243,12 +243,12 @@ export function AuthFlow() {
                 placeholder="you@example.com"
                 type="email"
               />
-              {detailsError && <p className="text-xs text-red-400">{detailsError}</p>}
+              {detailsError && <p className="text-xs text-red-600 dark:text-red-400">{detailsError}</p>}
             </div>
 
             <div className="mt-auto pt-10">
               <GoldButton onClick={handleDetails}>Continue →</GoldButton>
-              <p className="mt-4 text-center text-[11px] text-[#F7F3EA]/30">
+              <p className="mt-4 text-center text-[11px] text-muted-foreground">
                 We never share your information.
               </p>
             </div>
@@ -264,15 +264,15 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-[#F7F3EA]">
+            <h2 className="font-display text-3xl text-foreground">
               One last step — verify your number
             </h2>
-            <p className="mt-2 text-sm text-[#F7F3EA]/60">
+            <p className="mt-2 text-sm text-muted-foreground">
               We'll send a one-time code to confirm it's you.
             </p>
 
             <div className="mt-8">
-              <label className="mb-2 block text-[11px] tracking-[0.18em] text-[#F7F3EA]/50 uppercase">
+              <label className="mb-2 block text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
                 Phone number
               </label>
               <div className="flex gap-2">
@@ -280,14 +280,14 @@ export function AuthFlow() {
                   <button
                     type="button"
                     onClick={() => setCountryOpen((o) => !o)}
-                    className="flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-[#1C1E22] px-3 text-sm text-[#F7F3EA] hover:border-[#C8A45D]/40"
+                    className="flex h-12 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-foreground hover:border-champagne/40"
                   >
                     <span>{country.flag}</span>
                     <span>{country.code}</span>
-                    <span className="text-[#F7F3EA]/40">▾</span>
+                    <span className="text-muted-foreground">▾</span>
                   </button>
                   {countryOpen && (
-                    <div className="absolute top-full left-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-white/10 bg-[#1C1E22] shadow-xl">
+                    <div className="absolute top-full left-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
                       {COUNTRIES.map((c) => (
                         <button
                           key={c.code}
@@ -295,11 +295,11 @@ export function AuthFlow() {
                             setCountry(c);
                             setCountryOpen(false);
                           }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#F7F3EA] hover:bg-white/5"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                         >
                           <span>{c.flag}</span>
                           <span>{c.code}</span>
-                          <span className="text-[#F7F3EA]/50">{c.label}</span>
+                          <span className="text-muted-foreground">{c.label}</span>
                         </button>
                       ))}
                     </div>
@@ -310,10 +310,10 @@ export function AuthFlow() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                   placeholder="98765 43210"
-                  className="h-12 flex-1 rounded-lg border border-white/10 bg-[#1C1E22] px-4 text-sm text-[#F7F3EA] placeholder-[#F7F3EA]/30 outline-none focus:border-[#C8A45D]/60"
+                  className="h-12 flex-1 rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
                 />
               </div>
-              {phoneError && <p className="mt-2 text-xs text-red-400">{phoneError}</p>}
+              {phoneError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{phoneError}</p>}
             </div>
 
             <div className="mt-auto pt-10">
@@ -333,8 +333,8 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-[#F7F3EA]">Enter the code we sent</h2>
-            <p className="mt-2 text-sm text-[#F7F3EA]/60">
+            <h2 className="font-display text-3xl text-foreground">Enter the code we sent</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
               Sent to {country.code} {phone}
             </p>
 
@@ -356,24 +356,24 @@ export function AuthFlow() {
                   inputMode="numeric"
                   maxLength={1}
                   disabled={verifying}
-                  className="h-[52px] w-12 rounded-lg border border-white/10 bg-[#1C1E22] text-center text-lg text-[#F7F3EA] outline-none focus:border-[#C8A45D]"
+                  className="h-[52px] w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne"
                 />
               ))}
             </motion.div>
 
-            {otpError && <p className="mt-4 text-center text-xs text-red-400">{otpError}</p>}
+            {otpError && <p className="mt-4 text-center text-xs text-red-600 dark:text-red-400">{otpError}</p>}
             {verifying && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-xs text-[#F7F3EA]/50">
+              <p className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" /> Verifying…
               </p>
             )}
 
-            <div className="mt-auto pt-10 text-center text-xs text-[#F7F3EA]/50">
+            <div className="mt-auto pt-10 text-center text-xs text-muted-foreground">
               Didn't receive it?{" "}
               <button
                 disabled={resendIn > 0 || sending}
                 onClick={handleResend}
-                className="text-[#C8A45D] disabled:text-[#F7F3EA]/30"
+                className="text-champagne disabled:text-muted-foreground"
               >
                 {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
               </button>
@@ -390,8 +390,8 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-[#F7F3EA]">What best describes you?</h2>
-            <p className="mt-2 text-sm text-[#F7F3EA]/60">
+            <h2 className="font-display text-3xl text-foreground">What best describes you?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
               This helps us tailor which properties we show you first.
             </p>
 
@@ -404,13 +404,12 @@ export function AuthFlow() {
                     onClick={() => setProfession(key)}
                     className={`rounded-2xl border p-5 text-left transition-all ${
                       selected
-                        ? "border-[#C8A45D] bg-[#C8A45D]/8"
-                        : "border-white/10 bg-[#1C1E22] hover:border-white/20"
+                        ? "border-champagne bg-champagne/10"
+                        : "border-border bg-background hover:border-foreground/30"
                     }`}
-                    style={selected ? { backgroundColor: "rgba(200,164,93,0.08)" } : {}}
                   >
-                    <Icon className="h-7 w-7 text-[#C8A45D]" />
-                    <div className="mt-3 text-sm text-[#F7F3EA]">{label}</div>
+                    <Icon className="h-7 w-7 text-champagne" />
+                    <div className="mt-3 text-sm text-foreground">{label}</div>
                   </button>
                 );
               })}
@@ -434,7 +433,7 @@ export function AuthFlow() {
 
             <div className="mt-auto pt-10">
               {completeError && (
-                <p className="mb-3 text-center text-xs text-red-400">{completeError}</p>
+                <p className="mb-3 text-center text-xs text-red-600 dark:text-red-400">{completeError}</p>
               )}
               <GoldButton onClick={handleComplete} disabled={!profession} loading={saving}>
                 Complete profile →
@@ -462,7 +461,7 @@ function FieldInput({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-[11px] tracking-[0.18em] text-[#F7F3EA]/50 uppercase">
+      <label className="mb-2 block text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
         {label}
       </label>
       <input
@@ -470,7 +469,7 @@ function FieldInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded-lg border border-white/10 bg-[#1C1E22] px-4 text-sm text-[#F7F3EA] placeholder-[#F7F3EA]/30 outline-none focus:border-[#C8A45D]/60"
+        className="h-12 w-full rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
       />
     </div>
   );
@@ -491,7 +490,7 @@ function GoldButton({
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#C8A45D] to-[#A8884C] text-sm font-medium tracking-wide text-[#121416] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       {children}

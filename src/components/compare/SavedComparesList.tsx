@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { GitCompareArrows, Trash2 } from "lucide-react";
 import { useProperties } from "@/context/PropertiesContext";
 import { useSavedComparesStore } from "@/stores/saved-compares-store";
+import { useCompareStore } from "@/stores/compare-store";
 import { ShareCompareButton } from "@/components/compare/ShareCompareButton";
 import type { Property } from "@/types/property";
 
@@ -14,6 +15,15 @@ const dateFmt = new Intl.DateTimeFormat("en-IN", {
 export function SavedComparesList() {
   const properties = useProperties();
   const { saved, remove, clear } = useSavedComparesStore();
+  const { clear: clearCompare, toggle: toggleCompare } = useCompareStore();
+
+  // Reopens a saved set on the on-page comparison board (the quick suite),
+  // not the full report — the full report is one more click away from there,
+  // same as any other comparison the visitor builds fresh.
+  const openOnBoard = (ids: string[]) => {
+    clearCompare();
+    ids.forEach((id) => toggleCompare(id));
+  };
 
   // A saved set can outlive one of its residences (unpublished, renamed id).
   // Resolve what still exists and drop entries that no longer compare.
@@ -77,8 +87,9 @@ export function SavedComparesList() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Link
-                  to="/compare"
-                  search={{ ids: members.map((p) => p.id).join(",") }}
+                  to="/"
+                  hash="suite"
+                  onClick={() => openOnBoard(members.map((p) => p.id))}
                   className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-[11px] tracking-wide text-background transition hover:opacity-85"
                 >
                   <GitCompareArrows className="h-3 w-3" /> Open

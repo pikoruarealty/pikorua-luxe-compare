@@ -22,6 +22,15 @@ const nz = (v: string | null | undefined): string | null => {
   return t.length ? t : null;
 };
 
+/** Same, but for integer-column inputs — a text field the admin left blank
+ *  or typed something non-numeric into becomes null, not 0 or NaN. */
+const nzInt = (v: string | null | undefined): number | null => {
+  const t = nz(v);
+  if (t === null) return null;
+  const n = parseInt(t, 10);
+  return Number.isFinite(n) ? n : null;
+};
+
 /** Form bucket arrays → PropertyConfigurations, omitting buckets with no variants. */
 export function toConfigurations(configs: PropertyFormValues["configs"]): PropertyConfigurations {
   const out: PropertyConfigurations = {};
@@ -96,6 +105,34 @@ export interface PropertyRowInsert {
   gallery: Record<string, string>;
   expert_note: string | null;
   is_published: boolean;
+  plot_size: string | null;
+  total_towers: number | null;
+  total_floors: number | null;
+  units_per_floor: number | null;
+  total_units: number | null;
+  available_bhk_types: string | null;
+  rera_id: string | null;
+  rera_url: string | null;
+  proposed_start_date_rera: string | null;
+  parking_levels: number | null;
+  podium_structure: string | null;
+  lifts_per_tower: number | null;
+  open_space: string | null;
+  geyser_heat_pump_provided: string | null;
+  vrv_ac_provided: string | null;
+  window_glazing: string | null;
+  bath_sanitary_fittings: string | null;
+  flooring_type: string | null;
+  units_per_acre: string | null;
+  construction_quality: string | null;
+  internal_ceiling_height: string | null;
+  clubhouse_size: string | null;
+  developer_background: string | null;
+  developer_experience_years: number | null;
+  total_delivered_projects: number | null;
+  ongoing_projects: number | null;
+  notable_delivered_projects: string[];
+  possession_as_of: string | null;
 }
 
 /**
@@ -152,5 +189,33 @@ export function buildPropertyRow(
     },
     expert_note: nz(input.expertNote),
     is_published: input.isPublished,
+    plot_size: nz(input.plotSize),
+    total_towers: nzInt(input.totalTowers),
+    total_floors: nzInt(input.totalFloors),
+    units_per_floor: nzInt(input.unitsPerFloor),
+    total_units: nzInt(input.totalUnits),
+    available_bhk_types: nz(input.availableBhkTypes),
+    rera_id: nz(input.reraId),
+    rera_url: nz(input.reraUrl),
+    proposed_start_date_rera: nz(input.proposedStartDateRera),
+    parking_levels: nzInt(input.parkingLevels),
+    podium_structure: nz(input.podiumStructure),
+    lifts_per_tower: nzInt(input.liftsPerTower),
+    open_space: nz(input.openSpace),
+    geyser_heat_pump_provided: nz(input.geyserHeatPumpProvided),
+    vrv_ac_provided: nz(input.vrvAcProvided),
+    window_glazing: nz(input.windowGlazing),
+    bath_sanitary_fittings: nz(input.bathSanitaryFittings),
+    flooring_type: nz(input.flooringType),
+    units_per_acre: nz(input.unitsPerAcre),
+    construction_quality: nz(input.constructionQuality),
+    internal_ceiling_height: nz(input.internalCeilingHeight),
+    clubhouse_size: nz(input.clubhouseSize),
+    developer_background: nz(input.developerBackground),
+    developer_experience_years: nzInt(input.developerExperienceYears),
+    total_delivered_projects: nzInt(input.totalDeliveredProjects),
+    ongoing_projects: nzInt(input.ongoingProjects),
+    notable_delivered_projects: input.notableDeliveredProjects.map((s) => s.trim()).filter(Boolean),
+    possession_as_of: nz(input.possessionAsOf),
   };
 }

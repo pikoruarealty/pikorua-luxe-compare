@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -36,6 +36,12 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { allowedConfigKeys, matchesPreferences, parseBudget } from "@/lib/preference-filter";
 import { VariantSwitcher, VariantValueCell, variantsOf } from "@/components/compare/VariantColumns";
 import { useVariantViewStore, variantKey } from "@/stores/variant-view-store";
+import { AreaUnitToggle } from "@/components/compare/AreaUnitToggle";
+import { RoomFieldValue } from "@/components/compare/RoomFieldValue";
+import { formatAreaNumber, parseBareSqFt, unitLabel } from "@/lib/area-units";
+import { livePossessionLabel } from "@/lib/possession-format";
+import { calculatePropertyDistances } from "@/lib/distance.functions";
+import { useAreaUnitStore } from "@/stores/area-unit-store";
 
 const TERM_INFO: Record<string, { title: string; body: string }> = {
   Developer: {
@@ -96,7 +102,14 @@ function roomFieldsFor(k: ConfigKey): { key: RoomKey; label: string }[] {
   ];
 }
 
-export function ComparisonBoard() {
+export function ComparisonBoard({
+  slotsRef,
+}: {
+  /** Ref attached to the "Add property A/B/C" picker cards — lets the sticky
+   *  tray reappear once these scroll out of view, instead of staying hidden
+   *  for the whole comparison table below them. */
+  slotsRef?: RefObject<HTMLDivElement | null>;
+} = {}) {
   const hydrated = useHydrated();
   const { quizAnswers, requestAuth } = useOnboarding();
   const { selected: rawSelected, toggle, remove, clear } = useCompareStore();
@@ -144,15 +157,17 @@ export function ComparisonBoard() {
     }
     return CONFIG_KEYS.filter((k) => set.has(k));
   }, [quizAnswers, noMatches, items]);
-  // Per-BHK budget standing: "in" if the cheapest variant of that BHK across
-  // the compared properties still fits the top of the selected range, else
-  // "above". Undefined (no budget picked, or no price data) means no
-  // badge/collapse — full details show compulsorily.
-  const slotBudgetStatus = useMemo<Record<string, "in" | "above">>(() => {
+  // Per-BHK budget standing, based on how far the cheapest variant of that
+  // BHK sits above the top of the selected range: "in" fits outright: "near"
+  // is a modest step up (a 5 BHK over a 4 BHK budget, say); "far" is a much
+  // bigger jump (a Penthouse over the same budget). Undefined (no budget
+  // picked, or no price data) means no badge/collapse — full details show
+  // compulsorily.
+  const slotBudgetStatus = useMemo<Record<string, "in" | "near" | "far">>(() => {
     const budget = parseBudget(quizAnswers?.budgetSub || quizAnswers?.budgetRange);
     if (!budget) return {};
     const [, hi] = budget;
-    const status: Record<string, "in" | "above"> = {};
+    const status: Record<string, "in" | "near" | "far"> = {};
     for (const key of visibleConfigKeys) {
       const prices = items
         .flatMap((p) => p.configurations[key] ?? [])
@@ -162,7 +177,7 @@ export function ComparisonBoard() {
         })
         .filter((n): n is number => n !== null);
       if (prices.length === 0) continue;
-      status[key] = Math.min(...prices) <= hi ? "in" : "above";
+      status[key] = budgetStanding(Math.min(...prices), hi);
     }
     return status;
   }, [quizAnswers, visibleConfigKeys, items]);
@@ -210,6 +225,12 @@ export function ComparisonBoard() {
           </div>
         </div>
 
+        {ready && (
+          <div className="pb-4">
+            <AreaUnitToggle />
+          </div>
+        )}
+
         {noMatches && (
           <div className="mb-4 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-[12px] text-muted-foreground">
             No residences match your current preferences — showing the full catalogue so you can
@@ -218,7 +239,7 @@ export function ComparisonBoard() {
         )}
 
         {/* Slot picker */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div ref={slotsRef} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {slots.map((slot, idx) => (
             <SlotCard
               key={idx}
@@ -597,7 +618,7 @@ function PickerCard({ property: p, onPick }: { property: Property; onPick: (id: 
           <DetailRow
             icon={<CalendarDays className="h-3.5 w-3.5" />}
             label="Possession"
-            value={p.possession}
+            value={livePossessionLabel(p.possession, p.possessionAsOf)}
           />
         </div>
 
@@ -658,6 +679,16 @@ function bestIndex(values: (number | null)[]): number | null {
   return winners[0].i;
 }
 
+// A price up to 20% over budget reads as a small, natural step up (like a
+// 5 BHK sitting just above a 4 BHK budget); beyond that it's a different
+// price tier entirely (like a Penthouse), not a near-miss.
+const NEAR_BUDGET_THRESHOLD = 0.2;
+function budgetStanding(cheapestPrice: number, budgetHi: number): "in" | "near" | "far" {
+  if (cheapestPrice <= budgetHi) return "in";
+  const overBy = (cheapestPrice - budgetHi) / budgetHi;
+  return overBy <= NEAR_BUDGET_THRESHOLD ? "near" : "far";
+}
+
 /* ---------------- grid ---------------- */
 function ComparisonGrid({
   items,
@@ -667,11 +698,12 @@ function ComparisonGrid({
 }: {
   items: Property[];
   visibleConfigKeys: ConfigKey[];
-  slotBudgetStatus: Record<string, "in" | "above">;
+  slotBudgetStatus: Record<string, "in" | "near" | "far">;
   budgetLabel: string | null;
 }) {
   const cols = items.length;
   const gridTpl = cols === 2 ? "md:grid-cols-[200px_1fr_1fr]" : "md:grid-cols-[200px_1fr_1fr_1fr]";
+  const areaUnit = useAreaUnitStore((s) => s.unit);
 
   // Shared with the sticky tray so its chips can size to these columns.
   const {
@@ -708,16 +740,16 @@ function ComparisonGrid({
     <div className="overflow-hidden rounded-xl border-2 border-border-strong bg-background/40">
       {/* Header row */}
       <div className={`hidden md:grid ${gridTpl} border-b-2 border-border-strong bg-muted/30`}>
-        <div className="px-4 py-3 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+        <div className="border-r border-border-strong px-4 py-3 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
           Attribute
         </div>
         {items.map((p, i) => (
           <div key={p.id} className={`px-4 py-3 ${i > 0 ? "border-l border-border-strong" : ""}`}>
-            <div className="flex items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-background text-[10px] font-medium">
+            <div className="flex items-center justify-center gap-2">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-foreground text-background text-[10px] font-medium">
                 {String.fromCharCode(65 + i)}
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 text-center">
                 <p className="descender-safe font-display text-[14px] leading-tight text-foreground line-clamp-1">
                   {p.name}
                 </p>
@@ -752,6 +784,50 @@ function ComparisonGrid({
         gridTpl={gridTpl}
         render={(p) => <Plain value={p.developer} />}
       />
+      <Row
+        label="RERA ID"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <RegistrationLink id={p.reraId} url={p.reraUrl} />}
+      />
+
+      <SectionLabel title="Project Structure" />
+      <Row
+        label="Plot Size"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.plotSize ?? null} />}
+      />
+      <Row
+        label="Total Towers"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.totalTowers?.toString() ?? null} />}
+      />
+      <Row
+        label="Total Floors"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.totalFloors?.toString() ?? null} />}
+      />
+      <Row
+        label="Units per Floor"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.unitsPerFloor?.toString() ?? null} />}
+      />
+      <Row
+        label="Total Units"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.totalUnits?.toString() ?? null} />}
+      />
+      <Row
+        label="Available BHK Types"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.availableBhkTypes ?? null} />}
+      />
 
       <SectionLabel title="Configurations" />
       {visibleConfigKeys.map((key) => {
@@ -781,13 +857,16 @@ function ComparisonGrid({
                     activeIdx={activeIdxFor(key, p)}
                     expanded={isExpanded(key, p)}
                     onSelect={(idx) => selectVariant(key, p, idx)}
-                    render={(v, vi) => (
-                      <Numeric
-                        primary={v.area ?? DASH}
-                        unit="sq ft"
-                        isBest={winnerIdx === i && vi === activeIdxFor(key, p)}
-                      />
-                    )}
+                    render={(v, vi) => {
+                      const sqft = parseBareSqFt(v.area);
+                      return (
+                        <Numeric
+                          primary={sqft !== null ? formatAreaNumber(sqft, areaUnit) : DASH}
+                          unit={sqft !== null ? unitLabel(areaUnit) : undefined}
+                          isBest={winnerIdx === i && vi === activeIdxFor(key, p)}
+                        />
+                      );
+                    }}
                   />
                 </div>
               );
@@ -813,6 +892,92 @@ function ComparisonGrid({
         />
       ))}
 
+      <SectionLabel title="Construction & Amenities" />
+      <Row
+        label="Parking Levels"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.parkingLevels?.toString() ?? null} />}
+      />
+      <Row
+        label="Podium Structure"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.podiumStructure ?? null} />}
+      />
+      <Row
+        label="Lifts per Tower"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.liftsPerTower?.toString() ?? null} />}
+      />
+      <Row
+        label="Open Space"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.openSpace ?? null} />}
+      />
+      <Row
+        label="Geyser / Heat Pump Provided"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.geyserHeatPumpProvided ?? null} />}
+      />
+      <Row
+        label="VRV / AC Provided"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.vrvAcProvided ?? null} />}
+      />
+      <Row
+        label="Window glasses"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.windowGlazing ?? null} />}
+      />
+      <Row
+        label="Bath & Sanitary Fittings"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.bathSanitaryFittings ?? null} />}
+      />
+      <Row
+        label="Flooring"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.flooringType ?? null} />}
+      />
+      <Row
+        label="Density (Units per acre)"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.unitsPerAcre ?? null} />}
+      />
+      <Row
+        label="Construction Quality"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.constructionQuality ?? null} />}
+      />
+      <Row
+        label="Internal Ceiling Height"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.internalCeilingHeight ?? null} />}
+      />
+      <Row
+        label="Clubhouse Size"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.clubhouseSize ?? null} />}
+      />
+      <Row
+        label="Amenities"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <AmenitiesCell amenities={p.amenities} />}
+      />
+
       <SectionLabel title="Location & Timeline" />
       <Row
         label="Address"
@@ -820,17 +985,68 @@ function ComparisonGrid({
         gridTpl={gridTpl}
         render={(p) => <Plain value={p.location} />}
       />
+      <DistanceCalculator items={items} gridTpl={gridTpl} />
+      <Row
+        label="Proposed Start Date (RERA)"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.proposedStartDateRera ?? null} />}
+      />
       <Row
         label="Possession"
         items={items}
         gridTpl={gridTpl}
-        render={(p) => <Plain value={p.possession} />}
+        render={(p) => <Plain value={livePossessionLabel(p.possession, p.possessionAsOf)} />}
       />
       <Row
         label="Status"
         items={items}
         gridTpl={gridTpl}
         render={(p) => <Plain value={p.status} />}
+      />
+
+      <SectionLabel title="Developer" />
+      <Row
+        label="Background"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.developerBackground ?? null} />}
+      />
+      <Row
+        label="Experience (Years)"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.developerExperienceYears?.toString() ?? null} />}
+      />
+      <Row
+        label="Total Delivered Projects"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.totalDeliveredProjects?.toString() ?? null} />}
+      />
+      <Row
+        label="Ongoing Projects"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => <Plain value={p.ongoingProjects?.toString() ?? null} />}
+      />
+      <Row
+        label="Notable Delivered Projects"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) =>
+          p.notableDeliveredProjects?.length ? (
+            <ul className="space-y-1.5">
+              {p.notableDeliveredProjects.map((project) => (
+                <li key={project} className="text-[13px] text-foreground/85 leading-snug">
+                  {project}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Plain value={null} />
+          )
+        }
       />
 
       <SectionLabel title="Distinctions" />
@@ -854,12 +1070,6 @@ function ComparisonGrid({
             <Plain value={null} />
           )
         }
-      />
-      <Row
-        label="Amenities"
-        items={items}
-        gridTpl={gridTpl}
-        render={() => <Plain value="All luxurious amenities available" italic />}
       />
       <Row
         label="Verdict"
@@ -916,7 +1126,7 @@ function RoomDimensionsGroup({
   toggleExpand,
 }: {
   configKey: ConfigKey;
-  status: "in" | "above" | undefined;
+  status: "in" | "near" | "far" | undefined;
   budgetLabel: string | null;
   items: Property[];
   gridTpl: string;
@@ -926,25 +1136,39 @@ function RoomDimensionsGroup({
   selectVariant: (key: ConfigKey, p: Property, idx: number) => void;
   toggleExpand: (key: ConfigKey, p: Property) => void;
 }) {
-  const collapsible = status === "above";
+  const collapsible = status === "near" || status === "far";
   const [expanded, setExpanded] = useState(false);
   const showFields = !collapsible || expanded;
 
+  const headerTone =
+    status === "in"
+      ? "border-y border-emerald-600/25 bg-emerald-600/10"
+      : status === "near"
+        ? "border-y border-amber-500/25 bg-amber-500/10"
+        : status === "far"
+          ? "border-y border-red-600/25 bg-red-600/10"
+          : "border-y border-border-strong bg-muted/50";
+
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 border-y border-border-strong bg-muted/50 px-4 py-2.5">
+      <div className={`flex items-center justify-between gap-3 px-4 py-2.5 ${headerTone}`}>
         <div className="flex items-center gap-2">
           <span className="font-display text-[17px] font-bold tracking-tight text-foreground">
             {configKey}
           </span>
           {status === "in" && budgetLabel && (
-            <span className="rounded-full bg-champagne/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-champagne">
+            <span className="rounded-full bg-emerald-600/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">
               In selected range
             </span>
           )}
-          {status === "above" && budgetLabel && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          {status === "near" && budgetLabel && (
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-400">
               Slightly above selected range
+            </span>
+          )}
+          {status === "far" && budgetLabel && (
+            <span className="rounded-full bg-red-600/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-red-700 dark:text-red-400">
+              Well above selected range
             </span>
           )}
         </div>
@@ -1006,7 +1230,15 @@ function RoomDimensionsGroup({
                   activeIdx={activeIdxFor(configKey, p)}
                   expanded={isExpanded(configKey, p)}
                   onSelect={(idx) => selectVariant(configKey, p, idx)}
-                  render={(v) => <Plain value={v[key] ?? null} />}
+                  render={(v) =>
+                    v[key] ? (
+                      <div className="text-[14px] leading-snug text-foreground md:text-center">
+                        <RoomFieldValue value={v[key]} />
+                      </div>
+                    ) : (
+                      <Plain value={null} />
+                    )
+                  }
                 />
               );
             }}
@@ -1100,6 +1332,112 @@ function Plain({ value, italic }: { value: string | null | undefined; italic?: b
       }`}
     >
       {value ?? DASH}
+    </p>
+  );
+}
+
+/** Lets a visitor type their own address and get an approximate straight-line
+ *  distance to each compared property — computed server-side from geocoded
+ *  coordinates that never reach the client, so no map or exact location is
+ *  ever shown, only the resulting "~N km" figure. */
+function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: string }) {
+  const [address, setAddress] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [distances, setDistances] = useState<Record<string, number | null>>({});
+
+  const handleCalculate = async () => {
+    if (!address.trim() || status === "loading") return;
+    setStatus("loading");
+    try {
+      const result = await calculatePropertyDistances({
+        data: {
+          address,
+          properties: items.map((p) => ({
+            id: p.id,
+            address: [p.location, p.city, p.state].filter(Boolean).join(", "),
+          })),
+        },
+      });
+      if (result.ok) {
+        setDistances(result.distancesKm);
+        setStatus("done");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  return (
+    <>
+      <div className="border-b border-border bg-muted/10 px-4 py-3">
+        <p className="mb-2 text-[12px] text-muted-foreground">
+          Add your home or office address and we'll estimate how far each residence is.
+          Approximate distance only, no map or exact location shown.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCalculate()}
+            placeholder="e.g. Prahlad Nagar, Ahmedabad"
+            className="min-w-0 flex-1 rounded-full border border-border bg-background px-4 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-champagne"
+          />
+          <button
+            type="button"
+            onClick={handleCalculate}
+            disabled={!address.trim() || status === "loading"}
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[11px] font-medium tracking-wide text-background transition hover:opacity-85 disabled:opacity-50"
+          >
+            {status === "loading" ? "Calculating…" : "Calculate distance"}
+          </button>
+        </div>
+        {status === "error" && (
+          <p className="mt-2 text-[12px] text-red-600 dark:text-red-400">
+            Couldn't locate that address. Try adding more detail (area, city).
+          </p>
+        )}
+      </div>
+      <Row
+        label="Distance from your location"
+        items={items}
+        gridTpl={gridTpl}
+        render={(p) => {
+          if (status === "idle" || status === "error") return <Plain value={null} />;
+          if (status === "loading") return <Plain value="Calculating…" italic />;
+          const km = distances[p.id];
+          return <Plain value={km !== null && km !== undefined ? `~${km} km away` : null} />;
+        }}
+      />
+    </>
+  );
+}
+
+function RegistrationLink({ id, url }: { id: string | null | undefined; url: string | null | undefined }) {
+  if (!id) return <Plain value={null} />;
+  if (!url) return <Plain value={id} />;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-[14px] leading-snug text-foreground underline decoration-border-strong underline-offset-2 transition-colors hover:text-champagne md:justify-center"
+    >
+      {id}
+      <ArrowUpRight className="h-3 w-3 shrink-0" />
+    </a>
+  );
+}
+
+/** Full amenity list, inline — the row simply grows to fit rather than
+ *  truncating, so nothing is hidden behind a click. */
+function AmenitiesCell({ amenities }: { amenities: string[] }) {
+  if (!amenities.length) return <Plain value={null} />;
+  return (
+    <p className="text-[13px] leading-relaxed text-foreground/85 md:text-center">
+      {amenities.join(" · ")}
     </p>
   );
 }

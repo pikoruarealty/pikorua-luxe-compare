@@ -59,6 +59,7 @@ function matchesQuery(p: Property, q: string): boolean {
 
 function Index() {
   const heroRef = useRef<HTMLElement | null>(null);
+  const slotsRef = useRef<HTMLDivElement | null>(null);
   const collectionRef = useRef<HTMLElement | null>(null);
   const { quizAnswers, setQuizAnswers } = useOnboarding();
   const properties = useProperties();
@@ -158,7 +159,7 @@ function Index() {
       <SiteHeader />
       <StickyCompareTray
         watchRef={heroRef}
-        hideRef={collectionRef}
+        hideRef={slotsRef}
         onCompare={() => scrollToId("suite")}
         onAdd={() => scrollToId("collection")}
       />
@@ -448,7 +449,7 @@ function Index() {
           </div>
         </div>
         <div className="mt-8">
-          <ComparisonBoard />
+          <ComparisonBoard slotsRef={slotsRef} />
         </div>
       </section>
 

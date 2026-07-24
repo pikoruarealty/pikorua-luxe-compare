@@ -10,7 +10,7 @@ import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware"
 // Columns needed to build a Property. Kept in one place so the public and admin
 // readers can't drift apart.
 const PROPERTY_COLUMNS =
-  "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, carpet_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, amenities, advantages, gallery, expert_note, is_published";
+  "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, carpet_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, amenities, advantages, gallery, expert_note, is_published, plot_size, total_towers, total_floors, units_per_floor, total_units, available_bhk_types, rera_id, rera_url, proposed_start_date_rera, parking_levels, podium_structure, lifts_per_tower, open_space, geyser_heat_pump_provided, vrv_ac_provided, window_glazing, bath_sanitary_fittings, flooring_type, units_per_acre, construction_quality, internal_ceiling_height, clubhouse_size, developer_background, developer_experience_years, total_delivered_projects, ongoing_projects, notable_delivered_projects, possession_as_of";
 
 interface PropertyRow {
   id: string;
@@ -37,6 +37,34 @@ interface PropertyRow {
   gallery: unknown;
   expert_note: string | null;
   is_published: boolean;
+  plot_size: string | null;
+  total_towers: number | null;
+  total_floors: number | null;
+  units_per_floor: number | null;
+  total_units: number | null;
+  available_bhk_types: string | null;
+  rera_id: string | null;
+  rera_url: string | null;
+  proposed_start_date_rera: string | null;
+  parking_levels: number | null;
+  podium_structure: string | null;
+  lifts_per_tower: number | null;
+  open_space: string | null;
+  geyser_heat_pump_provided: string | null;
+  vrv_ac_provided: string | null;
+  window_glazing: string | null;
+  bath_sanitary_fittings: string | null;
+  flooring_type: string | null;
+  units_per_acre: string | null;
+  construction_quality: string | null;
+  internal_ceiling_height: string | null;
+  clubhouse_size: string | null;
+  developer_background: string | null;
+  developer_experience_years: number | null;
+  total_delivered_projects: number | null;
+  ongoing_projects: number | null;
+  notable_delivered_projects: string[] | null;
+  possession_as_of: string | null;
 }
 
 /** Admin-facing shape: the public Property plus row metadata the admin list needs. */
@@ -79,6 +107,34 @@ function toProperty(row: PropertyRow): Property {
     advantages: row.advantages ?? [],
     gallery: { ...EMPTY_GALLERY, ...gallery },
     expertNote: row.expert_note ?? "",
+    plotSize: row.plot_size,
+    totalTowers: row.total_towers,
+    totalFloors: row.total_floors,
+    unitsPerFloor: row.units_per_floor,
+    totalUnits: row.total_units,
+    availableBhkTypes: row.available_bhk_types,
+    reraId: row.rera_id,
+    reraUrl: row.rera_url,
+    parkingLevels: row.parking_levels,
+    podiumStructure: row.podium_structure,
+    liftsPerTower: row.lifts_per_tower,
+    openSpace: row.open_space,
+    geyserHeatPumpProvided: row.geyser_heat_pump_provided,
+    vrvAcProvided: row.vrv_ac_provided,
+    windowGlazing: row.window_glazing,
+    bathSanitaryFittings: row.bath_sanitary_fittings,
+    flooringType: row.flooring_type,
+    unitsPerAcre: row.units_per_acre,
+    constructionQuality: row.construction_quality,
+    internalCeilingHeight: row.internal_ceiling_height,
+    clubhouseSize: row.clubhouse_size,
+    proposedStartDateRera: row.proposed_start_date_rera,
+    possessionAsOf: row.possession_as_of,
+    developerBackground: row.developer_background,
+    developerExperienceYears: row.developer_experience_years,
+    totalDeliveredProjects: row.total_delivered_projects,
+    ongoingProjects: row.ongoing_projects,
+    notableDeliveredProjects: row.notable_delivered_projects,
   };
 }
 

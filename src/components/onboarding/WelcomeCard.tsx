@@ -18,11 +18,11 @@ export function WelcomeCard() {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Sparkles className="h-8 w-8 text-[#C8A45D]" />
+        <Sparkles className="h-8 w-8 text-champagne" />
       </motion.div>
 
-      <h2 className="mt-6 font-display text-4xl text-[#F7F3EA]">Welcome, {firstName}.</h2>
-      <p className="mt-3 font-display text-2xl text-[#C8A45D]" style={{ fontStyle: "normal" }}>
+      <h2 className="mt-6 font-display text-4xl text-foreground">Welcome, {firstName}.</h2>
+      <p className="mt-3 font-display text-2xl text-champagne" style={{ fontStyle: "normal" }}>
         Your private collection awaits.
       </p>
 
@@ -32,14 +32,15 @@ export function WelcomeCard() {
         transition={{ delay: 0.6, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
         className="mt-10 h-px max-w-[380px]"
         style={{
-          background: "linear-gradient(90deg, transparent 0%, #C8A45D 50%, transparent 100%)",
+          background:
+            "linear-gradient(90deg, transparent 0%, var(--color-champagne) 50%, transparent 100%)",
         }}
       />
 
       <div className="mt-10 w-full max-w-[320px]">
         <button
           onClick={() => setPhase("site-preview")}
-          className="flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#C8A45D] to-[#A8884C] text-sm font-medium tracking-wide text-[#121416] transition-opacity hover:opacity-95"
+          className="flex h-12 w-full items-center justify-center rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
         >
           Explore the collection →
         </button>
