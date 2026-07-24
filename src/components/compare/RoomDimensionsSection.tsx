@@ -8,13 +8,7 @@ import { AreaUnitToggle } from "@/components/compare/AreaUnitToggle";
 import { BareAreaValue, RoomFieldValue } from "@/components/compare/RoomFieldValue";
 
 type RoomKey =
-  | "livingArea"
-  | "kitchen"
-  | "bedroom1"
-  | "bedroom2"
-  | "bedroom3"
-  | "bedroom4"
-  | "bedroom5";
+  "livingArea" | "kitchen" | "bedroom1" | "bedroom2" | "bedroom3" | "bedroom4" | "bedroom5";
 
 const BEDROOM_COUNT: Record<ConfigKey, number> = {
   "4 BHK": 4,

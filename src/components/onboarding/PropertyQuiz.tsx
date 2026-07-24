@@ -138,7 +138,9 @@ export function PropertyQuiz({
               <p className="mt-1.5 text-[13px] text-muted-foreground">Pick a state, then a city.</p>
 
               <div className="mt-5">
-                <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">State</p>
+                <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+                  State
+                </p>
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   {locationGroups.map(({ state }) => {
                     const selected = selectedState === state;
@@ -161,7 +163,9 @@ export function PropertyQuiz({
 
               {selectedState && (
                 <div className="mt-5">
-                  <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">City</p>
+                  <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+                    City
+                  </p>
                   <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                     {citiesForState.map((city) => {
                       const selected = selectedCity === city;
@@ -205,7 +209,9 @@ export function PropertyQuiz({
               <h3 className="font-display text-[24px] leading-tight text-foreground">
                 What are you looking for?
               </h3>
-              <p className="mt-1.5 text-[13px] text-muted-foreground">Select all that interest you.</p>
+              <p className="mt-1.5 text-[13px] text-muted-foreground">
+                Select all that interest you.
+              </p>
 
               <div className="mt-5 grid grid-cols-3 gap-2.5">
                 {PROPERTY_TYPES.map(({ label, Icon }, i) => {
@@ -319,7 +325,7 @@ export function PropertyQuiz({
                             ? "border-champagne bg-champagne/10"
                             : "border-border bg-background hover:border-foreground/30"
                         }`}
-                        >
+                      >
                         {selected && <Checkmark />}
                         <span className="font-display text-[16px] text-foreground">{r}</span>
                       </button>

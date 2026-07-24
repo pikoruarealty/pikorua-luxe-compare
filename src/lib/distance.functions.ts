@@ -76,8 +76,7 @@ interface DistanceInput {
  *  couldn't be geocoded; "unlocated" (not per-property, applied to all) means
  *  the visitor's own address couldn't be found. */
 export type DistanceResult =
-  | { ok: true; distancesKm: Record<string, number | null> }
-  | { ok: false; reason: "unlocated" };
+  { ok: true; distancesKm: Record<string, number | null> } | { ok: false; reason: "unlocated" };
 
 /** Server-only: geocodes the visitor's address and each compared property's
  *  address, then returns straight-line distances in km. Coordinates never

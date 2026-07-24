@@ -1,19 +1,51 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro (build-only using cloudflare as a default target),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsConfigPaths from "vite-tsconfig-paths";
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-  // This project is dual-deployed: wrangler.jsonc drives `wrangler deploy` to
-  // Cloudflare, while the Nitro build below targets Vercel. VERCEL is set
-  // automatically in Vercel's build environment.
-  nitro: process.env.VERCEL ? { preset: "vercel" } : undefined,
+// Standard TanStack Start + Nitro setup. Vite natively injects
+// `import.meta.env.VITE_*` from .env, and vite-tsconfig-paths resolves the
+// "@/" alias from tsconfig.json — so `npm run dev` serves on
+// http://localhost:5173 with no extra tooling.
+export default defineConfig(async ({ command }) => {
+  const plugins = [
+    tailwindcss(),
+    tsConfigPaths({ projects: ["./tsconfig.json"] }),
+    tanstackStart({
+      // Route the server build through src/server.ts (our SSR error wrapper).
+      server: { entry: "server" },
+      // Keep server-only modules out of the client bundle.
+      importProtection: {
+        behavior: "error",
+        client: { files: ["**/server/**"], specifiers: ["server-only"] },
+      },
+    }),
+    viteReact(),
+  ];
+
+  // Nitro produces the deployable server output at build time only. Vercel sets
+  // VERCEL in its build env; every other target builds for Cloudflare (matches
+  // wrangler.jsonc).
+  if (command === "build") {
+    const { nitro } = await import("nitro/vite");
+    plugins.push(
+      nitro(process.env.VERCEL ? { preset: "vercel" } : { preset: "cloudflare-module" }),
+    );
+  }
+
+  return {
+    server: { port: 5173 },
+    resolve: {
+      dedupe: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+        "@tanstack/query-core",
+      ],
+    },
+    plugins,
+  };
 });

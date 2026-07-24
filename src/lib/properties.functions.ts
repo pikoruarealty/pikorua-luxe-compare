@@ -6,6 +6,7 @@ import type {
   PropertyGallery,
 } from "@/types/property";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { parseNumeric } from "@/lib/property-derivations";
 
 // Columns needed to build a Property. Kept in one place so the public and admin
 // readers can't drift apart.
@@ -92,7 +93,11 @@ function toProperty(row: PropertyRow): Property {
     tagline: row.tagline ?? "",
     image: row.image_url ?? "",
     size: row.size ?? "-",
-    sizeNumeric: row.size_numeric ?? 0,
+    // Recompute from the area string rather than trusting the stored column:
+    // rows written before the parseNumeric comma fix hold collapsed values
+    // (a 3,200 sq ft home stored as 3), so deriving it on read heals them
+    // without a data migration.
+    sizeNumeric: parseNumeric(row.super_built_up_area ?? row.size) || (row.size_numeric ?? 0),
     superBuiltUpArea: row.super_built_up_area ?? "-",
     carpetArea: row.carpet_area ?? "-",
     location: row.location ?? "-",

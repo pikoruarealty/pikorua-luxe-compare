@@ -68,13 +68,7 @@ const TERM_INFO: Record<string, { title: string; body: string }> = {
 const DASH = "—";
 
 type RoomKey =
-  | "livingArea"
-  | "kitchen"
-  | "bedroom1"
-  | "bedroom2"
-  | "bedroom3"
-  | "bedroom4"
-  | "bedroom5";
+  "livingArea" | "kitchen" | "bedroom1" | "bedroom2" | "bedroom3" | "bedroom4" | "bedroom5";
 
 /** A BHK bucket is one row-group, whatever the layout variants inside it.
  *
@@ -1432,8 +1426,8 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
     <>
       <div className="border-b border-border bg-muted/10 px-4 py-3">
         <p className="mb-2 text-[12px] text-muted-foreground">
-          Add your home or office address and we'll estimate how far each residence is.
-          Approximate distance only, no map or exact location shown.
+          Add your home or office address and we'll estimate how far each residence is. Approximate
+          distance only, no map or exact location shown.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -1474,7 +1468,13 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
   );
 }
 
-function RegistrationLink({ id, url }: { id: string | null | undefined; url: string | null | undefined }) {
+function RegistrationLink({
+  id,
+  url,
+}: {
+  id: string | null | undefined;
+  url: string | null | undefined;
+}) {
   if (!id) return <Plain value={null} />;
   if (!url) return <Plain value={id} />;
   return (

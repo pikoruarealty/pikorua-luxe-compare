@@ -16,6 +16,12 @@ dist-ssr
 .nitro
 *.local
 
+# This project uses Bun (bun.lock is the source of truth) — don't commit other
+# package managers' lockfiles.
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
@@ -23,8 +29,10 @@ dist-ssr
 # Vercel
 .vercel
 
-# Secrets
+# Secrets — .env.example stays committed as the template
 .env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

@@ -32,7 +32,10 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // Off: a dev-only Fast Refresh hint that fires on idiomatic code — React
+      // context files colocate their provider + hook, and shadcn/ui colocates
+      // its `*Variants` helpers with the component. No runtime/correctness impact.
+      "react-refresh/only-export-components": "off",
       "@typescript-eslint/no-unused-vars": "off",
     },
   },

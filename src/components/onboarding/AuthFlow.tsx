@@ -122,8 +122,23 @@ export function AuthFlow() {
     }
   };
 
+  // Fill boxes from `start` with a run of digits, then focus/submit. Shared by
+  // single-key typing, paste, and SMS autofill so all three behave identically.
+  const fillFrom = (start: number, digits: string) => {
+    const next = [...otpDigits];
+    for (let k = 0; k < digits.length && start + k < 6; k++) next[start + k] = digits[k];
+    setOtpDigits(next);
+    const lastFilled = Math.min(start + digits.length, 6) - 1;
+    otpRefs.current[Math.max(0, lastFilled)]?.focus();
+    if (next.every((d) => d.length === 1)) submitOtp(next.join(""));
+  };
+
   const handleOtpChange = (i: number, val: string) => {
-    const v = val.replace(/\D/g, "").slice(-1);
+    const cleaned = val.replace(/\D/g, "");
+    // Autofill can deliver the whole code to one box — spread it across the row
+    // instead of keeping only the last digit.
+    if (cleaned.length > 1) return fillFrom(i, cleaned);
+    const v = cleaned.slice(-1);
     const next = [...otpDigits];
     next[i] = v;
     setOtpDigits(next);
@@ -131,6 +146,15 @@ export function AuthFlow() {
     if (next.every((d) => d.length === 1)) {
       submitOtp(next.join(""));
     }
+  };
+
+  // maxLength=1 truncates a pasted code before onChange sees it, so paste is
+  // handled explicitly here from the clipboard text.
+  const handleOtpPaste = (i: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    const cleaned = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!cleaned) return;
+    e.preventDefault();
+    fillFrom(i, cleaned);
   };
 
   const handleOtpKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -263,7 +287,9 @@ export function AuthFlow() {
                 placeholder="you@example.com"
                 type="email"
               />
-              {detailsError && <p className="text-xs text-red-600 dark:text-red-400">{detailsError}</p>}
+              {detailsError && (
+                <p className="text-xs text-red-600 dark:text-red-400">{detailsError}</p>
+              )}
             </div>
 
             <div className="mt-auto pt-10">
@@ -375,7 +401,9 @@ export function AuthFlow() {
                       value={d}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKey(i, e)}
+                      onPaste={(e) => handleOtpPaste(i, e)}
                       inputMode="numeric"
+                      autoComplete={i === 0 ? "one-time-code" : "off"}
                       maxLength={1}
                       disabled={verifying || Boolean(verificationToken)}
                       className="h-[52px] w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne disabled:opacity-60"
@@ -467,7 +495,9 @@ export function AuthFlow() {
 
             <div className="mt-auto pt-10">
               {completeError && (
-                <p className="mb-3 text-center text-xs text-red-600 dark:text-red-400">{completeError}</p>
+                <p className="mb-3 text-center text-xs text-red-600 dark:text-red-400">
+                  {completeError}
+                </p>
               )}
               <GoldButton onClick={handleComplete} disabled={!profession} loading={saving}>
                 Complete profile →

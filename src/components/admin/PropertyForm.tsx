@@ -157,7 +157,10 @@ export function PropertyForm({
             <Input {...register("openSpace")} placeholder="e.g. 70% Open Area" />
           </Field>
           <Field label="Geyser / heat pump provided">
-            <Input {...register("geyserHeatPumpProvided")} placeholder="e.g. Yes – instant geyser" />
+            <Input
+              {...register("geyserHeatPumpProvided")}
+              placeholder="e.g. Yes – instant geyser"
+            />
           </Field>
           <Field label="VRV / AC provided">
             <Input {...register("vrvAcProvided")} placeholder="e.g. Yes, all bedrooms" />
@@ -204,7 +207,9 @@ export function PropertyForm({
         <Field label="Notable delivered projects">
           <StringListEditor
             items={watch("notableDeliveredProjects") ?? []}
-            onItemsChange={(next) => setValue("notableDeliveredProjects", next, { shouldDirty: true })}
+            onItemsChange={(next) =>
+              setValue("notableDeliveredProjects", next, { shouldDirty: true })
+            }
             placeholder="e.g. Godrej Garden City"
           />
         </Field>

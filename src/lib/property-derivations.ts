@@ -115,7 +115,13 @@ export const normalizePossession = (s: string | null | undefined): string => {
 
 export const parseNumeric = (s: string | null | undefined): number => {
   if (!s) return 0;
-  const m = String(s).match(/[\d.]+/);
+  // Strip grouping commas first: area strings come pre-formatted with en-IN
+  // separators ("3,200 – 8,000 sq ft"), and matching before stripping would
+  // stop at the first comma and read "3,200" as 3 — collapsing every
+  // thousands-plus size to a single digit.
+  const m = String(s)
+    .replace(/,/g, "")
+    .match(/[\d.]+/);
   return m ? parseFloat(m[0]) : 0;
 };
 
