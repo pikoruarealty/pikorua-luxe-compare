@@ -8,7 +8,7 @@ interface PropertyHeaderCardsProps {
 
 export function PropertyHeaderCards({ properties }: PropertyHeaderCardsProps) {
   return (
-    <div className="-mx-6 border-y border-[var(--glass-border)] bg-lux-black/85 px-6 py-5">
+    <div className="-mx-6 border-y border-(--glass-border) bg-lux-black/85 px-6 py-5">
       <div
         className="stack-sm grid gap-4"
         style={{ gridTemplateColumns: `repeat(${properties.length}, minmax(0, 1fr))` }}

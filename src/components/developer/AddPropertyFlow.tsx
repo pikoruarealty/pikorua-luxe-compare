@@ -41,9 +41,11 @@ export function AddPropertyFlow() {
         <button
           type="button"
           onClick={() => setStep("form")}
-          className="flex flex-col items-center gap-3 rounded-2xl border border-border p-8 text-center transition-colors hover:border-foreground/30"
+          className="hover-lift flex flex-col items-center gap-3 rounded-2xl border border-(--rule) bg-card p-8 text-center shadow-(--shadow-lift) transition-colors hover:border-champagne/40 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
         >
-          <PenLine className="h-7 w-7 text-champagne" />
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-champagne/12 text-champagne">
+            <PenLine className="h-6 w-6" />
+          </span>
           <div>
             <p className="font-medium text-foreground">Fill in manually</p>
             <p className="mt-1 text-xs text-muted-foreground">Type in every detail yourself.</p>
@@ -52,9 +54,11 @@ export function AddPropertyFlow() {
         <button
           type="button"
           onClick={() => setStep("upload")}
-          className="flex flex-col items-center gap-3 rounded-2xl border border-border p-8 text-center transition-colors hover:border-foreground/30"
+          className="hover-lift flex flex-col items-center gap-3 rounded-2xl border border-(--rule) bg-card p-8 text-center shadow-(--shadow-lift) transition-colors hover:border-champagne/40 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
         >
-          <FileText className="h-7 w-7 text-champagne" />
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-champagne/12 text-champagne">
+            <FileText className="h-6 w-6" />
+          </span>
           <div>
             <p className="font-medium text-foreground">Upload brochure</p>
             <p className="mt-1 text-xs text-muted-foreground">

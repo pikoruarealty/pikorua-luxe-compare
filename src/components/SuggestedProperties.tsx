@@ -119,8 +119,9 @@ export function SuggestedProperties() {
   const hydrated = useHydrated();
   const { selected: rawSelected } = useCompareStore();
   // A property already sitting in the comparison suite above has nothing to
-  // gain from also showing up as a "suggestion" right below it.
-  const selected = hydrated ? rawSelected : [];
+  // gain from also showing up as a "suggestion" right below it. Memoised so the
+  // pre-hydration empty array keeps a stable ref (no needless recompute below).
+  const selected = useMemo(() => (hydrated ? rawSelected : []), [hydrated, rawSelected]);
   const properties = useMemo(
     () => (selected.length ? allProperties.filter((p) => !selected.includes(p.id)) : allProperties),
     [allProperties, selected],
@@ -328,7 +329,7 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
             alt={property.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover/card:scale-105"
+            className="h-full w-full object-cover transition-transform duration-1200 ease-out group-hover/card:scale-105"
           />
           <div
             className="pointer-events-none absolute inset-0"

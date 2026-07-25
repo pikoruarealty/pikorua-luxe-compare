@@ -81,7 +81,7 @@ export function ShareCompareButton({ properties, className = "" }: Props) {
           <Share2 className="h-3 w-3" /> Share
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[280px] p-3">
+      <PopoverContent align="end" className="w-70 p-3">
         <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
           Share this comparison
         </p>

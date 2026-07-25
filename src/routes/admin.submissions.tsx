@@ -2,8 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, X } from "lucide-react";
+import { Check, Inbox, X } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { PageHeader } from "@/components/portal/PageHeader";
+import { StatusBadge, submissionTone } from "@/components/portal/StatusBadge";
+import { EmptyState } from "@/components/portal/EmptyState";
+import { Skeleton } from "@/components/portal/Skeleton";
+import { TableWrap, Th, Td } from "@/components/portal/Table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { submissionsQueryOptions, SUBMISSIONS_KEY } from "@/lib/submissions.queries";
 import {
   getSubmission,
@@ -26,7 +38,11 @@ const dateFmt = new Intl.DateTimeFormat("en-IN", {
   minute: "2-digit",
 });
 
+const reviewBtnClass =
+  "rounded-full border border-(--rule-strong) px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none";
+
 type StatusFilter = "pending" | "approved" | "rejected" | "all";
+const FILTERS: StatusFilter[] = ["pending", "approved", "rejected", "all"];
 
 function AdminSubmissions() {
   const { data: submissions, isPending, error } = useQuery(submissionsQueryOptions());
@@ -41,38 +57,93 @@ function AdminSubmissions() {
   const pendingCount = (submissions ?? []).filter((s) => s.status === "pending").length;
 
   return (
-    <AdminLayout title="Submissions" requireOwner>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Properties developers have added or edited. Nothing here reaches the public site until you
-        approve it.
-      </p>
+    <AdminLayout requireOwner>
+      <PageHeader
+        eyebrow="Review"
+        title="Submissions"
+        description="Properties developers have added or edited. Nothing reaches the public site until you approve it."
+      />
 
-      <div className="mb-4 flex gap-2">
-        {(["pending", "approved", "rejected", "all"] as StatusFilter[]).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`rounded-full px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase transition-colors ${
-              filter === f
-                ? "bg-champagne text-lux-black"
-                : "border border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {f}
-            {f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
-          </button>
-        ))}
+      <div className="mb-5 flex flex-wrap gap-2">
+        {FILTERS.map((f) => {
+          const active = filter === f;
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`rounded-full px-4 py-2 text-xs font-medium tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none ${
+                active
+                  ? "bg-champagne text-lux-black"
+                  : "border border-(--rule-strong) text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+              }`}
+            >
+              {f}
+              {f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+            </button>
+          );
+        })}
       </div>
 
-      {isPending && <p className="text-sm text-muted-foreground">Loading submissions…</p>}
-      {error && <p className="text-sm text-red-500">Could not load: {(error as Error).message}</p>}
+      {isPending && (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 rounded-xl" />
+          ))}
+        </div>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">
+          Could not load: {(error as Error).message}
+        </p>
+      )}
 
-      {!isPending && !error && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[820px] text-sm">
-            <thead className="bg-card text-left">
-              <tr className="border-b border-border">
+      {!isPending && !error && rows.length === 0 && (
+        <EmptyState
+          icon={Inbox}
+          title="Nothing here"
+          message={
+            filter === "pending"
+              ? "No submissions are awaiting review right now."
+              : `No ${filter === "all" ? "" : filter + " "}submissions to show.`
+          }
+        />
+      )}
+
+      {!isPending && !error && rows.length > 0 && (
+        <>
+          {/* Mobile: card list */}
+          <div className="space-y-3 lg:hidden">
+            {rows.map((s) => (
+              <div
+                key={s.id}
+                className="rounded-2xl border border-(--rule) bg-card p-4 shadow-(--shadow-lift)"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">{s.propertyName}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      <span className="capitalize">{s.action}</span> · {s.developerName}
+                    </p>
+                  </div>
+                  <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-(--rule) pt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {dateFmt.format(new Date(s.createdAt))}
+                  </p>
+                  <button type="button" onClick={() => setOpenId(s.id)} className={reviewBtnClass}>
+                    {s.status === "pending" ? "Review" : "View"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <TableWrap className="hidden lg:block">
+            <thead className="bg-muted/40">
+              <tr className="border-b border-(--rule)">
                 <Th>Property</Th>
                 <Th>Action</Th>
                 <Th>Developer</Th>
@@ -83,59 +154,38 @@ function AdminSubmissions() {
             </thead>
             <tbody>
               {rows.map((s) => (
-                <tr key={s.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-foreground">{s.propertyName}</td>
-                  <td className="px-4 py-3 text-muted-foreground capitalize">{s.action}</td>
-                  <td className="px-4 py-3">
+                <tr
+                  key={s.id}
+                  className="border-b border-(--rule) transition-colors last:border-0 hover:bg-foreground/2"
+                >
+                  <Td className="font-medium text-foreground">{s.propertyName}</Td>
+                  <Td className="text-muted-foreground capitalize">{s.action}</Td>
+                  <Td>
                     <p className="text-foreground">{s.developerName}</p>
                     <p className="text-xs text-muted-foreground">{s.developerEmail}</p>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {dateFmt.format(new Date(s.createdAt))}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={s.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </Td>
+                  <Td className="text-muted-foreground">{dateFmt.format(new Date(s.createdAt))}</Td>
+                  <Td>
+                    <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
+                  </Td>
+                  <Td className="text-right">
                     <button
                       type="button"
                       onClick={() => setOpenId(s.id)}
-                      className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:border-foreground/30"
+                      className={reviewBtnClass}
                     >
                       {s.status === "pending" ? "Review" : "View"}
                     </button>
-                  </td>
+                  </Td>
                 </tr>
               ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                    Nothing here.
-                  </td>
-                </tr>
-              )}
             </tbody>
-          </table>
-        </div>
+          </TableWrap>
+        </>
       )}
 
       {openId && <SubmissionDetail id={openId} onClose={() => setOpenId(null)} />}
     </AdminLayout>
-  );
-}
-
-function StatusBadge({ status }: { status: "pending" | "approved" | "rejected" }) {
-  const styles = {
-    pending: "bg-muted text-muted-foreground",
-    approved: "bg-champagne/15 text-champagne",
-    rejected: "bg-red-500/10 text-red-600 dark:text-red-400",
-  }[status];
-  return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase ${styles}`}
-    >
-      {status}
-    </span>
   );
 }
 
@@ -172,51 +222,52 @@ function SubmissionDetail({ id, onClose }: { id: string; onClose: () => void }) 
     onError: (e: Error) => toast.error(e.message || "Could not reject"),
   });
 
+  const busy = approveMutation.isPending || rejectMutation.isPending;
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="font-display text-lg text-foreground">Review submission</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-(--rule) px-6 py-4 text-left">
+          <DialogTitle className="font-display text-lg font-normal">Review submission</DialogTitle>
+          <DialogDescription className="sr-only">
+            Read-only view of a developer's property submission with approve and reject actions.
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
+          {isPending && (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 rounded" />
+              ))}
+            </div>
+          )}
           {data && <PayloadPreview payload={data.payload} action={data.action} />}
         </div>
 
         {data?.status === "pending" && (
-          <div className="border-t border-border px-6 py-4">
+          <div className="border-t border-(--rule) px-6 py-4">
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Note for the developer if rejecting (optional)"
               rows={2}
-              className="mb-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-champagne"
+              className="mb-3 w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => rejectMutation.mutate()}
-                disabled={rejectMutation.isPending || approveMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-foreground uppercase transition-colors hover:border-red-500/50 hover:text-red-500 disabled:opacity-60"
+                disabled={busy}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-(--rule-strong) px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-red-500/50 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none disabled:opacity-60"
               >
                 <X className="h-3.5 w-3.5" /> Reject
               </button>
               <button
                 type="button"
                 onClick={() => approveMutation.mutate()}
-                disabled={approveMutation.isPending || rejectMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-champagne px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-lux-black uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
+                disabled={busy}
+                className="foil inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[11px] font-semibold tracking-luxury uppercase disabled:opacity-60"
               >
                 <Check className="h-3.5 w-3.5" />
                 {approveMutation.isPending ? "Approving…" : "Approve & publish"}
@@ -224,8 +275,8 @@ function SubmissionDetail({ id, onClose }: { id: string; onClose: () => void }) 
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -261,9 +312,9 @@ function PayloadPreview({
 
   return (
     <div className="space-y-6">
-      <span className="inline-block rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+      <StatusBadge tone={action === "create" ? "positive" : "neutral"}>
         {action === "create" ? "New property" : "Edit to a live property"}
-      </span>
+      </StatusBadge>
 
       <Section title="Basics" rows={basics} />
       <Section title="Project structure" rows={structure} />
@@ -273,12 +324,12 @@ function PayloadPreview({
         if (!variants.length) return null;
         return (
           <div key={key}>
-            <p className="mb-2 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+            <p className="mb-2 font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
               {label}
             </p>
             <div className="space-y-2">
               {variants.map((v, i) => (
-                <div key={i} className="rounded-lg border border-border px-3 py-2 text-sm">
+                <div key={i} className="rounded-lg border border-(--rule) px-3 py-2 text-sm">
                   {v.type && <span className="mr-2 font-medium text-foreground">{v.type}</span>}
                   <span className="text-muted-foreground">
                     {[v.area && `${v.area} sq ft`, v.price].filter(Boolean).join(" · ")}
@@ -292,7 +343,7 @@ function PayloadPreview({
 
       {payload.amenities?.length > 0 && (
         <div>
-          <p className="mb-2 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+          <p className="mb-2 font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
             Amenities
           </p>
           <p className="text-sm text-foreground">{payload.amenities.join(" · ")}</p>
@@ -307,10 +358,10 @@ function Section({ title, rows }: { title: string; rows: [string, string | undef
   if (filled.length === 0) return null;
   return (
     <div>
-      <p className="mb-2 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+      <p className="mb-2 font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
         {title}
       </p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-(--rule) bg-muted/30 p-4">
         {filled.map(([label, value]) => (
           <div key={label}>
             <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -319,15 +370,5 @@ function Section({ title, rows }: { title: string; rows: [string, string | undef
         ))}
       </div>
     </div>
-  );
-}
-
-function Th({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <th
-      className={`px-4 py-3 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase ${className}`}
-    >
-      {children}
-    </th>
   );
 }

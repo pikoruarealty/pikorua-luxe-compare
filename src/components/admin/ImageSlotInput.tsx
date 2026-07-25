@@ -52,7 +52,7 @@ export function ImageSlotInput({
       </span>
 
       <div className="flex items-start gap-3">
-        <div className="relative h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
           {value ? (
             <>
               <img src={value} alt="" className="h-full w-full object-cover" />
@@ -77,7 +77,7 @@ export function ImageSlotInput({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs tracking-[0.1em] text-muted-foreground uppercase transition-colors hover:text-foreground disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs tracking-widest text-muted-foreground uppercase transition-colors hover:text-foreground disabled:opacity-60"
           >
             <Upload className="h-3.5 w-3.5" />
             {uploading ? "Uploading…" : "Upload"}
