@@ -101,10 +101,15 @@ function AdminDevelopers() {
                       type="button"
                       title={d.isActive ? "Revoke access" : "Re-enable access"}
                       onClick={() => toggleMutation.mutate({ id: d.id, isActive: !d.isActive })}
-                      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+                      disabled={toggleMutation.isPending && toggleMutation.variables?.id === d.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
                     >
                       <Power className="h-3.5 w-3.5" />
-                      {d.isActive ? "Revoke" : "Re-enable"}
+                      {toggleMutation.isPending && toggleMutation.variables?.id === d.id
+                        ? "…"
+                        : d.isActive
+                          ? "Revoke"
+                          : "Re-enable"}
                     </button>
                   </td>
                 </tr>

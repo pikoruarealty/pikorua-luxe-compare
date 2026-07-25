@@ -157,6 +157,9 @@ function AdminProperties() {
                           onClick={() =>
                             publishMutation.mutate({ id: p.rowId, isPublished: !p.isPublished })
                           }
+                          disabled={
+                            publishMutation.isPending && publishMutation.variables?.id === p.rowId
+                          }
                         >
                           {p.isPublished ? (
                             <EyeOff className="h-4 w-4" />
@@ -236,17 +239,20 @@ function IconButton({
   children,
   onClick,
   title,
+  disabled,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   title: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
-      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+      disabled={disabled}
+      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
     >
       {children}
     </button>
