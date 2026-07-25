@@ -27,52 +27,59 @@ export interface DeveloperSubmission {
  *  pending/rejected/approved). */
 export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
-  .handler(async ({ context }): Promise<{ properties: DeveloperProperty[]; submissions: DeveloperSubmission[] }> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const developerId = context.adminProfile.id;
+  .handler(
+    async ({
+      context,
+    }): Promise<{ properties: DeveloperProperty[]; submissions: DeveloperSubmission[] }> => {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const developerId = context.adminProfile.id;
 
-    const [{ data: props, error: propsError }, { data: subs, error: subsError }] = await Promise.all([
-      supabaseAdmin
-        .from("properties")
-        .select("id, name, developer, location, is_published")
-        .eq("created_by", developerId)
-        .order("created_at", { ascending: false }),
-      supabaseAdmin
-        .from("property_submissions")
-        .select("id, action, status, property_id, payload, reviewer_note, created_at, reviewed_at")
-        .eq("developer_id", developerId)
-        .order("created_at", { ascending: false }),
-    ]);
-    if (propsError) throw new Error(propsError.message);
-    if (subsError) throw new Error(subsError.message);
+      const [{ data: props, error: propsError }, { data: subs, error: subsError }] =
+        await Promise.all([
+          supabaseAdmin
+            .from("properties")
+            .select("id, name, developer, location, is_published")
+            .eq("created_by", developerId)
+            .order("created_at", { ascending: false }),
+          supabaseAdmin
+            .from("property_submissions")
+            .select(
+              "id, action, status, property_id, payload, reviewer_note, created_at, reviewed_at",
+            )
+            .eq("developer_id", developerId)
+            .order("created_at", { ascending: false }),
+        ]);
+      if (propsError) throw new Error(propsError.message);
+      if (subsError) throw new Error(subsError.message);
 
-    const pendingUpdateIds = new Set(
-      (subs ?? [])
-        .filter((s) => s.status === "pending" && s.action === "update" && s.property_id)
-        .map((s) => s.property_id as string),
-    );
+      const pendingUpdateIds = new Set(
+        (subs ?? [])
+          .filter((s) => s.status === "pending" && s.action === "update" && s.property_id)
+          .map((s) => s.property_id as string),
+      );
 
-    return {
-      properties: (props ?? []).map((p) => ({
-        id: p.id,
-        name: p.name,
-        developer: p.developer ?? "-",
-        location: p.location ?? "-",
-        isPublished: p.is_published,
-        hasPendingUpdate: pendingUpdateIds.has(p.id),
-      })),
-      submissions: (subs ?? []).map((s) => ({
-        id: s.id,
-        action: s.action,
-        status: s.status,
-        propertyId: s.property_id,
-        propertyName: (s.payload as { name?: string })?.name ?? "Untitled property",
-        reviewerNote: s.reviewer_note,
-        createdAt: s.created_at,
-        reviewedAt: s.reviewed_at,
-      })),
-    };
-  });
+      return {
+        properties: (props ?? []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          developer: p.developer ?? "-",
+          location: p.location ?? "-",
+          isPublished: p.is_published,
+          hasPendingUpdate: pendingUpdateIds.has(p.id),
+        })),
+        submissions: (subs ?? []).map((s) => ({
+          id: s.id,
+          action: s.action,
+          status: s.status,
+          propertyId: s.property_id,
+          propertyName: (s.payload as { name?: string })?.name ?? "Untitled property",
+          reviewerNote: s.reviewer_note,
+          createdAt: s.created_at,
+          reviewedAt: s.reviewed_at,
+        })),
+      };
+    },
+  );
 
 /** Developer-only: load one of THEIR OWN live properties into the edit form
  *  shape — same mapping as the owner's getPropertyForEdit, but ownership-
@@ -161,19 +168,21 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
  *  property or applies an edit to a live one (see admin-submissions.functions.ts). */
 export const submitPropertyForReview = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
-  .inputValidator((data: { action: "create" | "update"; propertyId?: string; values: PropertyFormValues }) => {
-    if (data?.action !== "create" && data?.action !== "update") {
-      throw new Error("Invalid action");
-    }
-    if (data.action === "update" && !data.propertyId) {
-      throw new Error("Missing property id for an update submission");
-    }
-    return {
-      action: data.action,
-      propertyId: data.propertyId,
-      values: propertyFormSchema.parse(data.values),
-    };
-  })
+  .inputValidator(
+    (data: { action: "create" | "update"; propertyId?: string; values: PropertyFormValues }) => {
+      if (data?.action !== "create" && data?.action !== "update") {
+        throw new Error("Invalid action");
+      }
+      if (data.action === "update" && !data.propertyId) {
+        throw new Error("Missing property id for an update submission");
+      }
+      return {
+        action: data.action,
+        propertyId: data.propertyId,
+        values: propertyFormSchema.parse(data.values),
+      };
+    },
+  )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

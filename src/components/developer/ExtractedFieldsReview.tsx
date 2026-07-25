@@ -21,7 +21,10 @@ export function ExtractedFieldsReview({
 }: {
   response: ExtractionResponse;
   fields: ExtractedFieldInfo[];
-  onContinue: (values: Partial<PropertyFormValues>, approvedKeys: (keyof PropertyFormValues)[]) => void;
+  onContinue: (
+    values: Partial<PropertyFormValues>,
+    approvedKeys: (keyof PropertyFormValues)[],
+  ) => void;
   onCancel: () => void;
 }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
@@ -38,7 +41,10 @@ export function ExtractedFieldsReview({
       return;
     }
     const partial = values as unknown as Partial<PropertyFormValues>;
-    onContinue(partial, fields.map((f) => f.formField));
+    onContinue(
+      partial,
+      fields.map((f) => f.formField),
+    );
   };
 
   return (
@@ -87,7 +93,9 @@ export function ExtractedFieldsReview({
                     <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
                       {f.label}
                     </p>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${confidenceStyle(f.confidence)}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${confidenceStyle(f.confidence)}`}
+                    >
                       {Math.round(f.confidence * 100)}% confident
                     </span>
                   </div>
@@ -113,12 +121,16 @@ export function ExtractedFieldsReview({
                   <input
                     type="checkbox"
                     checked={isApproved}
-                    onChange={(e) => setApproved((a) => ({ ...a, [f.formField]: e.target.checked }))}
+                    onChange={(e) =>
+                      setApproved((a) => ({ ...a, [f.formField]: e.target.checked }))
+                    }
                     className="h-4 w-4"
                   />
                   <span
                     className={`flex items-center gap-1 text-xs font-medium ${
-                      isApproved ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                      isApproved
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-muted-foreground"
                     }`}
                   >
                     <Check className="h-3.5 w-3.5" /> Approve

@@ -63,9 +63,7 @@ export function AdminLayout({
   if (!profile || profile.role === "developer") {
     return (
       <FullScreen>
-        <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">
-          Redirecting…
-        </p>
+        <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">Redirecting…</p>
       </FullScreen>
     );
   }

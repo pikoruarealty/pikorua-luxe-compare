@@ -8,7 +8,11 @@ export const Route = createFileRoute("/developer/")({
   component: DeveloperDashboard,
 });
 
-const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
 
 function DeveloperDashboard() {
   const { data, isPending, error } = useQuery({
@@ -53,7 +57,9 @@ function DeveloperDashboard() {
                       )}
                       <span
                         className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.1em] uppercase ${
-                          p.isPublished ? "bg-champagne/15 text-champagne" : "bg-muted text-muted-foreground"
+                          p.isPublished
+                            ? "bg-champagne/15 text-champagne"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {p.isPublished ? "Live" : "Hidden"}

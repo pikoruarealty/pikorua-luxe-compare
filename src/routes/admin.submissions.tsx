@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { Check, X } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { submissionsQueryOptions, SUBMISSIONS_KEY } from "@/lib/submissions.queries";
-import { getSubmission, approveSubmission, rejectSubmission } from "@/lib/admin-submissions.functions";
+import {
+  getSubmission,
+  approveSubmission,
+  rejectSubmission,
+} from "@/lib/admin-submissions.functions";
 import { PROPERTIES_KEY } from "@/lib/properties.queries";
 import type { PropertyFormValues } from "@/lib/property-schema";
 import { CONFIG_BUCKETS } from "@/lib/property-schema";
@@ -127,7 +131,9 @@ function StatusBadge({ status }: { status: "pending" | "approved" | "rejected" }
     rejected: "bg-red-500/10 text-red-600 dark:text-red-400",
   }[status];
   return (
-    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase ${styles}`}>
+    <span
+      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase ${styles}`}
+    >
       {status}
     </span>
   );
@@ -167,11 +173,18 @@ function SubmissionDetail({ id, onClose }: { id: string; onClose: () => void }) 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="font-display text-lg text-foreground">Review submission</h2>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -218,7 +231,13 @@ function SubmissionDetail({ id, onClose }: { id: string; onClose: () => void }) 
 
 /** Plain, read-only walk through the submitted payload — a reviewer isn't
  *  editing here, just confirming what the developer sent before it goes live. */
-function PayloadPreview({ payload, action }: { payload: PropertyFormValues; action: "create" | "update" }) {
+function PayloadPreview({
+  payload,
+  action,
+}: {
+  payload: PropertyFormValues;
+  action: "create" | "update";
+}) {
   const basics: [string, string | undefined][] = [
     ["Name", payload.name],
     ["Developer", payload.developer],
