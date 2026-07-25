@@ -60,7 +60,9 @@ export function BrochureUploadStep({
       <label className="mt-6 flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center transition-colors hover:border-champagne/50">
         <Upload className="h-6 w-6 text-muted-foreground" />
         <span className="text-sm text-foreground">Click to choose PDF files</span>
-        <span className="text-xs text-muted-foreground">Brochure, RERA certificate, price list…</span>
+        <span className="text-xs text-muted-foreground">
+          Brochure, RERA certificate, price list…
+        </span>
         <input
           type="file"
           accept="application/pdf"

@@ -8,7 +8,11 @@ import { emptyPropertyForm, type PropertyFormValues } from "@/lib/property-schem
 import { submitPropertyForReview } from "@/lib/developer-properties.functions";
 import { BrochureUploadStep } from "./BrochureUploadStep";
 import { ExtractedFieldsReview } from "./ExtractedFieldsReview";
-import { extractedFieldList, mapExtractedPayload, type ExtractionResponse } from "@/lib/brochure-field-mapping";
+import {
+  extractedFieldList,
+  mapExtractedPayload,
+  type ExtractionResponse,
+} from "@/lib/brochure-field-mapping";
 
 type Step = "choose" | "upload" | "review" | "form";
 
@@ -42,9 +46,7 @@ export function AddPropertyFlow() {
           <PenLine className="h-7 w-7 text-champagne" />
           <div>
             <p className="font-medium text-foreground">Fill in manually</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Type in every detail yourself.
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Type in every detail yourself.</p>
           </div>
         </button>
         <button
@@ -83,7 +85,11 @@ export function AddPropertyFlow() {
         fields={extractedFieldList(extraction)}
         onCancel={() => setStep("upload")}
         onContinue={(partial) => {
-          setFormDefaults({ ...emptyPropertyForm(), ...mapExtractedPayload(extraction.form_payload), ...partial });
+          setFormDefaults({
+            ...emptyPropertyForm(),
+            ...mapExtractedPayload(extraction.form_payload),
+            ...partial,
+          });
           setStep("form");
         }}
       />

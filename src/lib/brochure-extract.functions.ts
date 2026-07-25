@@ -42,7 +42,9 @@ export const extractFromBrochures = createServerFn({ method: "POST" })
 
     const form = new FormData();
     for (const f of data.files) {
-      const base64 = f.fileBase64.includes(",") ? f.fileBase64.slice(f.fileBase64.indexOf(",") + 1) : f.fileBase64;
+      const base64 = f.fileBase64.includes(",")
+        ? f.fileBase64.slice(f.fileBase64.indexOf(",") + 1)
+        : f.fileBase64;
       const buffer = Buffer.from(base64, "base64");
       if (buffer.length === 0) continue;
       const name = f.fileName.toLowerCase().endsWith(".pdf") ? f.fileName : `${f.fileName}.pdf`;

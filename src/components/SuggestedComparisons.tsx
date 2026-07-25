@@ -146,7 +146,8 @@ export function SuggestedComparisons() {
   const { selected: rawSelected } = useCompareStore();
   // A pair suggesting a property already in the comparison suite above is
   // redundant — leave it out until that property is removed from the suite.
-  const selected = hydrated ? rawSelected : [];
+  // Memoised so the pre-hydration empty array keeps a stable ref.
+  const selected = useMemo(() => (hydrated ? rawSelected : []), [hydrated, rawSelected]);
   const properties = useMemo(
     () => (selected.length ? allProperties.filter((p) => !selected.includes(p.id)) : allProperties),
     [allProperties, selected],

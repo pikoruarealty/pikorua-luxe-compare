@@ -48,9 +48,7 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
   if (!profile || profile.role !== "developer") {
     return (
       <FullScreen>
-        <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">
-          Redirecting…
-        </p>
+        <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">Redirecting…</p>
       </FullScreen>
     );
   }
@@ -72,7 +70,8 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
           {NAV.map(({ to, label, icon: Icon }) => {
-            const active = to === "/developer" ? pathname === "/developer" : pathname.startsWith(to);
+            const active =
+              to === "/developer" ? pathname === "/developer" : pathname.startsWith(to);
             return (
               <Link
                 key={to}
@@ -92,7 +91,9 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
         <div className="border-t border-border px-3 py-4">
           <div className="px-3 pb-3">
             <p className="truncate text-xs text-foreground">{profile.fullName || profile.email}</p>
-            <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">Developer</p>
+            <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
+              Developer
+            </p>
           </div>
           <button
             type="button"

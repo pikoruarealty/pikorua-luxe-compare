@@ -145,7 +145,12 @@ export function mapExtractedPayload(payload: Record<string, Json>): Partial<Prop
 
   const configurations = payload.configurations;
   if (Array.isArray(configurations) && configurations.length) {
-    const configs = { bhk4: [], bhk5: [], penthouse: [], duplex: [] } as PropertyFormValues["configs"];
+    const configs = {
+      bhk4: [],
+      bhk5: [],
+      penthouse: [],
+      duplex: [],
+    } as PropertyFormValues["configs"];
     for (const raw of configurations as Record<string, unknown>[]) {
       const bucket = BHK_TO_BUCKET[String(raw.bhk_type ?? "")];
       if (!bucket) continue;
@@ -157,8 +162,10 @@ export function mapExtractedPayload(payload: Record<string, Json>): Partial<Prop
         builtUpArea: raw.built_up_area ? String(raw.built_up_area) : null,
         price: raw.price ? String(raw.price) : null,
         rate: raw.price_per_sqft ? String(raw.price_per_sqft) : null,
-        bathrooms: raw.bathrooms !== null && raw.bathrooms !== undefined ? String(raw.bathrooms) : null,
-        balconies: raw.balconies !== null && raw.balconies !== undefined ? String(raw.balconies) : null,
+        bathrooms:
+          raw.bathrooms !== null && raw.bathrooms !== undefined ? String(raw.bathrooms) : null,
+        balconies:
+          raw.balconies !== null && raw.balconies !== undefined ? String(raw.balconies) : null,
         servantRoom: raw.servant_room ? String(raw.servant_room) : null,
       });
     }
@@ -173,7 +180,13 @@ export function mapExtractedPayload(payload: Record<string, Json>): Partial<Prop
  *  review screen. Configuration-array fields are intentionally excluded; the
  *  developer reviews those directly in the form's Configurations section. */
 export function extractedFieldList(response: ExtractionResponse): ExtractedFieldInfo[] {
-  const sections = ["basics", "project_structure", "rera_approvals", "construction_amenities", "developer_info"];
+  const sections = [
+    "basics",
+    "project_structure",
+    "rera_approvals",
+    "construction_amenities",
+    "developer_info",
+  ];
   const out: ExtractedFieldInfo[] = [];
   for (const [path, meta] of Object.entries(response.field_meta)) {
     const [section, snakeKey] = path.split(".");
