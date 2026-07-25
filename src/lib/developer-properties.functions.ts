@@ -86,7 +86,7 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
  *  checked against created_by instead of gated on the owner role. */
 export const getMyPropertyForEdit = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
-  .validator((data: { id: string }) => {
+  .inputValidator((data: { id: string }) => {
     if (!data?.id) throw new Error("Missing property id");
     return { id: data.id };
   })
@@ -168,7 +168,7 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
  *  property or applies an edit to a live one (see admin-submissions.functions.ts). */
 export const submitPropertyForReview = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
-  .validator(
+  .inputValidator(
     (data: { action: "create" | "update"; propertyId?: string; values: PropertyFormValues }) => {
       if (data?.action !== "create" && data?.action !== "update") {
         throw new Error("Invalid action");

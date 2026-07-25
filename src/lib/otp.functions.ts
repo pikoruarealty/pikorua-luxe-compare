@@ -41,7 +41,7 @@ async function signOtpToken(phone: string) {
 }
 
 export const sendOtp = createServerFn({ method: "POST" })
-  .validator((data: { phone: string }) => {
+  .inputValidator((data: { phone: string }) => {
     if (!data || typeof data.phone !== "string" || data.phone.length < 6) {
       throw new Error("Invalid phone number");
     }
@@ -60,7 +60,7 @@ export const sendOtp = createServerFn({ method: "POST" })
   });
 
 export const verifyOtp = createServerFn({ method: "POST" })
-  .validator((data: { sessionId: string; otp: string; phone: string }) => {
+  .inputValidator((data: { sessionId: string; otp: string; phone: string }) => {
     if (
       !data ||
       typeof data.sessionId !== "string" ||

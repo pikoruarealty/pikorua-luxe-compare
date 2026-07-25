@@ -34,7 +34,7 @@ const sessionConfig = () => ({
  * Never throws to the caller: analytics must not break the browsing experience.
  */
 export const logActivity = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     (data: {
       event: ActivityEvent;
       propertySlug?: string | null;
