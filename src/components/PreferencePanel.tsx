@@ -59,7 +59,7 @@ export function PreferencePanel() {
     current.propertyType.length + current.bhk.length + (current.budgetRange ? 1 : 0);
 
   return (
-    <aside className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-glass)]">
+    <aside className="rounded-2xl border border-border bg-card p-5 shadow-(--shadow-glass)">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">

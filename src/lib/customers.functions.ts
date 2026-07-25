@@ -97,7 +97,7 @@ export const getCustomers = createServerFn({ method: "GET" })
 /** Owner-only: one customer with their full interaction timeline. */
 export const getCustomerDetail = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
-  .validator((data: { id: string }) => {
+  .inputValidator((data: { id: string }) => {
     if (!data?.id || typeof data.id !== "string") throw new Error("Missing customer id");
     return { id: data.id };
   })

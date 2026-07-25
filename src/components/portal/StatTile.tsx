@@ -19,7 +19,7 @@ export function StatTile({
   to?: string;
 }) {
   const cls = cn(
-    "block rounded-2xl border border-[var(--rule)] bg-card p-5 shadow-[var(--shadow-lift)]",
+    "block rounded-2xl border border-(--rule) bg-card p-5 shadow-(--shadow-lift)",
     to &&
       "hover-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50",
   );

@@ -7,7 +7,7 @@ const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-[var(--glass-border)] bg-card/40">
+    <footer className="mt-24 border-t border-(--glass-border) bg-card/40">
       <div className="container-lux py-14">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           {/* Brand */}
@@ -79,7 +79,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--glass-border)] pt-6 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-(--glass-border) pt-6 sm:flex-row">
           <p className="text-[11px] text-muted-foreground">
             © {new Date().getFullYear()} Pikorua Realty. All rights reserved.
           </p>

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  *  as well as plain controlled inputs. Used by the property form, the admin
  *  login, and the developer/submission dialogs so every field looks the same. */
 export const controlClass =
-  "w-full rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30 disabled:opacity-60";
+  "w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30 disabled:opacity-60";
 
 export function Field({
   label,

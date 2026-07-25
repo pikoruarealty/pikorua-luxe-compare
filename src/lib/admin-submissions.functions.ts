@@ -62,7 +62,7 @@ export const listSubmissions = createServerFn({ method: "GET" })
 /** Owner-only: one submission's full payload, for the review screen. */
 export const getSubmission = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
-  .validator((data: { id: string }) => {
+  .inputValidator((data: { id: string }) => {
     if (!data?.id) throw new Error("Missing submission id");
     return { id: data.id };
   })
@@ -92,7 +92,7 @@ export const getSubmission = createServerFn({ method: "GET" })
  *  ever reflects what's been explicitly approved here. */
 export const approveSubmission = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .validator((data: { id: string }) => {
+  .inputValidator((data: { id: string }) => {
     if (!data?.id) throw new Error("Missing submission id");
     return { id: data.id };
   })
@@ -152,7 +152,7 @@ export const approveSubmission = createServerFn({ method: "POST" })
  *  sees the note on their dashboard and can resubmit. */
 export const rejectSubmission = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .validator((data: { id: string; note?: string }) => {
+  .inputValidator((data: { id: string; note?: string }) => {
     if (!data?.id) throw new Error("Missing submission id");
     return { id: data.id, note: data.note?.trim() || null };
   })

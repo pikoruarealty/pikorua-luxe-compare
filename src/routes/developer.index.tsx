@@ -75,7 +75,7 @@ function DeveloperDashboard() {
                 }
               />
             ) : (
-              <div className="divide-y divide-[var(--rule)] overflow-hidden rounded-2xl border border-[var(--rule)] bg-card shadow-[var(--shadow-lift)]">
+              <div className="divide-y divide-(--rule) overflow-hidden rounded-2xl border border-(--rule) bg-card shadow-(--shadow-lift)">
                 {data.properties.map((p) => (
                   <div
                     key={p.id}
@@ -119,7 +119,7 @@ function DeveloperDashboard() {
                 message="Changes you submit for review will show up here with their status."
               />
             ) : (
-              <div className="divide-y divide-[var(--rule)] overflow-hidden rounded-2xl border border-[var(--rule)] bg-card shadow-[var(--shadow-lift)]">
+              <div className="divide-y divide-(--rule) overflow-hidden rounded-2xl border border-(--rule) bg-card shadow-(--shadow-lift)">
                 {data.submissions.map((s) => (
                   <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
                     <div className="min-w-0">

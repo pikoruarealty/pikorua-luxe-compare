@@ -30,7 +30,7 @@ export function ExpertVerdict({ properties }: { properties: Property[] }) {
             <p className="mt-6 font-display text-2xl leading-snug text-ivory sm:text-3xl">
               {p.expertNote}
             </p>
-            <div className="mt-8 flex items-center gap-4 border-t border-[var(--glass-border)] pt-6">
+            <div className="mt-8 flex items-center gap-4 border-t border-(--glass-border) pt-6">
               <img
                 src={p.image}
                 alt={p.name}

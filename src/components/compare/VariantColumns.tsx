@@ -151,7 +151,7 @@ export function VariantSwitcher({
             return (
               <div
                 key={i}
-                className="min-w-0 flex-1 truncate rounded-md bg-foreground/90 px-2 py-1 text-center text-[9px] font-semibold uppercase tracking-[0.1em] text-background"
+                className="min-w-0 flex-1 truncate rounded-md bg-foreground/90 px-2 py-1 text-center text-[9px] font-semibold uppercase tracking-widest text-background"
                 title={`${property.name} — ${label}`}
               >
                 {label}
@@ -162,7 +162,7 @@ export function VariantSwitcher({
           return isActive ? (
             <span
               key={i}
-              className="min-w-0 flex-1 truncate rounded-md bg-foreground px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-background"
+              className="min-w-0 flex-1 truncate rounded-md bg-foreground px-2 py-1 text-[9px] font-semibold uppercase tracking-widest text-background"
             >
               {label}
             </span>

@@ -110,7 +110,7 @@ function toDTO(row: {
 }
 
 export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     (data: {
       name: string;
       email: string;
@@ -184,7 +184,7 @@ export const getSessionProfile = createServerFn({ method: "GET" }).handler(async
 });
 
 export const saveQuizAnswers = createServerFn({ method: "POST" })
-  .validator((data: { answers: QuizAnswersDTO | null }) => {
+  .inputValidator((data: { answers: QuizAnswersDTO | null }) => {
     if (!data || typeof data !== "object" || !("answers" in data)) {
       throw new Error("Invalid input");
     }
@@ -205,7 +205,7 @@ export const saveQuizAnswers = createServerFn({ method: "POST" })
   });
 
 export const updateProfile = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     (data: { name: string; email: string; profession: string; businessName?: string | null }) => {
       if (!data?.name?.trim() || !data?.email?.trim() || !data?.profession?.trim()) {
         throw new Error("Missing fields");

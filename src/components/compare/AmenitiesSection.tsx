@@ -31,7 +31,7 @@ export function AmenitiesSection({ properties }: { properties: Property[] }) {
               {p.amenities.map((a) => (
                 <span
                   key={a}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-graphite/70 px-3.5 py-1.5 text-xs text-ivory/85 ring-1 ring-[var(--glass-border)] transition-colors hover:bg-champagne hover:text-lux-black"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-graphite/70 px-3.5 py-1.5 text-xs text-ivory/85 ring-1 ring-(--glass-border) transition-colors hover:bg-champagne hover:text-lux-black"
                 >
                   <Sparkles className="h-3 w-3 text-champagne group-hover:text-lux-black" />
                   {a}

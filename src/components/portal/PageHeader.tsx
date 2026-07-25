@@ -19,7 +19,7 @@ export function PageHeader({
       <div className="min-w-0">
         {eyebrow && (
           <div className="flex items-center gap-2.5">
-            <span className="h-px w-6 bg-[var(--rule-strong)]" />
+            <span className="h-px w-6 bg-(--rule-strong)" />
             <p className="font-label text-[10px] font-semibold tracking-luxury text-champagne">
               {eyebrow}
             </p>
@@ -30,7 +30,7 @@ export function PageHeader({
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>
   );
 }

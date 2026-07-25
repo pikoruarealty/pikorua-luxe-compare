@@ -41,7 +41,7 @@ export function AddPropertyFlow() {
         <button
           type="button"
           onClick={() => setStep("form")}
-          className="hover-lift flex flex-col items-center gap-3 rounded-2xl border border-[var(--rule)] bg-card p-8 text-center shadow-[var(--shadow-lift)] transition-colors hover:border-champagne/40 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
+          className="hover-lift flex flex-col items-center gap-3 rounded-2xl border border-(--rule) bg-card p-8 text-center shadow-(--shadow-lift) transition-colors hover:border-champagne/40 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
         >
           <span className="grid h-12 w-12 place-items-center rounded-full bg-champagne/12 text-champagne">
             <PenLine className="h-6 w-6" />
@@ -54,7 +54,7 @@ export function AddPropertyFlow() {
         <button
           type="button"
           onClick={() => setStep("upload")}
-          className="hover-lift flex flex-col items-center gap-3 rounded-2xl border border-[var(--rule)] bg-card p-8 text-center shadow-[var(--shadow-lift)] transition-colors hover:border-champagne/40 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
+          className="hover-lift flex flex-col items-center gap-3 rounded-2xl border border-(--rule) bg-card p-8 text-center shadow-(--shadow-lift) transition-colors hover:border-champagne/40 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
         >
           <span className="grid h-12 w-12 place-items-center rounded-full bg-champagne/12 text-champagne">
             <FileText className="h-6 w-6" />

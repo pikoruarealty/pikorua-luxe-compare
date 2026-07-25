@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Power, Users } from "lucide-react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import { PageHeader } from "@/components/portal/PageHeader";
 import { StatusBadge } from "@/components/portal/StatusBadge";
 import { EmptyState } from "@/components/portal/EmptyState";
 import { Skeleton } from "@/components/portal/Skeleton";
@@ -16,8 +13,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Download, Plus, Power, Search, Users } from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { FilterSelect } from "@/components/admin/FilterSelect";
 import { developersQueryOptions, DEVELOPERS_KEY } from "@/lib/developers.queries";
-import { createDeveloper, setDeveloperActive } from "@/lib/admin-developers.functions";
+import {
+  createDeveloper,
+  setDeveloperActive,
+  type DeveloperAccount,
+} from "@/lib/admin-developers.functions";
+import { toCsv, downloadCsv } from "@/lib/csv-export";
 
 export const Route = createFileRoute("/admin/developers")({
   component: AdminDevelopers,
@@ -47,8 +52,31 @@ function AdminDevelopers() {
   const { data: developers, isPending, error } = useQuery(developersQueryOptions());
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: DEVELOPERS_KEY });
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (developers ?? []).filter((d) => {
+      if (statusFilter !== "all" && (statusFilter === "active") !== d.isActive) return false;
+      if (!q) return true;
+      return [d.fullName, d.email].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [developers, query, statusFilter]);
+
+  const exportCsv = () => {
+    const csv = toCsv<DeveloperAccount>(rows, [
+      { label: "Name", value: (d) => d.fullName },
+      { label: "Email", value: (d) => d.email },
+      { label: "Added", value: (d) => dateFmt.format(new Date(d.createdAt)) },
+      { label: "Total submissions", value: (d) => d.totalSubmissions },
+      { label: "Pending submissions", value: (d) => d.pendingSubmissions },
+      { label: "Status", value: (d) => (d.isActive ? "Active" : "Disabled") },
+    ]);
+    downloadCsv(`pikorua-developers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
 
   const toggleMutation = useMutation({
     mutationFn: (vars: { id: string; isActive: boolean }) => setDeveloperActive({ data: vars }),
@@ -63,17 +91,47 @@ function AdminDevelopers() {
   const busy = (id: string) => toggleMutation.isPending && toggleMutation.variables?.id === id;
 
   return (
-    <AdminLayout requireOwner>
-      <PageHeader
-        eyebrow="Access"
-        title="Developers"
-        description="Accounts that can sign in to the developer portal and submit properties for your review."
-        actions={
-          <button type="button" onClick={() => setOpen(true)} className={foilBtnClass}>
-            <Plus className="h-3.5 w-3.5" /> Add developer
+    <AdminLayout title="Developers" requireOwner>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Accounts that can sign in to the developer portal and submit properties for your review.
+      </p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, email…"
+              className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne"
+            />
+          </div>
+          <FilterSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            label="All statuses"
+            options={["active", "disabled"]}
+            optionLabels={{ active: "Active", disabled: "Disabled" }}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={rows.length === 0}
+            className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-foreground uppercase transition-colors hover:border-foreground/30 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" /> Export
           </button>
-        }
-      />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-champagne px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-lux-black uppercase transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Add developer
+          </button>
+        </div>
+      </div>
 
       {isPending && (
         <div className="space-y-3">
@@ -105,10 +163,15 @@ function AdminDevelopers() {
         <>
           {/* Mobile: card list */}
           <div className="space-y-3 lg:hidden">
-            {list.map((d) => (
+            {rows.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No developers match the current search and filters.
+              </p>
+            )}
+            {rows.map((d) => (
               <div
                 key={d.id}
-                className="rounded-2xl border border-[var(--rule)] bg-card p-4 shadow-[var(--shadow-lift)]"
+                className="rounded-2xl border border-(--rule) bg-card p-4 shadow-(--shadow-lift)"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -119,7 +182,7 @@ function AdminDevelopers() {
                     {d.isActive ? "Active" : "Disabled"}
                   </StatusBadge>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--rule)] pt-3">
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-(--rule) pt-3">
                   <p className="text-xs text-muted-foreground">
                     {d.totalSubmissions} total
                     {d.pendingSubmissions > 0 && (
@@ -144,7 +207,7 @@ function AdminDevelopers() {
           {/* Desktop: table */}
           <TableWrap className="hidden lg:block" minWidth="min-w-[720px]">
             <thead className="bg-muted/40">
-              <tr className="border-b border-[var(--rule)]">
+              <tr className="border-b border-(--rule)">
                 <Th>Developer</Th>
                 <Th>Added</Th>
                 <Th>Submissions</Th>
@@ -153,10 +216,10 @@ function AdminDevelopers() {
               </tr>
             </thead>
             <tbody>
-              {list.map((d) => (
+              {rows.map((d) => (
                 <tr
                   key={d.id}
-                  className="border-b border-[var(--rule)] transition-colors last:border-0 hover:bg-foreground/2"
+                  className="border-b border-(--rule) transition-colors last:border-0 hover:bg-foreground/2"
                 >
                   <Td>
                     <p className="font-medium text-foreground">{d.fullName || "—"}</p>
@@ -190,6 +253,15 @@ function AdminDevelopers() {
                   </Td>
                 </tr>
               ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                    {(developers ?? []).length === 0
+                      ? "No developer accounts yet."
+                      : "No developers match the current search and filters."}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </TableWrap>
         </>
@@ -234,7 +306,7 @@ function AddDeveloperDialog({
                 Send these to the developer yourself — this is the only time the password is shown.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 rounded-lg border border-[var(--rule-strong)] bg-muted/40 p-3 text-sm">
+            <div className="space-y-2 rounded-lg border border-(--rule-strong) bg-muted/40 p-3 text-sm">
               <p>
                 <span className="text-muted-foreground">Email: </span>
                 <span className="font-medium text-foreground">{result.email}</span>
@@ -277,7 +349,7 @@ function AddDeveloperDialog({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-full border border-[var(--rule-strong)] px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
+                className="flex-1 rounded-full border border-(--rule-strong) px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
               >
                 Cancel
               </button>
@@ -322,7 +394,7 @@ function Input({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
+      className="w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
     />
   );
 }

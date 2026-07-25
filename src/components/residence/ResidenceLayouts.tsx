@@ -128,7 +128,7 @@ export function ResidenceLayouts({ property }: { property: Property }) {
                     <div
                       key={String(f)}
                       className={`grid items-center gap-3 p-4 sm:p-5 ${
-                        rowIdx > 0 ? "border-t border-[var(--glass-border)]" : ""
+                        rowIdx > 0 ? "border-t border-(--glass-border)" : ""
                       }`}
                       style={{
                         gridTemplateColumns: `minmax(140px, 200px) repeat(${variants.length}, minmax(0, 1fr))`,

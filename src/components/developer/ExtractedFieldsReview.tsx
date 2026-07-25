@@ -55,7 +55,7 @@ export function ExtractedFieldsReview({
       </p>
 
       {response.missing_required.length > 0 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-[var(--rule-strong)] bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-(--rule-strong) bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             Not found in any file, fill these in yourself: {response.missing_required.join(", ")}
@@ -84,7 +84,7 @@ export function ExtractedFieldsReview({
                   ? "border-emerald-600/40 bg-emerald-600/5"
                   : needsAttention
                     ? "border-red-500/50"
-                    : "border-[var(--rule)]"
+                    : "border-(--rule)"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -102,7 +102,7 @@ export function ExtractedFieldsReview({
                   <input
                     value={values[f.formField] ?? ""}
                     onChange={(e) => setValues((v) => ({ ...v, [f.formField]: e.target.value }))}
-                    className="mt-2 w-full rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
+                    className="mt-2 w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
                   />
                   {(f.snippet || f.sourceFile) && (
                     <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -153,7 +153,7 @@ export function ExtractedFieldsReview({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-[var(--rule-strong)] px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
+          className="rounded-full border border-(--rule-strong) px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
         >
           Back
         </button>

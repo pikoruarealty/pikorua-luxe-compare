@@ -72,17 +72,17 @@ function AdminLogin() {
         <div className="mb-8 text-center">
           <p className="font-display text-2xl tracking-[0.2em] gold-text">PIKORUA</p>
           <div className="mt-3 flex items-center justify-center gap-2.5">
-            <span className="h-px w-6 bg-[var(--rule-strong)]" />
+            <span className="h-px w-6 bg-(--rule-strong)" />
             <p className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
               Admin Portal
             </p>
-            <span className="h-px w-6 bg-[var(--rule-strong)]" />
+            <span className="h-px w-6 bg-(--rule-strong)" />
           </div>
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="glass space-y-4 rounded-2xl p-6 shadow-[var(--shadow-lift)]"
+          className="glass space-y-4 rounded-2xl p-6 shadow-(--shadow-lift)"
         >
           <Field label="Email" htmlFor="admin-email">
             <Input

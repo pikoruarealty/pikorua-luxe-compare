@@ -129,7 +129,7 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                     <div
                       key={key}
                       className={`compare-cols grid items-start gap-3 p-4 sm:items-center sm:p-5 ${
-                        rowIdx > 0 ? "border-t border-[var(--glass-border)]" : ""
+                        rowIdx > 0 ? "border-t border-(--glass-border)" : ""
                       }`}
                       style={
                         {

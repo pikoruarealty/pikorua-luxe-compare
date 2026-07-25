@@ -232,10 +232,10 @@ export function PropertyForm({
               key={b.key}
               type="button"
               onClick={() => setActiveBucket(b.key)}
-              className={`rounded-full px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none ${
+              className={`rounded-full px-4 py-2 text-xs font-medium tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none ${
                 activeBucket === b.key
                   ? "bg-champagne text-lux-black"
-                  : "border border-[var(--rule-strong)] text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  : "border border-(--rule-strong) text-muted-foreground hover:border-foreground/30 hover:text-foreground"
               }`}
             >
               {b.label}
@@ -300,7 +300,7 @@ export function PropertyForm({
         />
       </Section>
 
-      <div className="sticky bottom-0 z-10 flex gap-3 border-t border-[var(--rule)] bg-background/90 py-4 backdrop-blur">
+      <div className="sticky bottom-0 z-10 flex gap-3 border-t border-(--rule) bg-background/90 py-4 backdrop-blur">
         <button
           type="submit"
           disabled={submitting}
@@ -356,7 +356,7 @@ function ConfigBucketEditor({
       )}
 
       {fields.map((field, index) => (
-        <div key={field.id} className="rounded-xl border border-[var(--rule)] bg-muted/20 p-4">
+        <div key={field.id} className="rounded-xl border border-(--rule) bg-muted/20 p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <span className="font-label text-[10px] font-semibold tracking-luxury text-champagne uppercase">
@@ -365,7 +365,7 @@ function ConfigBucketEditor({
               <input
                 {...register(`configs.${bucketKey}.${index}.type` as const)}
                 placeholder="Label (e.g. Type A)"
-                className="min-w-0 rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-1.5 text-xs text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
+                className="min-w-0 rounded-lg border border-(--rule-strong) bg-background px-3 py-1.5 text-xs text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
               />
             </div>
             <button
@@ -394,7 +394,7 @@ function ConfigBucketEditor({
       <button
         type="button"
         onClick={() => append(emptyConfigDetail())}
-        className="inline-flex items-center gap-2 rounded-full border border-[var(--rule-strong)] px-4 py-2 text-xs tracking-[0.12em] text-muted-foreground uppercase transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
+        className="inline-flex items-center gap-2 rounded-full border border-(--rule-strong) px-4 py-2 text-xs tracking-[0.12em] text-muted-foreground uppercase transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
       >
         <Plus className="h-4 w-4" /> Add {label} variant
       </button>
@@ -454,12 +454,12 @@ function StringListEditor({
             }
           }}
           placeholder={placeholder}
-          className="w-full max-w-sm rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
+          className="w-full max-w-sm rounded-lg border border-(--rule-strong) bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
         />
         <button
           type="button"
           onClick={add}
-          className="rounded-lg border border-[var(--rule-strong)] px-4 py-2.5 text-xs tracking-[0.12em] text-muted-foreground uppercase transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
+          className="rounded-lg border border-(--rule-strong) px-4 py-2.5 text-xs tracking-[0.12em] text-muted-foreground uppercase transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
         >
           Add
         </button>
@@ -478,10 +478,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-[var(--rule)] bg-card p-5 shadow-[var(--shadow-lift)] sm:p-6">
+    <section className="rounded-2xl border border-(--rule) bg-card p-5 shadow-(--shadow-lift) sm:p-6">
       <div className="mb-5">
         <div className="flex items-center gap-2.5">
-          <span className="h-px w-6 bg-[var(--rule-strong)]" />
+          <span className="h-px w-6 bg-(--rule-strong)" />
           <h2 className="font-label text-[11px] font-semibold tracking-luxury text-champagne uppercase">
             {title}
           </h2>

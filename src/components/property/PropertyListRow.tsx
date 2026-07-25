@@ -67,7 +67,7 @@ export function PropertyListRow({ property, index = 0 }: Props) {
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.45, delay: Math.min(index, 6) * 0.04, ease: [0.22, 1, 0.36, 1] }}
         animate={{ opacity: hoverOpen ? 0.35 : 1 }}
-        className="group grid grid-cols-1 gap-5 overflow-hidden rounded-2xl bg-card p-4 shadow-[var(--shadow-glass)] sm:grid-cols-[300px_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:p-5"
+        className="group grid grid-cols-1 gap-5 overflow-hidden rounded-2xl bg-card p-4 shadow-(--shadow-glass) sm:grid-cols-[300px_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:p-5"
         style={{
           border: "1px solid var(--glass-border)",
           contentVisibility: "auto",

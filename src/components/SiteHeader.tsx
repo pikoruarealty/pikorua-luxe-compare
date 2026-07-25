@@ -82,7 +82,7 @@ export function SiteHeader() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-40 border-b border-[var(--glass-border)] backdrop-blur-md [transform:translateZ(0)] transition-shadow duration-300 ${
+      className={`fixed inset-x-0 top-0 z-40 border-b border-(--glass-border) backdrop-blur-md [transform:translateZ(0)] transition-shadow duration-300 ${
         scrolled ? "bg-lux-black/90 shadow-[0_12px_34px_-20px_rgba(0,0,0,0.5)]" : "bg-lux-black/80"
       }`}
     >
@@ -235,7 +235,7 @@ export function SiteHeader() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-[var(--glass-border)] bg-lux-black/95 backdrop-blur-xl sm:hidden"
+            className="overflow-hidden border-t border-(--glass-border) bg-lux-black/95 backdrop-blur-xl sm:hidden"
           >
             <div className="flex flex-col gap-1 px-4 py-4">
               {NAV_LINKS.map((l) => (

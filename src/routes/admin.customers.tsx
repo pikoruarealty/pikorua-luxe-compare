@@ -1,16 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, X } from "lucide-react";
+import { Download, Search, Users, X } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { PageHeader } from "@/components/portal/PageHeader";
-import { SearchInput } from "@/components/portal/SearchInput";
 import { EmptyState } from "@/components/portal/EmptyState";
 import { Skeleton } from "@/components/portal/Skeleton";
 import { TableWrap, Th, Td } from "@/components/portal/Table";
-import { getCustomers, getCustomerDetail } from "@/lib/customers.functions";
+import { FilterSelect } from "@/components/admin/FilterSelect";
+import { getCustomers, getCustomerDetail, type CustomerSummary } from "@/lib/customers.functions";
 import type { ActivityEvent } from "@/lib/activity.functions";
 import type { QuizAnswersDTO } from "@/lib/profile.functions";
+import { toCsv, downloadCsv } from "@/lib/csv-export";
+import { parseBudget } from "@/lib/preference-filter";
 
 export const Route = createFileRoute("/admin/customers")({
   component: AdminCustomers,
@@ -62,34 +63,94 @@ function AdminCustomers() {
     retry: false,
   });
   const [query, setQuery] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
+  const [budgetFilter, setBudgetFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const cities = useMemo(
+    () =>
+      [
+        ...new Set((customers ?? []).map((c) => c.quizAnswers?.city).filter(Boolean)),
+      ].sort() as string[],
+    [customers],
+  );
+
+  // Sorted by actual Cr value (lowest first), not alphabetically — "₹ 11 – 15 Cr"
+  // would otherwise sort before "₹ 6 – 10 Cr".
+  const budgetRanges = useMemo(() => {
+    const set = new Set((customers ?? []).map((c) => c.quizAnswers?.budgetRange).filter(Boolean));
+    return [...set].sort(
+      (a, b) => (parseBudget(a)?.[0] ?? Infinity) - (parseBudget(b)?.[0] ?? Infinity),
+    ) as string[];
+  }, [customers]);
+
   const rows = useMemo(() => {
-    const list = customers ?? [];
     const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((c) =>
-      [c.name, c.phone, c.email, c.profession, c.businessName]
+    return (customers ?? []).filter((c) => {
+      if (cityFilter !== "all" && c.quizAnswers?.city !== cityFilter) return false;
+      if (budgetFilter !== "all" && c.quizAnswers?.budgetRange !== budgetFilter) return false;
+      if (!q) return true;
+      return [c.name, c.phone, c.email, c.profession, c.businessName]
         .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [customers, query]);
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [customers, query, cityFilter, budgetFilter]);
+
+  const exportCsv = () => {
+    const csv = toCsv<CustomerSummary>(rows, [
+      { label: "Name", value: (c) => c.name },
+      { label: "Phone", value: (c) => c.phone },
+      { label: "Email", value: (c) => c.email },
+      { label: "Profession", value: (c) => c.profession },
+      { label: "Business", value: (c) => c.businessName },
+      { label: "State", value: (c) => c.quizAnswers?.state },
+      { label: "City", value: (c) => c.quizAnswers?.city },
+      { label: "Looking for", value: (c) => c.quizAnswers?.propertyType?.join(", ") },
+      { label: "Configuration", value: (c) => c.quizAnswers?.bhk?.join(", ") },
+      { label: "Budget", value: (c) => c.quizAnswers?.budgetSub || c.quizAnswers?.budgetRange },
+      { label: "Interactions", value: (c) => c.activityCount },
+      { label: "Joined", value: (c) => fmtDate(c.createdAt) },
+    ]);
+    downloadCsv(`pikorua-customers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
 
   return (
-    <AdminLayout requireOwner>
-      <PageHeader
-        eyebrow="Audience"
-        title="Customers"
-        description="Everyone who has signed up on the website, with their requirements and activity."
-      />
-
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <SearchInput value={query} onChange={setQuery} placeholder="Search name, phone, email…" />
-        {!isPending && !error && (
+    <AdminLayout title="Customers" requireOwner>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, phone, email…"
+              className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne"
+            />
+          </div>
+          <FilterSelect
+            value={cityFilter}
+            onChange={setCityFilter}
+            label="All cities"
+            options={cities}
+          />
+          <FilterSelect
+            value={budgetFilter}
+            onChange={setBudgetFilter}
+            label="All budgets"
+            options={budgetRanges}
+          />
           <p className="text-xs text-muted-foreground">
             {rows.length} of {customers?.length ?? 0} customers
           </p>
-        )}
+        </div>
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={rows.length === 0}
+          className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-foreground uppercase transition-colors hover:border-foreground/30 disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" /> Export
+        </button>
       </div>
 
       {isPending && (
@@ -124,7 +185,7 @@ function AdminCustomers() {
                 key={c.id}
                 type="button"
                 onClick={() => setOpenId(c.id)}
-                className="w-full rounded-2xl border border-[var(--rule)] bg-card p-4 text-left shadow-[var(--shadow-lift)] transition-colors hover:bg-foreground/2 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
+                className="w-full rounded-2xl border border-(--rule) bg-card p-4 text-left shadow-(--shadow-lift) transition-colors hover:bg-foreground/2 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -135,7 +196,7 @@ function AdminCustomers() {
                   </div>
                   <span className={countPill}>{c.activityCount}</span>
                 </div>
-                <div className="mt-3 space-y-1 border-t border-[var(--rule)] pt-3 text-xs text-muted-foreground">
+                <div className="mt-3 space-y-1 border-t border-(--rule) pt-3 text-xs text-muted-foreground">
                   <p className="truncate">
                     {c.phone}
                     {c.email ? ` · ${c.email}` : ""}
@@ -149,7 +210,7 @@ function AdminCustomers() {
           {/* Desktop: table */}
           <TableWrap className="hidden lg:block" minWidth="min-w-[980px]">
             <thead className="bg-muted/40">
-              <tr className="border-b border-[var(--rule)]">
+              <tr className="border-b border-(--rule)">
                 <Th>Customer</Th>
                 <Th>Contact</Th>
                 <Th>Profession</Th>
@@ -163,7 +224,7 @@ function AdminCustomers() {
                 <tr
                   key={c.id}
                   onClick={() => setOpenId(c.id)}
-                  className="cursor-pointer border-b border-[var(--rule)] transition-colors last:border-0 hover:bg-foreground/2"
+                  className="cursor-pointer border-b border-(--rule) transition-colors last:border-0 hover:bg-foreground/2"
                 >
                   <Td>
                     <p className="font-medium text-foreground">{c.name || "—"}</p>
@@ -209,7 +270,7 @@ function CustomerDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
       <aside
-        className="glass-strong h-full w-full max-w-lg overflow-y-auto p-6 shadow-[var(--shadow-lift)]"
+        className="glass-strong h-full w-full max-w-lg overflow-y-auto p-6 shadow-(--shadow-lift)"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6 flex items-start justify-between gap-3">
@@ -282,7 +343,7 @@ function CustomerDrawer({ id, onClose }: { id: string; onClose: () => void }) {
                           <span className="text-champagne"> {a.propertyName}</span>
                         )}
                       </span>
-                      <span className="flex-shrink-0 text-xs text-muted-foreground">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         {fmtDate(a.createdAt)}
                       </span>
                     </li>
@@ -310,7 +371,7 @@ function DrawerSection({ title, children }: { title: string; children: React.Rea
 
 function Detail({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-[var(--rule)] pb-2 last:border-0">
+    <div className="flex justify-between gap-4 border-b border-(--rule) pb-2 last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-right text-sm text-foreground">{value || "—"}</span>
     </div>

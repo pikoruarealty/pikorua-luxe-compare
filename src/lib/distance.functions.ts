@@ -67,6 +67,29 @@ function haversineKm(a: GeoPoint, b: GeoPoint): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+/** Server-only: address autocomplete as the visitor types. Only returns the
+ *  place names Nominatim already publishes — never coordinates — so this
+ *  stays consistent with the "no map or exact location shown" promise. */
+export const suggestAddresses = createServerFn({ method: "GET" })
+  .inputValidator((data: { query: string }) => {
+    if (!data || typeof data.query !== "string") throw new Error("Missing query");
+    return { query: data.query.trim().slice(0, 200) };
+  })
+  .handler(async ({ data }): Promise<{ suggestions: string[] }> => {
+    if (data.query.length < 3) return { suggestions: [] };
+    const address = normalizeAddress(data.query);
+    const url = `${NOMINATIM_URL}?format=json&limit=5&countrycodes=in&q=${encodeURIComponent(address)}`;
+    try {
+      const res = await throttledFetch(url);
+      if (!res.ok) return { suggestions: [] };
+      const results = (await res.json()) as { display_name: string }[];
+      // De-dupe: Nominatim sometimes returns near-identical rows for the same place.
+      return { suggestions: [...new Set(results.map((r) => r.display_name))] };
+    } catch {
+      return { suggestions: [] };
+    }
+  });
+
 interface DistanceInput {
   address: string;
   properties: { id: string; address: string }[];
@@ -83,7 +106,7 @@ export type DistanceResult =
  *  reach the client — only the resulting numbers — so no map or exact
  *  location is ever exposed. */
 export const calculatePropertyDistances = createServerFn({ method: "POST" })
-  .validator((data: DistanceInput) => {
+  .inputValidator((data: DistanceInput) => {
     if (!data || typeof data.address !== "string" || data.address.trim().length < 3) {
       throw new Error("Enter a more complete address");
     }

@@ -25,7 +25,7 @@ function ThemeToggle({ className }: { className?: string }) {
       aria-label="Toggle theme"
       title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
       className={cn(
-        "grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--rule-strong)] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none",
+        "grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-(--rule-strong) text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none",
         className,
       )}
     >
@@ -78,7 +78,7 @@ export function PortalShell({
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="border-b border-[var(--rule)] px-6 py-5">
+      <div className="border-b border-(--rule) px-6 py-5">
         <p className="font-display text-lg tracking-[0.16em] gold-text">PIKORUA</p>
         <p className="mt-1 font-label text-[10px] tracking-luxury text-muted-foreground">
           {portalLabel}
@@ -109,7 +109,7 @@ export function PortalShell({
           );
         })}
       </nav>
-      <div className="border-t border-[var(--rule)] px-3 py-4">
+      <div className="border-t border-(--rule) px-3 py-4">
         <div className="flex items-center justify-between gap-2 px-3 pb-3">
           <div className="min-w-0">
             <p className="truncate text-xs text-foreground">{userLabel}</p>
@@ -134,7 +134,7 @@ export function PortalShell({
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop sidebar */}
-      <aside className="glass sticky top-0 hidden h-screen w-64 flex-shrink-0 lg:flex lg:flex-col">
+      <aside className="glass sticky top-0 hidden h-screen w-64 shrink-0 lg:flex lg:flex-col">
         {sidebar}
       </aside>
 
@@ -183,7 +183,7 @@ export function PortalShell({
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
-              className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--rule-strong)] text-foreground transition-colors hover:bg-foreground/5 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-(--rule-strong) text-foreground transition-colors hover:bg-foreground/5 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -192,7 +192,7 @@ export function PortalShell({
 
         <main className="min-w-0 flex-1 overflow-x-hidden">
           {title && (
-            <header className="border-b border-[var(--rule)] px-5 py-6 sm:px-8">
+            <header className="border-b border-(--rule) px-5 py-6 sm:px-8">
               <h1 className="font-display text-2xl text-foreground">{title}</h1>
             </header>
           )}

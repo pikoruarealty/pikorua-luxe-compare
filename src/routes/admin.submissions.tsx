@@ -39,7 +39,7 @@ const dateFmt = new Intl.DateTimeFormat("en-IN", {
 });
 
 const reviewBtnClass =
-  "rounded-full border border-[var(--rule-strong)] px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none";
+  "rounded-full border border-(--rule-strong) px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "all";
 const FILTERS: StatusFilter[] = ["pending", "approved", "rejected", "all"];
@@ -72,10 +72,10 @@ function AdminSubmissions() {
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              className={`rounded-full px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none ${
+              className={`rounded-full px-4 py-2 text-xs font-medium tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none ${
                 active
                   ? "bg-champagne text-lux-black"
-                  : "border border-[var(--rule-strong)] text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  : "border border-(--rule-strong) text-muted-foreground hover:border-foreground/30 hover:text-foreground"
               }`}
             >
               {f}
@@ -117,7 +117,7 @@ function AdminSubmissions() {
             {rows.map((s) => (
               <div
                 key={s.id}
-                className="rounded-2xl border border-[var(--rule)] bg-card p-4 shadow-[var(--shadow-lift)]"
+                className="rounded-2xl border border-(--rule) bg-card p-4 shadow-(--shadow-lift)"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -128,7 +128,7 @@ function AdminSubmissions() {
                   </div>
                   <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--rule)] pt-3">
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-(--rule) pt-3">
                   <p className="text-xs text-muted-foreground">
                     {dateFmt.format(new Date(s.createdAt))}
                   </p>
@@ -143,7 +143,7 @@ function AdminSubmissions() {
           {/* Desktop: table */}
           <TableWrap className="hidden lg:block">
             <thead className="bg-muted/40">
-              <tr className="border-b border-[var(--rule)]">
+              <tr className="border-b border-(--rule)">
                 <Th>Property</Th>
                 <Th>Action</Th>
                 <Th>Developer</Th>
@@ -156,7 +156,7 @@ function AdminSubmissions() {
               {rows.map((s) => (
                 <tr
                   key={s.id}
-                  className="border-b border-[var(--rule)] transition-colors last:border-0 hover:bg-foreground/2"
+                  className="border-b border-(--rule) transition-colors last:border-0 hover:bg-foreground/2"
                 >
                   <Td className="font-medium text-foreground">{s.propertyName}</Td>
                   <Td className="text-muted-foreground capitalize">{s.action}</Td>
@@ -227,7 +227,7 @@ function SubmissionDetail({ id, onClose }: { id: string; onClose: () => void }) 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b border-[var(--rule)] px-6 py-4 text-left">
+        <DialogHeader className="border-b border-(--rule) px-6 py-4 text-left">
           <DialogTitle className="font-display text-lg font-normal">Review submission</DialogTitle>
           <DialogDescription className="sr-only">
             Read-only view of a developer's property submission with approve and reject actions.
@@ -246,20 +246,20 @@ function SubmissionDetail({ id, onClose }: { id: string; onClose: () => void }) 
         </div>
 
         {data?.status === "pending" && (
-          <div className="border-t border-[var(--rule)] px-6 py-4">
+          <div className="border-t border-(--rule) px-6 py-4">
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Note for the developer if rejecting (optional)"
               rows={2}
-              className="mb-3 w-full rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
+              className="mb-3 w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => rejectMutation.mutate()}
                 disabled={busy}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-[var(--rule-strong)] px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-red-500/50 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none disabled:opacity-60"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-(--rule-strong) px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-red-500/50 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none disabled:opacity-60"
               >
                 <X className="h-3.5 w-3.5" /> Reject
               </button>
@@ -329,7 +329,7 @@ function PayloadPreview({
             </p>
             <div className="space-y-2">
               {variants.map((v, i) => (
-                <div key={i} className="rounded-lg border border-[var(--rule)] px-3 py-2 text-sm">
+                <div key={i} className="rounded-lg border border-(--rule) px-3 py-2 text-sm">
                   {v.type && <span className="mr-2 font-medium text-foreground">{v.type}</span>}
                   <span className="text-muted-foreground">
                     {[v.area && `${v.area} sq ft`, v.price].filter(Boolean).join(" · ")}
@@ -361,7 +361,7 @@ function Section({ title, rows }: { title: string; rows: [string, string | undef
       <p className="mb-2 font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
         {title}
       </p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-[var(--rule)] bg-muted/30 p-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-(--rule) bg-muted/30 p-4">
         {filled.map(([label, value]) => (
           <div key={label}>
             <p className="text-[11px] text-muted-foreground">{label}</p>

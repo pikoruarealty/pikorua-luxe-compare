@@ -314,7 +314,7 @@ function ResidenceContent({ property }: { property: Property }) {
 
           {/* Enquiry card */}
           <aside className="lg:sticky lg:top-28 lg:self-start">
-            <div className="rounded-[28px] border border-border bg-card p-7 shadow-[var(--shadow-glass)]">
+            <div className="rounded-[28px] border border-border bg-card p-7 shadow-(--shadow-glass)">
               <p className="text-[10px] tracking-luxury text-champagne">Private enquiry</p>
               <h3 className="mt-2 font-display text-[24px] leading-tight text-ivory">
                 Speak with our advisory desk

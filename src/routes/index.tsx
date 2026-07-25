@@ -435,7 +435,7 @@ function Index() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
+                <span className="h-px w-8 bg-(--rule-strong) sm:w-12" />
                 <p className="font-label text-[10px] font-semibold tracking-luxury text-champagne sm:text-[11px]">
                   The Suite
                 </p>
@@ -476,10 +476,10 @@ function Index() {
         className="relative scroll-mt-28 overflow-hidden py-16 sm:py-24"
       >
         <div className="container-lux relative z-10">
-          <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-b border-[var(--rule)] pb-6">
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-b border-(--rule) pb-6">
             <div>
               <div className="flex items-center gap-3">
-                <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
+                <span className="h-px w-8 bg-(--rule-strong) sm:w-12" />
                 <p className="font-label text-[10px] font-semibold tracking-luxury text-champagne sm:text-[11px]">
                   The Collection
                 </p>

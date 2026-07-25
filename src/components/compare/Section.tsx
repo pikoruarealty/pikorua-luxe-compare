@@ -32,7 +32,7 @@ export function Section({ id, eyebrow, title, description, children }: SectionPr
           {title}
         </h2>
         {description && (
-          <p className="mt-5 max-w-[var(--measure)] text-[15px] font-medium leading-relaxed text-muted-foreground sm:mt-6 sm:text-[18px]">
+          <p className="mt-5 max-w-(--measure) text-[15px] font-medium leading-relaxed text-muted-foreground sm:mt-6 sm:text-[18px]">
             {description}
           </p>
         )}

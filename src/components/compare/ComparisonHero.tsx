@@ -31,7 +31,7 @@ export function ComparisonHero({ properties }: ComparisonHeroProps) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--card)]/60 px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.24em] text-champagne backdrop-blur-md sm:px-4 sm:text-[10px] sm:tracking-[0.32em]"
+          className="inline-flex items-center gap-2 rounded-full border border-(--glass-border) bg-(--card)/60 px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.24em] text-champagne backdrop-blur-md sm:px-4 sm:text-[10px] sm:tracking-[0.32em]"
         >
           <span className="h-1 w-1 rounded-full bg-champagne" />
           The Comparison Suite

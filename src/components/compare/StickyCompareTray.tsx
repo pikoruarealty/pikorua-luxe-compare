@@ -104,7 +104,7 @@ export function StickyCompareTray({ watchRef, hideRef, onCompare, onAdd }: Props
                 className={[
                   "whitespace-nowrap rounded-full border px-5 py-2 text-[11px] uppercase tracking-luxury transition",
                   ready
-                    ? "border-[var(--brand)] text-[var(--brand)] hover:bg-[color-mix(in_oklab,var(--brand)_12%,transparent)]"
+                    ? "border-(--brand) text-(--brand) hover:bg-[color-mix(in_oklab,var(--brand)_12%,transparent)]"
                     : "cursor-not-allowed border-[color-mix(in_oklab,var(--brand)_35%,transparent)] text-[color-mix(in_oklab,var(--brand)_45%,transparent)] opacity-50",
                 ].join(" ")}
               >
@@ -191,7 +191,7 @@ function SlotPill({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`${base} border-dashed border-[color-mix(in_oklab,var(--brand)_45%,transparent)] text-ivory/60 hover:text-ivory hover:border-[var(--brand)] hover:bg-[color-mix(in_oklab,var(--brand)_8%,transparent)] transition cursor-pointer text-left`}
+          className={`${base} border-dashed border-[color-mix(in_oklab,var(--brand)_45%,transparent)] text-ivory/60 hover:text-ivory hover:border-(--brand) hover:bg-[color-mix(in_oklab,var(--brand)_8%,transparent)] transition cursor-pointer text-left`}
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-label="Add a property to comparison"
@@ -211,7 +211,7 @@ function SlotPill({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 rounded-2xl border border-[color-mix(in_oklab,var(--brand)_35%,transparent)] bg-[var(--glass-bg)] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+              className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 rounded-2xl border border-[color-mix(in_oklab,var(--brand)_35%,transparent)] bg-(--glass-bg) shadow-[0_20px_60px_-20px_rgba(0,0,0,0.55)] backdrop-blur-xl"
               role="listbox"
             >
               <div className="border-b border-[color-mix(in_oklab,var(--brand)_20%,transparent)] p-2">
@@ -248,7 +248,7 @@ function SlotPill({
                       <img
                         src={p.image}
                         alt=""
-                        className="h-9 w-9 flex-shrink-0 rounded-full object-cover"
+                        className="h-9 w-9 shrink-0 rounded-full object-cover"
                       />
                       <div className="min-w-0 flex-1">
                         <p className="descender-safe truncate font-display text-[14px] leading-tight text-foreground">
@@ -277,9 +277,9 @@ function SlotPill({
 
   return (
     <div
-      className={`${base} group border-[color-mix(in_oklab,var(--brand)_60%,transparent)] bg-soft-black/60 text-ivory transition hover:border-[var(--brand)]`}
+      className={`${base} group border-[color-mix(in_oklab,var(--brand)_60%,transparent)] bg-soft-black/60 text-ivory transition hover:border-(--brand)`}
     >
-      <img src={slot.image} alt="" className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
+      <img src={slot.image} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
       <div className="min-w-0 flex-1">
         <p className="descender-safe truncate font-display text-[15px] leading-tight">
           {slot.name}
