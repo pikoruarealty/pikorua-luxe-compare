@@ -8,6 +8,7 @@ import {
   ChevronDown,
   GitCompareArrows,
   LayoutList,
+  RotateCcw,
   Search,
   SlidersHorizontal,
   X,
@@ -554,71 +555,87 @@ function Index() {
             </div>
           )}
 
-          <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
-            {/* Desktop Sticky Sidebar Filter */}
-            <div className="hidden lg:sticky lg:top-[80px] lg:z-30 lg:block">
-              <PreferencePanel />
+          <div className="mt-10 flex flex-col gap-6">
+            {/* Desktop & Mobile Refine Collection Trigger Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-2xl border border-[var(--rule)] bg-card p-4 sm:p-5 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl border border-champagne/30 bg-champagne/10 text-champagne">
+                  <SlidersHorizontal className="h-4 w-4 stroke-[2.2]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display text-base font-bold text-foreground">
+                      Refine Collection
+                    </h3>
+                    {hydrated && activeFilterCount > 0 && (
+                      <span className="rounded-full border border-champagne/30 bg-champagne/15 px-2.5 py-0.5 text-[10px] font-extrabold text-champagne">
+                        {activeFilterCount} Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Filter by architectural style, BHK configuration, or budget spectrum
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                {hydrated && activeFilterCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] bg-background/60 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition hover:border-champagne/40 hover:text-champagne"
+                  >
+                    <RotateCcw className="h-3 w-3 text-champagne" /> Clear all
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-champagne via-muted-gold to-champagne px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-lux-black shadow-md shadow-champagne/20 transition hover:opacity-95 active:scale-95"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span>Filter Options</span>
+                </button>
+              </div>
             </div>
 
-            {/* Mobile Filter Trigger Bar */}
-            <div className="lg:hidden">
-              <button
-                type="button"
-                onClick={() => setFiltersOpen(true)}
-                className="flex w-full items-center justify-between rounded-2xl border border-[var(--rule)] bg-card px-5 py-3.5 text-left shadow-xs transition hover:border-champagne/40"
-              >
-                <span className="inline-flex items-center gap-2.5 text-sm font-semibold text-foreground">
-                  <SlidersHorizontal className="h-4 w-4 text-champagne" />
-                  Filter Collection
-                  {hydrated && activeFilterCount > 0 && (
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne px-1.5 text-xs font-bold text-lux-black">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </span>
-                <span className="text-xs font-semibold uppercase tracking-wider text-champagne">
-                  Refine
-                </span>
-              </button>
-            </div>
-
-            {/* Mobile Filter Full-Screen Modal — Portaled to Document Body */}
+            {/* Slide-Over Preference Drawer — Portaled to Document Body for Desktop & Mobile */}
             {hydrated &&
               createPortal(
                 <AnimatePresence>
                   {filtersOpen && (
-                    <div className="lg:hidden">
+                    <div>
+                      {/* Dark Backdrop Overlay */}
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setFiltersOpen(false)}
-                        className="fixed inset-0 z-[99998] bg-black/85 backdrop-blur-md"
+                        className="fixed inset-0 z-[99998] bg-black/80 backdrop-blur-sm"
                       />
+
+                      {/* Fixed Slide-Over Drawer Container (Left Side) */}
                       <motion.div
-                        initial={{ y: "100%" }}
-                        animate={{ y: 0 }}
-                        exit={{ y: "100%" }}
-                        transition={{ type: "spring", stiffness: 340, damping: 30 }}
-                        className="fixed inset-0 z-[99999] flex flex-col overflow-hidden bg-background text-foreground"
+                        initial={{ x: "-100%" }}
+                        animate={{ x: 0 }}
+                        exit={{ x: "-100%" }}
+                        transition={{ type: "spring", stiffness: 340, damping: 32 }}
+                        className="fixed inset-y-0 left-0 z-[99999] flex w-full max-w-full sm:max-w-md flex-col overflow-hidden border-r border-[var(--rule)] bg-card text-foreground shadow-2xl"
                       >
                         {/* Fixed Top Bar — Luxury Glass & Gold Accents */}
                         <div className="flex shrink-0 items-center justify-between border-b border-[var(--rule)] bg-card/95 px-5 py-4 pt-4 sm:pt-6 backdrop-blur-md">
-                          <button
-                            type="button"
-                            onClick={() => setFiltersOpen(false)}
-                            className="inline-flex items-center gap-2 rounded-full border border-champagne/40 bg-champagne/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-champagne transition hover:bg-champagne hover:text-lux-black active:scale-95"
-                          >
-                            <ArrowLeft className="h-4 w-4 stroke-[2.5]" /> Back
-                          </button>
-
-                          <div className="text-center">
-                            <p className="font-label tracking-luxury text-[10px] font-bold uppercase text-champagne">
-                              Collection Filter
-                            </p>
-                            <h3 className="font-display text-base font-bold text-foreground">
-                              Refine Preferences
-                            </h3>
+                          <div className="flex items-center gap-2.5">
+                            <SlidersHorizontal className="h-4 w-4 text-champagne" />
+                            <div>
+                              <p className="font-label tracking-luxury text-[10px] font-bold uppercase text-champagne">
+                                Collection Filter
+                              </p>
+                              <h3 className="font-display text-base font-bold text-foreground">
+                                Refine Preferences
+                              </h3>
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-3">
@@ -642,8 +659,8 @@ function Index() {
                           </div>
                         </div>
 
-                        {/* Scrollable Preference Options Body */}
-                        <div className="flex-1 overflow-y-auto bg-card/40 p-6 [webkit-overflow-scrolling:touch]">
+                        {/* Preference Options Body — no-scroll */}
+                        <div className="flex-1 overflow-hidden bg-card/40 px-6 py-6">
                           <PreferencePanel hideHeader={true} />
                         </div>
 
@@ -652,10 +669,11 @@ function Index() {
                           <button
                             type="button"
                             onClick={() => setFiltersOpen(false)}
-                            className="tracking-luxury inline-flex h-13 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-champagne via-muted-gold to-champagne text-xs font-bold uppercase tracking-wider text-lux-black shadow-xl shadow-champagne/20 transition duration-200 hover:opacity-95 active:scale-[0.99]"
+                            className="tracking-luxury inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-champagne via-muted-gold to-champagne text-xs font-bold uppercase tracking-wider text-lux-black shadow-xl shadow-champagne/20 transition duration-200 hover:opacity-95 active:scale-[0.99]"
                           >
                             <span>
-                              Show {visibleCount} {visibleCount === 1 ? "Residence" : "Residences"}
+                              Apply Filters ({visibleCount}{" "}
+                              {visibleCount === 1 ? "Residence" : "Residences"})
                             </span>
                             <ArrowUpRight className="h-4 w-4 stroke-[3]" />
                           </button>

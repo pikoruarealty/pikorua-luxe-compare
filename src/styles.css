@@ -770,46 +770,9 @@ body,
   }
 }
 
-/* ============ Shine sweep on media hover ============ */
+/* ============ Shine sweep on media hover (Disabled for clean photo hover) ============ */
 .shine {
-  position: absolute;
-  top: -10%;
-  bottom: -10%;
-  left: 0;
-  width: 45%;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.32) 50%,
-    transparent 100%
-  );
-  transform: translateX(-180%) skewX(-14deg);
-}
-.group:hover > .media-frame .shine,
-.media-frame:hover .shine,
-.shine-host:hover .shine {
-  animation: shine-sweep 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes shine-sweep {
-  0% {
-    opacity: 0;
-    transform: translateX(-180%) skewX(-14deg);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(360%) skewX(-14deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .shine {
-    display: none;
-  }
+  display: none !important;
 }
 
 /* ============ Film grain texture ============ */

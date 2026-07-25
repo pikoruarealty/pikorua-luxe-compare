@@ -201,48 +201,19 @@ function ScrollCounter({
   total: number;
   progress: number;
 }) {
-  const r = 15;
-  const circ = 2 * Math.PI * r;
-  const strokeDashoffset = circ * (1 - Math.max(0, Math.min(1, progress)));
-
   return (
     <div
-      className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--rule)] bg-card px-3 py-1.5"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--rule-strong)] bg-card/90 px-3.5 py-1.5 shadow-2xs"
       aria-label={`Residences list position ${position} of ${total}`}
     >
-      <div className="relative grid h-7 w-7 place-items-center">
-        <svg className="h-7 w-7 -rotate-90" viewBox="0 0 36 36">
-          <circle
-            cx="18"
-            cy="18"
-            r={r}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            className="text-muted/40"
-          />
-          <circle
-            cx="18"
-            cy="18"
-            r={r}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeDasharray={circ}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className="text-champagne transition-[stroke-dashoffset] duration-150"
-          />
-        </svg>
-        <span
-          className="absolute font-display font-medium text-foreground"
-          style={{ fontSize: "var(--step--2)" }}
-        >
-          {position}
-        </span>
-      </div>
-      <span className="font-medium text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
-        of {total}
+      <span className="font-display text-sm font-bold text-champagne tabular-nums leading-none">
+        {position}
+      </span>
+      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground leading-none">
+        of
+      </span>
+      <span className="font-display text-sm font-bold text-foreground tabular-nums leading-none">
+        {total}
       </span>
     </div>
   );

@@ -144,13 +144,10 @@ export function SuggestedComparisons() {
   const allProperties = useProperties();
   const hydrated = useHydrated();
   const { selected: rawSelected } = useCompareStore();
-  // A pair suggesting a property already in the comparison suite above is
-  // redundant — leave it out until that property is removed from the suite.
-  const selected = hydrated ? rawSelected : [];
-  const properties = useMemo(
-    () => (selected.length ? allProperties.filter((p) => !selected.includes(p.id)) : allProperties),
-    [allProperties, selected],
-  );
+  const properties = useMemo(() => {
+    const selected = hydrated ? rawSelected : [];
+    return selected.length ? allProperties.filter((p) => !selected.includes(p.id)) : allProperties;
+  }, [allProperties, rawSelected, hydrated]);
   const pairs = useMemo(
     () => buildPairs(properties, quizAnswers ?? null),
     [properties, quizAnswers],

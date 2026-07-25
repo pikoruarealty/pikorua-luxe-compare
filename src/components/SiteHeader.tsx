@@ -160,8 +160,17 @@ export function SiteHeader() {
             Saved
             {hydrated && favCount > 0 && (
               <span
-                className="grid h-4 min-w-4 place-items-center rounded-full bg-champagne px-1 font-medium text-lux-black"
-                style={{ fontSize: "var(--step--2)" }}
+                className="rounded-full bg-champagne font-bold text-lux-black tabular-nums"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "16px",
+                  height: "16px",
+                  fontSize: "9px",
+                  lineHeight: 0,
+                  letterSpacing: 0,
+                }}
               >
                 {favCount}
               </span>
@@ -225,8 +234,17 @@ export function SiteHeader() {
             <Heart data-saved-target className="h-4 w-4" />
             {hydrated && favCount > 0 && (
               <span
-                className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-champagne px-1 font-medium text-lux-black"
-                style={{ fontSize: "var(--step--2)" }}
+                className="absolute -right-0.5 -top-0.5 rounded-full bg-champagne font-bold text-lux-black tabular-nums"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "16px",
+                  height: "16px",
+                  fontSize: "9px",
+                  lineHeight: 0,
+                  letterSpacing: 0,
+                }}
               >
                 {favCount}
               </span>
