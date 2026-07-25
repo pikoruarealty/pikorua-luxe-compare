@@ -1,11 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Power } from "lucide-react";
+import { Download, Plus, Power, Search } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { FilterSelect } from "@/components/admin/FilterSelect";
 import { developersQueryOptions, DEVELOPERS_KEY } from "@/lib/developers.queries";
-import { createDeveloper, setDeveloperActive } from "@/lib/admin-developers.functions";
+import {
+  createDeveloper,
+  setDeveloperActive,
+  type DeveloperAccount,
+} from "@/lib/admin-developers.functions";
+import { toCsv, downloadCsv } from "@/lib/csv-export";
 
 export const Route = createFileRoute("/admin/developers")({
   component: AdminDevelopers,
@@ -29,8 +35,31 @@ function AdminDevelopers() {
   const { data: developers, isPending, error } = useQuery(developersQueryOptions());
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: DEVELOPERS_KEY });
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (developers ?? []).filter((d) => {
+      if (statusFilter !== "all" && (statusFilter === "active") !== d.isActive) return false;
+      if (!q) return true;
+      return [d.fullName, d.email].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [developers, query, statusFilter]);
+
+  const exportCsv = () => {
+    const csv = toCsv<DeveloperAccount>(rows, [
+      { label: "Name", value: (d) => d.fullName },
+      { label: "Email", value: (d) => d.email },
+      { label: "Added", value: (d) => dateFmt.format(new Date(d.createdAt)) },
+      { label: "Total submissions", value: (d) => d.totalSubmissions },
+      { label: "Pending submissions", value: (d) => d.pendingSubmissions },
+      { label: "Status", value: (d) => (d.isActive ? "Active" : "Disabled") },
+    ]);
+    downloadCsv(`pikorua-developers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
 
   const toggleMutation = useMutation({
     mutationFn: (vars: { id: string; isActive: boolean }) => setDeveloperActive({ data: vars }),
@@ -43,17 +72,45 @@ function AdminDevelopers() {
 
   return (
     <AdminLayout title="Developers" requireOwner>
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Accounts that can sign in to the developer portal and submit properties for your review.
-        </p>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-champagne px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-lux-black uppercase transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" /> Add developer
-        </button>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Accounts that can sign in to the developer portal and submit properties for your review.
+      </p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, email…"
+              className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne"
+            />
+          </div>
+          <FilterSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            label="All statuses"
+            options={["active", "disabled"]}
+            optionLabels={{ active: "Active", disabled: "Disabled" }}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={rows.length === 0}
+            className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-foreground uppercase transition-colors hover:border-foreground/30 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" /> Export
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-champagne px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-lux-black uppercase transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Add developer
+          </button>
+        </div>
       </div>
 
       {isPending && <p className="text-sm text-muted-foreground">Loading developers…</p>}
@@ -72,7 +129,7 @@ function AdminDevelopers() {
               </tr>
             </thead>
             <tbody>
-              {(developers ?? []).map((d) => (
+              {rows.map((d) => (
                 <tr key={d.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
                     <p className="font-medium text-foreground">{d.fullName || "—"}</p>
@@ -118,10 +175,12 @@ function AdminDevelopers() {
                   </td>
                 </tr>
               ))}
-              {(developers ?? []).length === 0 && (
+              {rows.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                    No developer accounts yet.
+                    {(developers ?? []).length === 0
+                      ? "No developer accounts yet."
+                      : "No developers match the current search and filters."}
                   </td>
                 </tr>
               )}

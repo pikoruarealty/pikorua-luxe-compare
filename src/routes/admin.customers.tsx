@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
+import { Download, Search, X } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { getCustomers, getCustomerDetail } from "@/lib/customers.functions";
+import { FilterSelect } from "@/components/admin/FilterSelect";
+import { getCustomers, getCustomerDetail, type CustomerSummary } from "@/lib/customers.functions";
 import type { ActivityEvent } from "@/lib/activity.functions";
 import type { QuizAnswersDTO } from "@/lib/profile.functions";
+import { toCsv, downloadCsv } from "@/lib/csv-export";
 
 export const Route = createFileRoute("/admin/customers")({
   component: AdminCustomers,
@@ -54,34 +56,75 @@ function AdminCustomers() {
     retry: false,
   });
   const [query, setQuery] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const cities = useMemo(
+    () =>
+      [...new Set((customers ?? []).map((c) => c.quizAnswers?.city).filter(Boolean))].sort() as string[],
+    [customers],
+  );
+
   const rows = useMemo(() => {
-    const list = customers ?? [];
     const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((c) =>
-      [c.name, c.phone, c.email, c.profession, c.businessName]
+    return (customers ?? []).filter((c) => {
+      if (cityFilter !== "all" && c.quizAnswers?.city !== cityFilter) return false;
+      if (!q) return true;
+      return [c.name, c.phone, c.email, c.profession, c.businessName]
         .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [customers, query]);
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [customers, query, cityFilter]);
+
+  const exportCsv = () => {
+    const csv = toCsv<CustomerSummary>(rows, [
+      { label: "Name", value: (c) => c.name },
+      { label: "Phone", value: (c) => c.phone },
+      { label: "Email", value: (c) => c.email },
+      { label: "Profession", value: (c) => c.profession },
+      { label: "Business", value: (c) => c.businessName },
+      { label: "State", value: (c) => c.quizAnswers?.state },
+      { label: "City", value: (c) => c.quizAnswers?.city },
+      { label: "Looking for", value: (c) => c.quizAnswers?.propertyType?.join(", ") },
+      { label: "Configuration", value: (c) => c.quizAnswers?.bhk?.join(", ") },
+      { label: "Budget", value: (c) => c.quizAnswers?.budgetSub || c.quizAnswers?.budgetRange },
+      { label: "Interactions", value: (c) => c.activityCount },
+      { label: "Joined", value: (c) => fmtDate(c.createdAt) },
+    ]);
+    downloadCsv(`pikorua-customers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
 
   return (
     <AdminLayout title="Customers" requireOwner>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, phone, email…"
-            className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne"
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, phone, email…"
+              className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-sm text-foreground outline-none focus:border-champagne"
+            />
+          </div>
+          <FilterSelect
+            value={cityFilter}
+            onChange={setCityFilter}
+            label="All cities"
+            options={cities}
           />
+          <p className="text-xs text-muted-foreground">
+            {rows.length} of {customers?.length ?? 0} customers
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {rows.length} of {customers?.length ?? 0} customers
-        </p>
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={rows.length === 0}
+          className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-foreground uppercase transition-colors hover:border-foreground/30 disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" /> Export
+        </button>
       </div>
 
       {isPending && <p className="text-sm text-muted-foreground">Loading customers…</p>}
