@@ -1,11 +1,12 @@
 import { type ReactNode, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, LogOut, Plus } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { LayoutDashboard, Plus } from "lucide-react";
 import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/lib/admin.queries";
 import { supabase } from "@/integrations/supabase/client";
+import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
 
-const NAV = [
+const NAV: PortalNavItem[] = [
   { to: "/developer", label: "My Properties", icon: LayoutDashboard },
   { to: "/developer/properties/new", label: "Add Property", icon: Plus },
 ];
@@ -24,7 +25,6 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
   const { data: profile, isPending } = useQuery(adminMeQueryOptions());
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     if (isPending) return;
@@ -41,14 +41,14 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
   if (isPending) {
     return (
       <FullScreen>
-        <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">Loading…</p>
+        <p className="font-label text-sm tracking-luxury text-muted-foreground">Loading…</p>
       </FullScreen>
     );
   }
   if (!profile || profile.role !== "developer") {
     return (
       <FullScreen>
-        <p className="text-sm tracking-[0.2em] text-muted-foreground uppercase">Redirecting…</p>
+        <p className="font-label text-sm tracking-luxury text-muted-foreground">Redirecting…</p>
       </FullScreen>
     );
   }
@@ -60,60 +60,16 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="flex w-60 flex-shrink-0 flex-col border-r border-border bg-card">
-        <div className="border-b border-border px-6 py-5">
-          <p className="font-display text-lg tracking-[0.2em] text-champagne">PIKORUA</p>
-          <p className="mt-1 text-[10px] tracking-[0.24em] text-muted-foreground uppercase">
-            Developer Portal
-          </p>
-        </div>
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {NAV.map(({ to, label, icon: Icon }) => {
-            const active =
-              to === "/developer" ? pathname === "/developer" : pathname.startsWith(to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                  active
-                    ? "bg-champagne/15 text-champagne"
-                    : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-border px-3 py-4">
-          <div className="px-3 pb-3">
-            <p className="truncate text-xs text-foreground">{profile.fullName || profile.email}</p>
-            <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
-              Developer
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
-        </div>
-      </aside>
-
-      <main className="flex-1 overflow-x-hidden">
-        {title && (
-          <header className="border-b border-border px-8 py-6">
-            <h1 className="font-display text-2xl text-foreground">{title}</h1>
-          </header>
-        )}
-        <div className="px-8 py-8">{children}</div>
-      </main>
-    </div>
+    <PortalShell
+      nav={NAV}
+      homePath="/developer"
+      portalLabel="Developer Portal"
+      userLabel={profile.fullName || profile.email}
+      userRole="Developer"
+      onSignOut={signOut}
+      title={title}
+    >
+      {children}
+    </PortalShell>
   );
 }

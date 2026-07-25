@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
@@ -12,6 +13,7 @@ const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent
  * scrolled a screen's worth or spent 20s on the page, then stays put.
  */
 export function AdvisorPill() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -25,6 +27,12 @@ export function AdvisorPill() {
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
+
+  // Public-site chrome only — the advisor pill has no place in the admin or
+  // developer portals, which are internal tools rather than sales surfaces.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/developer")) {
+    return null;
+  }
 
   return (
     <AnimatePresence>

@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { ADMIN_ME_KEY } from "@/lib/admin.queries";
 import { getCurrentAdminProfile } from "@/lib/admin-auth.functions";
+import { Field, Input } from "@/components/portal/FormControls";
 
 export const Route = createFileRoute("/admin/login")({
   component: AdminLogin,
@@ -69,49 +70,47 @@ function AdminLogin() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="font-display text-2xl tracking-[0.2em] text-champagne">PIKORUA</p>
-          <p className="mt-2 text-[11px] tracking-[0.24em] text-muted-foreground uppercase">
-            Admin Portal
-          </p>
+          <p className="font-display text-2xl tracking-[0.2em] gold-text">PIKORUA</p>
+          <div className="mt-3 flex items-center justify-center gap-2.5">
+            <span className="h-px w-6 bg-[var(--rule-strong)]" />
+            <p className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
+              Admin Portal
+            </p>
+            <span className="h-px w-6 bg-[var(--rule-strong)]" />
+          </div>
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="space-y-4 rounded-2xl border border-border bg-card p-6"
+          className="glass space-y-4 rounded-2xl p-6 shadow-[var(--shadow-lift)]"
         >
-          <div>
-            <label className="mb-1.5 block text-xs tracking-[0.14em] text-muted-foreground uppercase">
-              Email
-            </label>
-            <input
+          <Field label="Email" htmlFor="admin-email">
+            <Input
+              id="admin-email"
               type="email"
               autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-champagne"
             />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs tracking-[0.14em] text-muted-foreground uppercase">
-              Password
-            </label>
-            <input
+          </Field>
+          <Field label="Password" htmlFor="admin-password">
+            <Input
+              id="admin-password"
               type="password"
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-champagne"
             />
-          </div>
+          </Field>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="flex h-11 w-full items-center justify-center rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95 disabled:opacity-60"
+            className="foil flex h-11 w-full items-center justify-center rounded-full text-[11px] font-semibold tracking-luxury uppercase disabled:opacity-60"
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>

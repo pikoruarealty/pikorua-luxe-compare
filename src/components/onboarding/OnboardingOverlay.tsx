@@ -13,7 +13,8 @@ export function OnboardingOverlay() {
   // The public sign-in / quiz gate must never appear on the admin or
   // developer portals — those have their own account-based auth entirely.
   const isPortalRoute = useRouterState({
-    select: (s) => s.location.pathname.startsWith("/admin") || s.location.pathname.startsWith("/developer"),
+    select: (s) =>
+      s.location.pathname.startsWith("/admin") || s.location.pathname.startsWith("/developer"),
   });
 
   // Auth and the first-time quiz are compulsory — the only way out is a

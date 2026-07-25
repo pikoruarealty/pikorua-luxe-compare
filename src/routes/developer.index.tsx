@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Plus } from "lucide-react";
+import { Building2, History, Pencil, Plus } from "lucide-react";
 import { DeveloperLayout } from "@/components/developer/DeveloperLayout";
+import { PageHeader } from "@/components/portal/PageHeader";
+import { EmptyState } from "@/components/portal/EmptyState";
+import { Skeleton } from "@/components/portal/Skeleton";
+import { StatusBadge, submissionTone } from "@/components/portal/StatusBadge";
 import { getMyDeveloperDashboard } from "@/lib/developer-properties.functions";
 
 export const Route = createFileRoute("/developer/")({
@@ -21,54 +25,79 @@ function DeveloperDashboard() {
   });
 
   return (
-    <DeveloperLayout title="My Properties">
-      {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {error && <p className="text-sm text-red-500">Could not load: {(error as Error).message}</p>}
+    <DeveloperLayout>
+      <PageHeader
+        eyebrow="Developer"
+        title="My Properties"
+        description="Your listings on Pikorua and the status of every change you've submitted."
+        actions={
+          <Link
+            to="/developer/properties/new"
+            className="foil inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[11px] font-semibold tracking-luxury uppercase"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add property
+          </Link>
+        }
+      />
+
+      {isPending && (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">
+          Could not load: {(error as Error).message}
+        </p>
+      )}
 
       {data && (
         <div className="space-y-10">
           <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-lg text-foreground">Live on the site</h2>
-              <Link
-                to="/developer/properties/new"
-                className="inline-flex items-center gap-2 rounded-full bg-champagne px-4 py-2 text-xs font-medium tracking-[0.12em] text-lux-black uppercase transition-opacity hover:opacity-90"
-              >
-                <Plus className="h-3.5 w-3.5" /> Add property
-              </Link>
-            </div>
+            <h2 className="mb-3 font-label text-[11px] font-semibold tracking-luxury text-muted-foreground uppercase">
+              Live on the site
+            </h2>
             {data.properties.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nothing here yet — add your first property to get started.
-              </p>
+              <EmptyState
+                icon={Building2}
+                title="No properties yet"
+                message="Add your first property to get it in front of buyers on Pikorua."
+                action={
+                  <Link
+                    to="/developer/properties/new"
+                    className="foil inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[11px] font-semibold tracking-luxury uppercase"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add property
+                  </Link>
+                }
+              />
             ) : (
-              <div className="divide-y divide-border rounded-xl border border-border">
+              <div className="divide-y divide-[var(--rule)] overflow-hidden rounded-2xl border border-[var(--rule)] bg-card shadow-[var(--shadow-lift)]">
                 {data.properties.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div
+                    key={p.id}
+                    className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-foreground/2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                  >
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{p.name}</p>
                       <p className="truncate text-xs text-muted-foreground">{p.location}</p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                       {p.hasPendingUpdate && (
-                        <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-                          Edit pending review
-                        </span>
+                        <StatusBadge tone="warning">Edit in review</StatusBadge>
                       )}
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.1em] uppercase ${
-                          p.isPublished
-                            ? "bg-champagne/15 text-champagne"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
+                      <StatusBadge tone={p.isPublished ? "positive" : "neutral"}>
                         {p.isPublished ? "Live" : "Hidden"}
-                      </span>
+                      </StatusBadge>
                       <Link
                         to="/developer/properties/$id"
                         params={{ id: p.id }}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+                        className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
                         title="Edit"
+                        aria-label={`Edit ${p.name}`}
                       >
                         <Pencil className="h-4 w-4" />
                       </Link>
@@ -80,13 +109,19 @@ function DeveloperDashboard() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-display text-lg text-foreground">Submission history</h2>
+            <h2 className="mb-3 font-label text-[11px] font-semibold tracking-luxury text-muted-foreground uppercase">
+              Submission history
+            </h2>
             {data.submissions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No submissions yet.</p>
+              <EmptyState
+                icon={History}
+                title="No submissions yet"
+                message="Changes you submit for review will show up here with their status."
+              />
             ) : (
-              <div className="divide-y divide-border rounded-xl border border-border">
+              <div className="divide-y divide-[var(--rule)] overflow-hidden rounded-2xl border border-[var(--rule)] bg-card shadow-[var(--shadow-lift)]">
                 {data.submissions.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{s.propertyName}</p>
                       <p className="text-xs text-muted-foreground">
@@ -99,7 +134,7 @@ function DeveloperDashboard() {
                         </p>
                       )}
                     </div>
-                    <StatusBadge status={s.status} />
+                    <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
                   </div>
                 ))}
               </div>
@@ -108,20 +143,5 @@ function DeveloperDashboard() {
         </div>
       )}
     </DeveloperLayout>
-  );
-}
-
-function StatusBadge({ status }: { status: "pending" | "approved" | "rejected" }) {
-  const styles = {
-    pending: "bg-muted text-muted-foreground",
-    approved: "bg-champagne/15 text-champagne",
-    rejected: "bg-red-500/10 text-red-600 dark:text-red-400",
-  }[status];
-  return (
-    <span
-      className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase ${styles}`}
-    >
-      {status}
-    </span>
   );
 }

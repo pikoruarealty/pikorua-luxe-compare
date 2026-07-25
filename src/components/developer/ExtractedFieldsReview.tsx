@@ -55,7 +55,7 @@ export function ExtractedFieldsReview({
       </p>
 
       {response.missing_required.length > 0 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-[var(--rule-strong)] bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             Not found in any file, fill these in yourself: {response.missing_required.join(", ")}
@@ -84,13 +84,13 @@ export function ExtractedFieldsReview({
                   ? "border-emerald-600/40 bg-emerald-600/5"
                   : needsAttention
                     ? "border-red-500/50"
-                    : "border-border"
+                    : "border-[var(--rule)]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                    <p className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
                       {f.label}
                     </p>
                     <span
@@ -102,7 +102,7 @@ export function ExtractedFieldsReview({
                   <input
                     value={values[f.formField] ?? ""}
                     onChange={(e) => setValues((v) => ({ ...v, [f.formField]: e.target.value }))}
-                    className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-champagne"
+                    className="mt-2 w-full rounded-lg border border-[var(--rule-strong)] bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-champagne focus:ring-2 focus:ring-champagne/30"
                   />
                   {(f.snippet || f.sourceFile) && (
                     <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -153,14 +153,14 @@ export function ExtractedFieldsReview({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-border px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-foreground uppercase transition-colors hover:border-foreground/30"
+          className="rounded-full border border-[var(--rule-strong)] px-5 py-2.5 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
         >
           Back
         </button>
         <button
           type="button"
           onClick={handleContinue}
-          className="rounded-full bg-champagne px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-lux-black uppercase transition-opacity hover:opacity-90"
+          className="foil rounded-full px-5 py-2.5 text-[11px] font-semibold tracking-luxury uppercase"
         >
           Continue to form
         </button>
