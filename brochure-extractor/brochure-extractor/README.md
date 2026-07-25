@@ -28,7 +28,7 @@ Design decisions worth knowing:
 
 - **Vision, not plain OCR.** Brochures are 80% design — specs live inside tables,
   floor plans and image overlays that a text layer misses entirely. Every page is
-  sent as an image *and* as text. Tesseract is used only as an extra signal on
+  sent as an image _and_ as text. Tesseract is used only as an extra signal on
   scanned pages, and is optional.
 - **Strict JSON schema.** The model physically cannot return a field we don't
   know about or skip one we do — no fragile response parsing.
@@ -93,13 +93,13 @@ Then `python tools/gen_types.py`.
 
 ## Tuning
 
-| Symptom | Change |
-| --- | --- |
-| Misses specs in dense tables | `RENDER_DPI=200`, `PAGES_PER_CHUNK=4` |
-| Too slow | `PARALLEL_CHUNKS=8`, `RENDER_DPI=120` |
-| Bad on scanned/photocopied PDFs | `EXTRACTOR_MODEL=gpt-4o`, install tesseract |
-| Cost too high | `PAGES_PER_CHUNK=8`, `MAX_PAGES_PER_FILE=30` |
-| Too many nulls | lower `MIN_CONFIDENCE` (only changes what's flagged, not what's kept) |
+| Symptom                         | Change                                                                |
+| ------------------------------- | --------------------------------------------------------------------- |
+| Misses specs in dense tables    | `RENDER_DPI=200`, `PAGES_PER_CHUNK=4`                                 |
+| Too slow                        | `PARALLEL_CHUNKS=8`, `RENDER_DPI=120`                                 |
+| Bad on scanned/photocopied PDFs | `EXTRACTOR_MODEL=gpt-4o`, install tesseract                           |
+| Cost too high                   | `PAGES_PER_CHUNK=8`, `MAX_PAGES_PER_FILE=30`                          |
+| Too many nulls                  | lower `MIN_CONFIDENCE` (only changes what's flagged, not what's kept) |
 
 Rough numbers for a 24-page brochure at default settings: ~4 chunk calls,
 25–45 s wall clock with parallelism, a few rupees of tokens per property.

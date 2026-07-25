@@ -4,7 +4,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DeveloperLayout } from "@/components/developer/DeveloperLayout";
 import { PropertyForm } from "@/components/admin/PropertyForm";
-import { getMyPropertyForEdit, submitPropertyForReview } from "@/lib/developer-properties.functions";
+import {
+  getMyPropertyForEdit,
+  submitPropertyForReview,
+} from "@/lib/developer-properties.functions";
 import type { PropertyFormValues } from "@/lib/property-schema";
 
 export const Route = createFileRoute("/developer/properties/$id")({

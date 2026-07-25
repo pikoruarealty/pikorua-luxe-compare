@@ -1,16 +1,30 @@
 import { useServerFn } from "@tanstack/react-start";
-import { Check } from "lucide-react";
+import {
+  Check,
+  Home,
+  Building,
+  Building2,
+  Layers,
+  Compass,
+  Coins,
+  BedDouble,
+  RotateCcw,
+} from "lucide-react";
 import { useOnboarding, type QuizAnswers } from "@/context/OnboardingContext";
 import { saveQuizAnswers as saveQuizAnswersFn } from "@/lib/profile.functions";
 
-const PROPERTY_TYPES = ["Bungalow", "Apartment", "Penthouse", "Duplex", "Plots"];
-// Full BHK range shown to the visitor. Only 4/5 BHK exist in the current
-// catalogue, so 2/3/6/7 BHK are a no-op filter until matching inventory
-// is added (see preference-filter.ts) — kept for consistency with the quiz.
+const PROPERTY_TYPES: Array<{ label: string; icon: typeof Home }> = [
+  { label: "Bungalow", icon: Home },
+  { label: "Apartment", icon: Building },
+  { label: "Penthouse", icon: Building2 },
+  { label: "Duplex", icon: Layers },
+  { label: "Plots", icon: Compass },
+];
+
 const BHK_OPTIONS = ["2 BHK", "3 BHK", "4 BHK", "5 BHK", "6 BHK", "7 BHK"];
 const BUDGETS = ["₹ 1 – 5 Cr", "₹ 6 – 10 Cr", "₹ 11 – 15 Cr", "₹ 16 – 20 Cr", "₹ 21 Cr +"];
 
-export function PreferencePanel() {
+export function PreferencePanel({ hideHeader = false }: { hideHeader?: boolean }) {
   const { quizAnswers, setQuizAnswers } = useOnboarding();
   const saveQuiz = useServerFn(saveQuizAnswersFn);
 
@@ -58,93 +72,157 @@ export function PreferencePanel() {
   const totalSelected =
     current.propertyType.length + current.bhk.length + (current.budgetRange ? 1 : 0);
 
+  const optionsContent = (
+    <div className="space-y-7">
+      {/* PROPERTY TYPE */}
+      <Group title="Property Type" subtitle="Select architectural styles">
+        <div className="flex flex-wrap gap-3 sm:gap-3.5">
+          {PROPERTY_TYPES.map(({ label, icon: Icon }) => {
+            const active = current.propertyType.includes(label);
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => toggle("propertyType", label)}
+                className={`group inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 ${
+                  active
+                    ? "bg-gradient-to-r from-champagne via-muted-gold to-champagne text-lux-black shadow-md shadow-champagne/20 ring-2 ring-champagne/40"
+                    : "border border-[var(--rule-strong)] bg-card/80 text-foreground/85 hover:border-champagne/60 hover:bg-card hover:text-foreground"
+                }`}
+              >
+                <Icon
+                  className={`h-3.5 w-3.5 transition-transform group-hover:scale-110 ${
+                    active ? "text-lux-black stroke-[2.5]" : "text-champagne"
+                  }`}
+                />
+                {label}
+                {active && <Check className="ml-0.5 h-3.5 w-3.5 stroke-[3]" />}
+              </button>
+            );
+          })}
+        </div>
+      </Group>
+
+      {/* BHK CONFIGURATION */}
+      <Group title="Configuration" subtitle="Bedrooms & layouts">
+        <div className="flex flex-wrap gap-3 sm:gap-3.5">
+          {BHK_OPTIONS.map((b) => {
+            const active = current.bhk.includes(b);
+            return (
+              <button
+                key={b}
+                type="button"
+                onClick={() => toggle("bhk", b)}
+                className={`group inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 ${
+                  active
+                    ? "bg-gradient-to-r from-champagne via-muted-gold to-champagne text-lux-black shadow-md shadow-champagne/20 ring-2 ring-champagne/40"
+                    : "border border-[var(--rule-strong)] bg-card/80 text-foreground/85 hover:border-champagne/60 hover:bg-card hover:text-foreground"
+                }`}
+              >
+                <BedDouble
+                  className={`h-3.5 w-3.5 transition-transform group-hover:scale-110 ${
+                    active ? "text-lux-black stroke-[2.5]" : "text-champagne"
+                  }`}
+                />
+                {b}
+                {active && <Check className="ml-0.5 h-3.5 w-3.5 stroke-[3]" />}
+              </button>
+            );
+          })}
+        </div>
+      </Group>
+
+      {/* PRICE BAND */}
+      <Group title="Price Band" subtitle="Budget spectrum">
+        <div className="flex flex-wrap gap-3 sm:gap-3.5">
+          {BUDGETS.map((b) => {
+            const active = current.budgetRange === b;
+            return (
+              <button
+                key={b}
+                type="button"
+                onClick={() => setBudget(b)}
+                className={`group inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 ${
+                  active
+                    ? "bg-gradient-to-r from-champagne via-muted-gold to-champagne text-lux-black shadow-md shadow-champagne/20 ring-2 ring-champagne/40"
+                    : "border border-[var(--rule-strong)] bg-card/80 text-foreground/85 hover:border-champagne/60 hover:bg-card hover:text-foreground"
+                }`}
+              >
+                <Coins
+                  className={`h-3.5 w-3.5 transition-transform group-hover:scale-110 ${
+                    active ? "text-lux-black stroke-[2.5]" : "text-champagne"
+                  }`}
+                />
+                {b}
+                {active && <span className="ml-0.5 h-2 w-2 rounded-full bg-lux-black" />}
+              </button>
+            );
+          })}
+        </div>
+      </Group>
+    </div>
+  );
+
+  if (hideHeader) {
+    return optionsContent;
+  }
+
   return (
-    <aside className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-glass)]">
-      <div className="flex items-center justify-between">
+    <aside className="flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-2xl border border-[var(--rule)] bg-card shadow-lg">
+      {/* FIXED STATIONARY HEADER */}
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--rule)] bg-gradient-to-b from-champagne/5 to-transparent p-5 pb-4">
         <div>
-          <p className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">
-            Your preferences
+          <p className="font-label tracking-luxury text-[11px] font-bold uppercase text-champagne">
+            Your Preferences
           </p>
-          <h3 className="mt-1 font-display text-[20px] text-foreground">Refine</h3>
+          <h3 className="mt-0.5 font-display text-xl font-bold text-foreground">
+            Refine Collection
+          </h3>
         </div>
         {totalSelected > 0 && (
           <button
             type="button"
             onClick={clearAll}
-            className="text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-champagne"
           >
-            Clear all
+            <RotateCcw className="h-3 w-3 text-champagne" /> Clear all
           </button>
         )}
       </div>
 
-      <Group title="Property type">
-        {PROPERTY_TYPES.map((t) => (
-          <CheckRow
-            key={t}
-            label={t}
-            checked={current.propertyType.includes(t)}
-            onChange={() => toggle("propertyType", t)}
-          />
-        ))}
-      </Group>
-
-      <Group title="Configuration">
-        {BHK_OPTIONS.map((b) => (
-          <CheckRow
-            key={b}
-            label={b}
-            checked={current.bhk.includes(b)}
-            onChange={() => toggle("bhk", b)}
-          />
-        ))}
-      </Group>
-
-      <Group title="Budget">
-        {BUDGETS.map((b) => (
-          <CheckRow
-            key={b}
-            label={b}
-            checked={current.budgetRange === b}
-            onChange={() => setBudget(b)}
-          />
-        ))}
-      </Group>
+      {/* INTERNAL SCROLLABLE OPTIONS BODY */}
+      <div className="pref-scroll flex-1 overflow-y-auto p-6 [webkit-overflow-scrolling:touch]">
+        {optionsContent}
+      </div>
     </aside>
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-5 border-t border-border pt-4">
-      <p className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">{title}</p>
-      <div className="mt-3 flex flex-col gap-2">{children}</div>
-    </div>
-  );
-}
-
-function CheckRow({
-  label,
-  checked,
-  onChange,
+function Group({
+  title,
+  subtitle,
+  children,
 }: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted">
-      <span
-        className={`flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors ${
-          checked ? "border-foreground bg-foreground" : "border-border bg-transparent"
-        }`}
-      >
-        {checked && <Check className="h-3 w-3 text-background" strokeWidth={3} />}
-      </span>
-      <span className={`text-[13px] ${checked ? "text-foreground" : "text-muted-foreground"}`}>
-        {label}
-      </span>
-      <input type="checkbox" className="sr-only" checked={checked} onChange={onChange} />
-    </label>
+    <div className="space-y-3">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-champagne" />
+          <h4 className="font-display text-xs font-bold uppercase tracking-widest text-foreground">
+            {title}
+          </h4>
+        </div>
+        {subtitle && (
+          <p className="mt-0.5 pl-3.5 text-[11px] font-medium text-muted-foreground">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      <div className="pl-1">{children}</div>
+    </div>
   );
 }

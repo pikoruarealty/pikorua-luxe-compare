@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import {
+  ArrowLeft,
   ArrowUpRight,
   ChevronDown,
   GitCompareArrows,
@@ -153,6 +155,16 @@ function Index() {
     window.scrollTo({ top, behavior: "smooth" });
   };
 
+  // Lock body scroll while mobile filter modal is open.
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [filtersOpen]);
+
   return (
     <div className="min-h-screen">
       <div aria-hidden className="page-grain" />
@@ -178,36 +190,42 @@ function Index() {
 
         <div className="container-lux relative z-10">
           <div className="grid grid-cols-1 items-start gap-14 lg:grid-cols-[1.05fr_0.95fr]">
-            {/* LEFT — copy */}
-            <div className="relative pt-2 sm:pt-6">
-              <h1 className="font-display text-[46px] font-extrabold leading-[1.05] tracking-[-0.02em] text-foreground sm:text-[62px] lg:text-[74px]">
-                {[
-                  <>India's Smartest</>,
-                  <>
-                    <span className="gold-text">Property Comparison</span>
-                  </>,
-                  <>Platform.</>,
-                ].map((line, i) => (
-                  <span
-                    key={i}
-                    className="descender-safe block overflow-hidden sm:whitespace-nowrap"
+            {/* LEFT — copy.
+                min-w-0 is load-bearing: grid items default to min-width:auto,
+                so anything unshrinkable inside (the headline used to be
+                whitespace-nowrap) sets this column's minimum and pushes the
+                whole grid past the container, where the section's
+                overflow-hidden silently clips it. */}
+            <div className="relative min-w-0 pt-2 sm:pt-6">
+              <h1 className="font-display text-[40px] font-extrabold leading-[1.08] tracking-[-0.02em] text-foreground sm:text-[54px] lg:text-[64px]">
+                <span className="descender-safe block overflow-hidden">
+                  <motion.span
+                    className="block"
+                    initial={{ y: "110%" }}
+                    animate={{ y: 0 }}
+                    transition={{
+                      duration: 0.9,
+                      delay: 0.12,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
                   >
-                    <motion.span
-                      className="block"
-                      // Must clear the descender padding too, or the incoming
-                      // line peeks into it before the reveal starts.
-                      initial={{ y: "135%" }}
-                      animate={{ y: 0 }}
-                      transition={{
-                        duration: 0.9,
-                        delay: 0.12 + i * 0.14,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                    >
-                      {line}
-                    </motion.span>
-                  </span>
-                ))}
+                    India&apos;s Smartest
+                  </motion.span>
+                </span>
+                <span className="descender-safe block overflow-hidden">
+                  <motion.span
+                    className="block"
+                    initial={{ y: "110%" }}
+                    animate={{ y: 0 }}
+                    transition={{
+                      duration: 0.9,
+                      delay: 0.26,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                  >
+                    <span className="gold-text">Property Comparison</span> Platform.
+                  </motion.span>
+                </span>
               </h1>
 
               {/* Pill search — filters the collection below */}
@@ -249,7 +267,7 @@ function Index() {
                   type="submit"
                   className="foil rounded-full px-5 py-3 text-[12px] font-semibold tracking-luxury sm:px-7"
                 >
-                  Explore
+                  Search
                 </button>
               </motion.form>
 
@@ -447,8 +465,8 @@ function Index() {
                 Compare, <span className="gold-text">side by side</span>
               </h2>
             </div>
-            <p className="max-w-xs pb-1 text-[14px] leading-relaxed text-muted-foreground">
-              Pick two or three residences. Every detail lines up below.
+            <p className="pb-1 text-[14px] text-muted-foreground">
+              Select two or three residences to compare side by side.
             </p>
           </div>
         </div>
@@ -470,40 +488,47 @@ function Index() {
       <DeveloperAlliances />
 
       {/* ============ COLLECTION ============ */}
+      {/* No overflow-hidden here — this section has nothing decorative to
+          clip (unlike the hero above it), and overflow-hidden on an
+          ancestor is what silently breaks position:sticky for the filter
+          sidebar below: any ancestor with overflow other than visible stops
+          a sticky descendant from sticking past that ancestor's box. */}
       <section
         id="collection"
         ref={collectionRef}
-        className="relative scroll-mt-28 overflow-hidden py-16 sm:py-24"
+        className="relative scroll-mt-28"
+        style={{ paddingBlock: "var(--space-section)" }}
       >
         <div className="container-lux relative z-10">
-          <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-b border-[var(--rule)] pb-6">
+          <div className="mt-8 flex flex-col justify-between gap-6 border-b border-[var(--rule)] pb-6 sm:flex-row sm:items-end">
             <div>
               <div className="flex items-center gap-3">
                 <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
-                <p className="font-label text-[10px] font-semibold tracking-luxury text-champagne sm:text-[11px]">
+                <p
+                  className="font-label tracking-luxury text-xs font-semibold uppercase text-champagne"
+                >
                   The Collection
                 </p>
               </div>
               <h2
-                className="mt-4 font-display leading-[1.02] tracking-[-0.01em] text-ivory"
-                style={{ fontSize: "var(--step-3)" }}
+                className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+                style={{ letterSpacing: "var(--tracking-display)" }}
               >
                 Residences in <span className="gold-text">focus</span>
               </h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-                Hover a residence to expand it — "Add to Compare" sends it to the Suite.
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Select any residence to inspect floor plans and compare details.
               </p>
             </div>
-            <div className="flex items-baseline gap-3">
-              <span
-                className="font-display leading-none text-champagne tabular-nums"
-                style={{ fontSize: "var(--step-4)" }}
-              >
-                {searching || filtersActive ? visibleCount : properties.length}
-              </span>
-              <span className="font-label text-[11px] tracking-luxury text-muted-foreground">
-                {searching || filtersActive ? "matching residences" : "curated residences"}
-              </span>
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <div className="flex items-center gap-2.5 rounded-full border border-champagne/30 bg-champagne/5 px-4 py-2 shadow-xs">
+                <span className="font-display text-lg font-bold leading-none text-champagne tabular-nums sm:text-xl">
+                  {searching || filtersActive ? visibleCount : properties.length}
+                </span>
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {searching || filtersActive ? "matching residences" : "curated residences"}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -512,15 +537,19 @@ function Index() {
           </div>
 
           {searching && (
-            <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-champagne/20 bg-champagne/5 px-5 py-3">
-              <Search className="h-3.5 w-3.5 text-champagne" />
-              <p className="text-[13px] text-foreground">
+            // A transient notice, not a decision the visitor made — same
+            // hairline treatment as the preference banner above it, gold
+            // reserved for the "Clear" action rather than the whole bar.
+            <div className="mt-6 flex flex-wrap items-center gap-3 rounded-card border border-[var(--rule)] bg-card/60 px-5 py-3">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-foreground" style={{ fontSize: "var(--step--1)" }}>
                 Showing results for <span className="font-semibold">"{query.trim()}"</span>
               </p>
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-champagne/30 px-3 py-1 text-[11px] tracking-luxury text-champagne transition hover:bg-champagne/10"
+                className="tracking-luxury ml-auto inline-flex items-center gap-1.5 rounded-full border border-champagne/30 px-3 py-1 text-champagne transition hover:bg-champagne/10"
+                style={{ fontSize: "var(--step--2)" }}
               >
                 <X className="h-3 w-3" /> Clear
               </button>
@@ -528,40 +557,132 @@ function Index() {
           )}
 
           <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr] lg:items-start">
-            <div className="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-2 pref-scroll">
-              {/* Mobile: filters collapse behind a toggle so the list stays first. */}
+            {/* Desktop Sticky Sidebar Filter */}
+            <div className="hidden lg:sticky lg:top-[80px] lg:z-30 lg:block">
+              <PreferencePanel />
+            </div>
+
+            {/* Mobile Filter Trigger Bar */}
+            <div className="lg:hidden">
               <button
                 type="button"
-                onClick={() => setFiltersOpen((v) => !v)}
-                aria-expanded={filtersOpen}
-                className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-5 py-3.5 text-left lg:hidden"
+                onClick={() => setFiltersOpen(true)}
+                className="flex w-full items-center justify-between rounded-2xl border border-[var(--rule)] bg-card px-5 py-3.5 text-left shadow-xs transition hover:border-champagne/40"
               >
-                <span className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground">
+                <span className="inline-flex items-center gap-2.5 text-sm font-semibold text-foreground">
                   <SlidersHorizontal className="h-4 w-4 text-champagne" />
-                  Filters
+                  Filter Collection
                   {hydrated && activeFilterCount > 0 && (
-                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-champagne px-1.5 text-[10px] font-semibold text-lux-black">
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne px-1.5 text-xs font-bold text-lux-black">
                       {activeFilterCount}
                     </span>
                   )}
                 </span>
-                <ChevronDown
-                  className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${
-                    filtersOpen ? "rotate-180" : ""
-                  }`}
-                />
+                <span className="text-xs font-semibold uppercase tracking-wider text-champagne">
+                  Refine
+                </span>
               </button>
-              <div className={`${filtersOpen ? "mt-3 block" : "hidden"} lg:mt-0 lg:block`}>
-                <PreferencePanel />
-              </div>
             </div>
+
+            {/* Mobile Filter Full-Screen Modal — Portaled to Document Body */}
+            {hydrated &&
+              createPortal(
+                <AnimatePresence>
+                  {filtersOpen && (
+                    <div className="lg:hidden">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setFiltersOpen(false)}
+                        className="fixed inset-0 z-[99998] bg-black/85 backdrop-blur-md"
+                      />
+                      <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", stiffness: 340, damping: 30 }}
+                        className="fixed inset-0 z-[99999] flex flex-col overflow-hidden bg-background text-foreground"
+                      >
+                        {/* Fixed Top Bar — Luxury Glass & Gold Accents */}
+                        <div className="flex shrink-0 items-center justify-between border-b border-[var(--rule)] bg-card/95 px-5 py-4 pt-4 sm:pt-6 backdrop-blur-md">
+                          <button
+                            type="button"
+                            onClick={() => setFiltersOpen(false)}
+                            className="inline-flex items-center gap-2 rounded-full border border-champagne/40 bg-champagne/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-champagne transition hover:bg-champagne hover:text-lux-black active:scale-95"
+                          >
+                            <ArrowLeft className="h-4 w-4 stroke-[2.5]" /> Back
+                          </button>
+
+                          <div className="text-center">
+                            <p className="font-label tracking-luxury text-[10px] font-bold uppercase text-champagne">
+                              Collection Filter
+                            </p>
+                            <h3 className="font-display text-base font-bold text-foreground">
+                              Refine Preferences
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {activeFilterCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="text-xs font-bold uppercase tracking-wider text-champagne transition hover:opacity-80"
+                              >
+                                Clear all
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setFiltersOpen(false)}
+                              className="rounded-full border border-[var(--rule)] bg-muted/60 p-2.5 text-foreground transition hover:border-foreground/40 hover:bg-muted"
+                              aria-label="Close filters"
+                            >
+                              <X className="h-5 w-5 stroke-[2.5]" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Scrollable Preference Options Body */}
+                        <div className="flex-1 overflow-y-auto bg-card/40 p-6 [webkit-overflow-scrolling:touch]">
+                          <PreferencePanel hideHeader={true} />
+                        </div>
+
+                        {/* Sticky Bottom Action CTA */}
+                        <div className="shrink-0 border-t border-[var(--rule)] bg-card/95 p-4 pb-6 backdrop-blur-md">
+                          <button
+                            type="button"
+                            onClick={() => setFiltersOpen(false)}
+                            className="tracking-luxury inline-flex h-13 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-champagne via-muted-gold to-champagne text-xs font-bold uppercase tracking-wider text-lux-black shadow-xl shadow-champagne/20 transition duration-200 hover:opacity-95 active:scale-[0.99]"
+                          >
+                            <span>
+                              Show {visibleCount} {visibleCount === 1 ? "Residence" : "Residences"}
+                            </span>
+                            <ArrowUpRight className="h-4 w-4 stroke-[3]" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>,
+                document.body,
+              )}
 
             <div className="flex flex-col gap-6">
               {visibleCount === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-card/40 px-8 py-16 text-center">
+                <div className="rounded-card border border-dashed border-[var(--rule-strong)] bg-card/40 px-8 py-16 text-center">
                   <Search className="mx-auto h-5 w-5 text-muted-foreground" />
-                  <h3 className="mt-4 font-display text-xl text-ivory">No residences found</h3>
-                  <p className="mx-auto mt-2 max-w-sm text-[14px] text-muted-foreground">
+                  <h3
+                    className="mt-4 font-display text-foreground"
+                    style={{ fontSize: "var(--step-1)" }}
+                  >
+                    No residences found
+                  </h3>
+                  <p
+                    className="mx-auto mt-2 max-w-sm text-muted-foreground"
+                    style={{ fontSize: "var(--step--1)" }}
+                  >
                     {searching
                       ? `Nothing matches "${query.trim()}". Try a different name, location, or developer — or clear the search.`
                       : "No residences match your current filters. Loosen a filter or clear them to see the full collection."}
@@ -571,7 +692,8 @@ function Index() {
                       <button
                         type="button"
                         onClick={() => setQuery("")}
-                        className="inline-flex items-center gap-2 rounded-full border border-champagne/40 px-5 py-2.5 text-[11px] tracking-luxury text-champagne transition hover:bg-champagne/10"
+                        className="tracking-luxury inline-flex items-center gap-2 rounded-full border border-champagne/40 px-5 py-2.5 text-champagne transition hover:bg-champagne/10"
+                        style={{ fontSize: "var(--step--2)" }}
                       >
                         <X className="h-3 w-3" /> Clear search
                       </button>
@@ -580,7 +702,8 @@ function Index() {
                       <button
                         type="button"
                         onClick={clearFilters}
-                        className="inline-flex items-center gap-2 rounded-full border border-champagne/40 px-5 py-2.5 text-[11px] tracking-luxury text-champagne transition hover:bg-champagne/10"
+                        className="tracking-luxury inline-flex items-center gap-2 rounded-full border border-champagne/40 px-5 py-2.5 text-champagne transition hover:bg-champagne/10"
+                        style={{ fontSize: "var(--step--2)" }}
                       >
                         <X className="h-3 w-3" /> Clear filters
                       </button>
@@ -589,19 +712,9 @@ function Index() {
                 </div>
               ) : (
                 <>
-                  {filtersActive && (
-                    <div className="mb-2 flex items-center gap-3">
-                      <span className="text-[10px] tracking-luxury text-champagne">
-                        Matched to your preferences · {visibleCount}
-                      </span>
-                      <span className="h-px flex-1 bg-champagne/15" />
-                    </div>
-                  )}
-
                   {visibleRows.map((p, i) => (
                     <div key={p.id} id={`property-row-${p.id}`} className="group/row scroll-mt-32">
                       <PropertyListRow property={p} index={i} />
-                      {i < visibleRows.length - 1 && <RowDivider />}
                     </div>
                   ))}
                 </>
@@ -612,14 +725,6 @@ function Index() {
       </section>
 
       <SiteFooter />
-    </div>
-  );
-}
-
-function RowDivider() {
-  return (
-    <div className="my-1 flex items-center gap-4 px-2 opacity-60">
-      <span className="h-px flex-1 bg-champagne/12" />
     </div>
   );
 }

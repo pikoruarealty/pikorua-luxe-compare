@@ -108,7 +108,10 @@ export function PropertyQuiz({
           <div className="flex w-16 shrink-0 justify-start">
             {q > 1 && <BackBtn onClick={() => setQ((prev) => (prev - 1) as 1 | 2 | 3 | 4)} />}
           </div>
-          <p className="flex-1 text-center text-[11px] tracking-[0.22em] text-champagne uppercase">
+          <p
+            className="tracking-luxury flex-1 text-center text-champagne"
+            style={{ fontSize: "var(--step--2)" }}
+          >
             Question {q} of 4
           </p>
           {/* Matches the Back button's width so the close (X) button in the
@@ -137,13 +140,21 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[24px] leading-tight text-foreground">
+              <h3
+                className="font-display leading-tight text-foreground"
+                style={{ fontSize: "var(--step-1)" }}
+              >
                 Where are you looking?
               </h3>
-              <p className="mt-1.5 text-[13px] text-muted-foreground">Pick a state, then a city.</p>
+              <p className="mt-1.5 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
+                Pick a state, then a city.
+              </p>
 
               <div className="mt-5">
-                <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+                <p
+                  className="tracking-luxury text-muted-foreground"
+                  style={{ fontSize: "var(--step--2)" }}
+                >
                   State
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-2">
@@ -153,11 +164,12 @@ export function PropertyQuiz({
                       <button
                         key={state}
                         onClick={() => selectState(state)}
-                        className={`rounded-full border px-4 py-2 text-[13px] transition-all ${
+                        className={`rounded-full border px-4 py-2 transition-all ${
                           selected
                             ? "border-champagne bg-champagne/10 text-champagne"
                             : "border-border bg-background text-foreground hover:border-foreground/30"
                         }`}
+                        style={{ fontSize: "var(--step--1)" }}
                       >
                         {state}
                       </button>
@@ -168,7 +180,10 @@ export function PropertyQuiz({
 
               {selectedState && (
                 <div className="mt-5">
-                  <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+                  <p
+                    className="tracking-luxury text-muted-foreground"
+                    style={{ fontSize: "var(--step--2)" }}
+                  >
                     City
                   </p>
                   <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -178,7 +193,7 @@ export function PropertyQuiz({
                         <button
                           key={city}
                           onClick={() => setSelectedCity(city)}
-                          className={`relative rounded-[16px] border p-3 text-center transition-all hover:scale-[1.03] ${
+                          className={`relative rounded-card border p-3 text-center transition-all hover:scale-[1.03] ${
                             selected
                               ? "border-champagne bg-champagne/10"
                               : "border-border bg-background hover:border-foreground/30"
@@ -186,7 +201,12 @@ export function PropertyQuiz({
                         >
                           {selected && <Checkmark />}
                           <MapIcon className="mx-auto h-5 w-5 text-champagne" />
-                          <div className="mt-1.5 text-[13px] text-foreground">{city}</div>
+                          <div
+                            className="mt-1.5 text-foreground"
+                            style={{ fontSize: "var(--step--1)" }}
+                          >
+                            {city}
+                          </div>
                         </button>
                       );
                     })}
@@ -211,10 +231,13 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[24px] leading-tight text-foreground">
+              <h3
+                className="font-display leading-tight text-foreground"
+                style={{ fontSize: "var(--step-1)" }}
+              >
                 What are you looking for?
               </h3>
-              <p className="mt-1.5 text-[13px] text-muted-foreground">
+              <p className="mt-1.5 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
                 Select all that interest you.
               </p>
 
@@ -225,7 +248,7 @@ export function PropertyQuiz({
                     <button
                       key={label}
                       onClick={() => toggleType(label)}
-                      className={`relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-[18px] border text-center transition-all hover:scale-[1.03] ${
+                      className={`relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-card border text-center transition-all hover:scale-[1.03] ${
                         selected
                           ? "border-champagne bg-champagne/10"
                           : "border-border bg-background hover:border-foreground/30"
@@ -234,7 +257,9 @@ export function PropertyQuiz({
                     >
                       {selected && <Checkmark />}
                       <Icon className="h-8 w-8 text-champagne" />
-                      <div className="text-[13px] text-foreground">{label}</div>
+                      <div className="text-foreground" style={{ fontSize: "var(--step--1)" }}>
+                        {label}
+                      </div>
                     </button>
                   );
                 })}
@@ -257,10 +282,13 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[24px] leading-tight text-foreground">
+              <h3
+                className="font-display leading-tight text-foreground"
+                style={{ fontSize: "var(--step-1)" }}
+              >
                 What configuration are you looking for?
               </h3>
-              <p className="mt-1.5 text-[13px] text-muted-foreground">
+              <p className="mt-1.5 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
                 Choose up to {MAX_BHK} options.
               </p>
 
@@ -272,7 +300,7 @@ export function PropertyQuiz({
                     <button
                       key={n}
                       onClick={() => toggleBhk(n)}
-                      className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-[18px] border text-center transition-all hover:scale-[1.03] ${
+                      className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-card border text-center transition-all hover:scale-[1.03] ${
                         selected
                           ? "border-champagne bg-champagne/10"
                           : disabled
@@ -281,10 +309,15 @@ export function PropertyQuiz({
                       }`}
                     >
                       {selected && <Checkmark />}
-                      <div className="font-display text-[36px] leading-none text-champagne">
+                      <div
+                        className="font-display leading-none text-champagne"
+                        style={{ fontSize: "var(--step-2)" }}
+                      >
                         {n}
                       </div>
-                      <div className="text-[12px] text-muted-foreground">BHK</div>
+                      <div className="text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
+                        BHK
+                      </div>
                     </button>
                   );
                 })}
@@ -307,10 +340,13 @@ export function PropertyQuiz({
               transition={transition}
               className="flex flex-1 flex-col"
             >
-              <h3 className="font-display text-[22px] leading-tight text-foreground">
+              <h3
+                className="font-display leading-tight text-foreground"
+                style={{ fontSize: "var(--step-1)" }}
+              >
                 What budget are you comfortable with?
               </h3>
-              <p className="mt-1.5 text-[13px] text-muted-foreground">
+              <p className="mt-1.5 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
                 Choose a range that feels right — we'll refine it in a moment.
               </p>
 
@@ -325,14 +361,19 @@ export function PropertyQuiz({
                           setBudgetRange(r);
                           setBudgetSub("");
                         }}
-                        className={`relative flex h-11 w-full items-center justify-center rounded-[14px] border transition-all ${
+                        className={`relative flex h-11 w-full items-center justify-center rounded-card border transition-all ${
                           selected
                             ? "border-champagne bg-champagne/10"
                             : "border-border bg-background hover:border-foreground/30"
                         }`}
                       >
                         {selected && <Checkmark />}
-                        <span className="font-display text-[16px] text-foreground">{r}</span>
+                        <span
+                          className="font-display text-foreground"
+                          style={{ fontSize: "var(--step-0)" }}
+                        >
+                          {r}
+                        </span>
                       </button>
                       <motion.div
                         initial={false}
@@ -343,7 +384,10 @@ export function PropertyQuiz({
                         {subs && (
                           <div className="px-1 pt-2.5">
                             <div className="mb-2 border-t border-border pt-2">
-                              <p className="text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
+                              <p
+                                className="tracking-luxury text-muted-foreground"
+                                style={{ fontSize: "var(--step--2)" }}
+                              >
                                 Narrow it down:
                               </p>
                             </div>
@@ -354,11 +398,12 @@ export function PropertyQuiz({
                                   <button
                                     key={s}
                                     onClick={() => setBudgetSub(s)}
-                                    className={`rounded-full border px-3 py-1.5 text-[12px] transition-all ${
+                                    className={`rounded-full border px-3 py-1.5 transition-all ${
                                       subSelected
                                         ? "border-champagne bg-champagne/10 text-champagne"
                                         : "border-champagne/30 bg-transparent text-foreground/80 hover:border-champagne/60"
                                     }`}
+                                    style={{ fontSize: "var(--step--2)" }}
                                   >
                                     {s}
                                   </button>
@@ -406,7 +451,8 @@ function BackBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+      className="tracking-luxury flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+      style={{ fontSize: "var(--step--2)" }}
     >
       ← Back
     </button>
@@ -426,7 +472,8 @@ function NextBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center rounded-full bg-champagne text-[15px] font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-12 w-full items-center justify-center rounded-full bg-champagne font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ fontSize: "var(--step--1)" }}
     >
       {children}
     </button>

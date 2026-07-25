@@ -278,7 +278,7 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-foreground">
+            <h2 className="font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
               Tell us a little about yourself
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -306,7 +306,10 @@ export function AuthFlow() {
 
             <div className="mt-auto pt-10">
               <GoldButton onClick={handleDetails}>Continue →</GoldButton>
-              <p className="mt-4 text-center text-[11px] text-muted-foreground">
+              <p
+                className="mt-4 text-center text-muted-foreground"
+                style={{ fontSize: "var(--step--2)" }}
+              >
                 We never share your information.
               </p>
             </div>
@@ -324,7 +327,7 @@ export function AuthFlow() {
           >
             {!sessionId ? (
               <>
-                <h2 className="font-display text-3xl text-foreground">
+                <h2 className="font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
                   One last step. Verify your number
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -332,7 +335,10 @@ export function AuthFlow() {
                 </p>
 
                 <div className="mt-8">
-                  <label className="mb-2 block text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+                  <label
+                    className="tracking-luxury mb-2 block text-muted-foreground"
+                    style={{ fontSize: "var(--step--2)" }}
+                  >
                     Phone number
                   </label>
                   <div className="flex gap-2">
@@ -340,14 +346,14 @@ export function AuthFlow() {
                       <button
                         type="button"
                         onClick={() => setCountryOpen((o) => !o)}
-                        className="flex h-12 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-foreground hover:border-champagne/40"
+                        className="flex h-12 items-center gap-2 rounded-card border border-border bg-background px-3 text-sm text-foreground hover:border-champagne/40"
                       >
                         <span>{country.flag}</span>
                         <span>{country.code}</span>
                         <span className="text-muted-foreground">▾</span>
                       </button>
                       {countryOpen && (
-                        <div className="absolute top-full left-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
+                        <div className="absolute top-full left-0 z-10 mt-1 w-44 overflow-hidden rounded-card border border-border bg-background shadow-[var(--shadow-pop)]">
                           {COUNTRIES.map((c) => (
                             <button
                               key={c.code}
@@ -370,7 +376,7 @@ export function AuthFlow() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                       placeholder="98765 43210"
-                      className="h-12 flex-1 rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
+                      className="h-12 flex-1 rounded-card border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
                     />
                   </div>
                   {phoneError && (
@@ -386,7 +392,9 @@ export function AuthFlow() {
               </>
             ) : (
               <>
-                <h2 className="font-display text-3xl text-foreground">Enter the code we sent</h2>
+                <h2 className="font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
+                  Enter the code we sent
+                </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Sent to {country.code} {phone}{" "}
                   <button
@@ -418,7 +426,7 @@ export function AuthFlow() {
                       autoComplete={i === 0 ? "one-time-code" : "off"}
                       maxLength={1}
                       disabled={verifying || Boolean(verificationToken)}
-                      className="h-[52px] w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne disabled:opacity-60"
+                      className="h-[52px] w-12 rounded-card border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne disabled:opacity-60"
                     />
                   ))}
                 </motion.div>
@@ -464,7 +472,9 @@ export function AuthFlow() {
             transition={transition}
             className="flex flex-1 flex-col"
           >
-            <h2 className="font-display text-3xl text-foreground">What best describes you?</h2>
+            <h2 className="font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
+              What best describes you?
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               This helps us tailor which properties we show you first.
             </p>
@@ -476,7 +486,7 @@ export function AuthFlow() {
                   <button
                     key={key}
                     onClick={() => setProfession(key)}
-                    className={`rounded-2xl border p-5 text-left transition-all ${
+                    className={`rounded-card border p-5 text-left transition-all ${
                       selected
                         ? "border-champagne bg-champagne/10"
                         : "border-border bg-background hover:border-foreground/30"
@@ -537,7 +547,10 @@ function FieldInput({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+      <label
+        className="tracking-luxury mb-2 block text-muted-foreground"
+        style={{ fontSize: "var(--step--2)" }}
+      >
         {label}
       </label>
       <input
@@ -545,7 +558,7 @@ function FieldInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
+        className="h-12 w-full rounded-card border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
       />
     </div>
   );
@@ -555,7 +568,8 @@ function BackBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+      className="tracking-luxury flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+      style={{ fontSize: "var(--step--2)" }}
     >
       ← Back
     </button>

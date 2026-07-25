@@ -54,10 +54,16 @@ export function AdvisorPill() {
             <span className="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-hover:grid-cols-[1fr] group-focus-visible:grid-cols-[1fr]">
               <span className="overflow-hidden">
                 <span className="block whitespace-nowrap pl-3 pr-2.5 text-left leading-tight">
-                  <span className="block text-[12px] font-semibold text-foreground">
+                  <span
+                    className="block font-semibold text-foreground"
+                    style={{ fontSize: "var(--step--1)" }}
+                  >
                     Speak to an advisor
                   </span>
-                  <span className="block text-[10px] text-muted-foreground">
+                  <span
+                    className="block text-muted-foreground"
+                    style={{ fontSize: "var(--step--2)" }}
+                  >
                     Replies within the hour
                   </span>
                 </span>

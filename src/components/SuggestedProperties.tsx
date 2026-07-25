@@ -165,7 +165,7 @@ export function SuggestedProperties() {
   return (
     <section
       id="suggested"
-      className="relative scroll-mt-28 border-y border-champagne/10 py-12 sm:py-16"
+      className="relative scroll-mt-28 border-y border-[var(--rule)] py-12 sm:py-16"
     >
       <Marquee
         anchorId="suggested-in-budget"
@@ -203,13 +203,21 @@ function Marquee({
       <div className="container-lux">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-[28px] leading-tight text-ivory sm:text-[36px]">
+            <h2
+              className="font-display leading-tight text-ivory"
+              style={{ fontSize: "var(--step-2)", letterSpacing: "var(--tracking-display)" }}
+            >
               {title}
             </h2>
-            <p className="mt-1.5 text-[13px] text-muted-foreground">{subtitle}</p>
+            <p className="mt-1.5 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
+              {subtitle}
+            </p>
           </div>
-          <span className="text-[10px] tracking-luxury text-muted-foreground">
-            {list.length} {list.length === 1 ? "match" : "matches"} · hover to pause
+          <span
+            className="tracking-luxury text-muted-foreground"
+            style={{ fontSize: "var(--step--2)" }}
+          >
+            {list.length} {list.length === 1 ? "match" : "matches"}
           </span>
         </div>
       </div>
@@ -306,10 +314,10 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
         onClick={() => setOpen((v) => !v)}
         whileHover={{ y: -6 }}
         transition={{ type: "spring", stiffness: 300, damping: 22 }}
-        className="suggested-card group/card relative shrink-0 overflow-hidden rounded-2xl text-left"
+        className="suggested-card group/card relative w-[calc(100vw-2.5rem)] shrink-0 overflow-hidden rounded-card text-left sm:w-[320px]"
         style={{
           background: "var(--card)",
-          border: "1px solid var(--glass-border)",
+          border: "1px solid var(--rule)",
           boxShadow:
             "0 1px 0 0 color-mix(in oklab, var(--foreground) 6%, transparent) inset, 0 18px 40px -24px color-mix(in oklab, var(--foreground) 28%, transparent), 0 4px 12px -6px color-mix(in oklab, var(--foreground) 14%, transparent)",
         }}
@@ -330,43 +338,40 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
             }}
           />
           <span
-            className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[9px] font-semibold tracking-luxury backdrop-blur-md"
-            style={{
-              background: "rgba(255,255,255,0.92)",
-              color: "#0a0a0a",
-              border: "1px solid rgba(8,8,8,0.08)",
-              boxShadow: "0 2px 8px -2px rgba(0,0,0,0.18)",
-            }}
+            className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md"
           >
             {property.status}
           </span>
           {chipLabel && (
             <span
-              className="absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-[9px] font-semibold tracking-luxury"
-              style={{
-                background: "var(--foreground)",
-                color: "var(--background)",
-                boxShadow: "0 2px 8px -2px rgba(0,0,0,0.25)",
-              }}
+              className="absolute bottom-2.5 left-2.5 z-10 max-w-[calc(60%-1rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md"
             >
               {chipLabel}
             </span>
           )}
           <span
-            className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-semibold tracking-luxury opacity-0 transition-opacity group-hover/card:opacity-100"
-            style={{ background: "var(--foreground)", color: "var(--background)" }}
+            className="absolute bottom-2.5 right-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground opacity-0 shadow-xs backdrop-blur-md transition-opacity group-hover/card:opacity-100"
           >
-            View <ArrowUpRight className="h-2.5 w-2.5" />
+            Compare <ArrowUpRight className="h-3 w-3" />
           </span>
         </div>
         <div className="p-4">
-          <p className="text-[9px] font-semibold tracking-luxury text-muted-foreground">
+          <p
+            className="tracking-luxury font-semibold text-muted-foreground"
+            style={{ fontSize: "var(--step--2)" }}
+          >
             {property.developer}
           </p>
-          <h3 className="descender-safe mt-1 truncate font-display text-[18px] font-medium text-foreground">
+          <h3
+            className="descender-safe mt-1 truncate font-display font-medium text-foreground"
+            style={{ fontSize: "var(--step-0)" }}
+          >
             {property.name}
           </h3>
-          <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          <p
+            className="mt-1.5 inline-flex items-center gap-1 text-muted-foreground"
+            style={{ fontSize: "var(--step--2)" }}
+          >
             <MapPin className="h-3 w-3" /> {property.location}
           </p>
         </div>

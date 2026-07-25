@@ -37,8 +37,10 @@ export function ReviewPreferences() {
       transition={{ duration: 0.5 }}
       className="flex h-full flex-col"
     >
-      <h2 className="font-display text-3xl text-foreground">Welcome back, {firstName}.</h2>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <h2 className="font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
+        Welcome back, {firstName}.
+      </h2>
+      <p className="mt-2 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
         Here's what you told us last time. Still sounds right?
       </p>
 
@@ -46,12 +48,20 @@ export function ReviewPreferences() {
         {rows.map((r) => (
           <div
             key={r.label}
-            className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
+            className="flex items-center justify-between gap-4 rounded-card border border-[var(--rule)] bg-background px-4 py-3"
           >
-            <span className="text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+            <span
+              className="tracking-luxury text-muted-foreground"
+              style={{ fontSize: "var(--step--2)" }}
+            >
               {r.label}
             </span>
-            <span className="text-right text-sm font-medium text-foreground">{r.value}</span>
+            <span
+              className="text-right font-medium text-foreground"
+              style={{ fontSize: "var(--step--1)" }}
+            >
+              {r.value}
+            </span>
           </div>
         ))}
       </div>
@@ -60,14 +70,16 @@ export function ReviewPreferences() {
         <button
           type="button"
           onClick={keepAndContinue}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-champagne font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
+          style={{ fontSize: "var(--step--1)" }}
         >
           <Check className="h-4 w-4" /> Looks good, continue
         </button>
         <button
           type="button"
           onClick={openQuizForEdit}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border text-sm font-medium tracking-wide text-foreground transition-colors hover:border-foreground/30"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[var(--rule)] font-medium tracking-wide text-foreground transition-colors hover:border-foreground/40"
+          style={{ fontSize: "var(--step--1)" }}
         >
           <Pencil className="h-4 w-4" /> Edit my preferences
         </button>

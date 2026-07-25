@@ -94,10 +94,12 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
               transition={{ duration: 0.6 }}
             >
               <div className="mb-3 flex items-center gap-3">
-                <h3 className="font-display text-[20px] text-ivory sm:text-[24px]">{cfgKey}</h3>
+                <h3 className="font-display text-ivory" style={{ fontSize: "var(--step-1)" }}>
+                  {cfgKey}
+                </h3>
                 <span className="h-px flex-1 bg-champagne/15" />
               </div>
-              <div className="overflow-x-auto rounded-3xl border-2 border-border-strong bg-card/60">
+              <div className="overflow-x-auto rounded-card border-2 border-border-strong bg-card/60">
                 <div style={minWidth ? { minWidth } : undefined}>
                   {anyMultiVariant && (
                     <div
@@ -109,7 +111,10 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                         } as React.CSSProperties
                       }
                     >
-                      <p className="compare-label text-[10px] tracking-luxury text-muted-foreground sm:text-[11px]">
+                      <p
+                        className="compare-label tracking-luxury text-muted-foreground"
+                        style={{ fontSize: "var(--step--2)" }}
+                      >
                         Layout
                       </p>
                       {properties.map((p) => (
@@ -129,7 +134,7 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                     <div
                       key={key}
                       className={`compare-cols grid items-start gap-3 p-4 sm:items-center sm:p-5 ${
-                        rowIdx > 0 ? "border-t border-[var(--glass-border)]" : ""
+                        rowIdx > 0 ? "border-t border-[var(--rule)]" : ""
                       }`}
                       style={
                         {
@@ -138,7 +143,10 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                         } as React.CSSProperties
                       }
                     >
-                      <p className="compare-label text-[10px] tracking-luxury text-muted-foreground sm:text-[11px]">
+                      <p
+                        className="compare-label tracking-luxury text-muted-foreground"
+                        style={{ fontSize: "var(--step--2)" }}
+                      >
                         {label}
                       </p>
                       {properties.map((p) => {
@@ -147,11 +155,17 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                           // Values centre under their property column so a row of
                           // dashes reads as a column, not a ragged left edge.
                           <div key={p.id} className="sm:text-center">
-                            <p className="truncate text-[9px] tracking-luxury text-muted-foreground sm:hidden">
+                            <p
+                              className="tracking-luxury truncate text-muted-foreground sm:hidden"
+                              style={{ fontSize: "var(--step--2)" }}
+                            >
                               {p.name}
                             </p>
                             {variants.length === 0 ? (
-                              <p className="text-[12px] leading-snug text-muted-foreground/60 sm:text-[14px]">
+                              <p
+                                className="leading-snug text-muted-foreground/60"
+                                style={{ fontSize: "var(--step--1)" }}
+                              >
                                 Not offered
                               </p>
                             ) : (
@@ -164,13 +178,19 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
                                   const val = (v[key as keyof typeof v] as string | null) ?? null;
                                   if (!val) {
                                     return (
-                                      <p className="text-[12px] leading-snug text-muted-foreground/60 sm:text-[14px]">
+                                      <p
+                                        className="leading-snug text-muted-foreground/60"
+                                        style={{ fontSize: "var(--step--1)" }}
+                                      >
                                         {DASH}
                                       </p>
                                     );
                                   }
                                   return (
-                                    <div className="text-[12px] leading-snug text-ivory/90 sm:text-[14px]">
+                                    <div
+                                      className="leading-snug text-ivory/90"
+                                      style={{ fontSize: "var(--step--1)" }}
+                                    >
                                       {key === "area" || key === "carpet" ? (
                                         <BareAreaValue value={val} />
                                       ) : (
@@ -191,7 +211,7 @@ export function RoomDimensionsSection({ properties }: { properties: Property[] }
             </motion.div>
           );
         })}
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
           All areas and dimensions are approximate, as shared by the developers.
         </p>
       </div>

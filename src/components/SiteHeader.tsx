@@ -83,7 +83,7 @@ export function SiteHeader() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-40 border-b border-[var(--glass-border)] backdrop-blur-md [transform:translateZ(0)] transition-shadow duration-300 ${
-        scrolled ? "bg-lux-black/90 shadow-[0_12px_34px_-20px_rgba(0,0,0,0.5)]" : "bg-lux-black/80"
+        scrolled ? "bg-card/90 shadow-[0_12px_34px_-20px_rgba(0,0,0,0.5)]" : "bg-card/80"
       }`}
     >
       <div
@@ -101,13 +101,20 @@ export function SiteHeader() {
           </span>
           <div className="leading-tight">
             <p className="font-display text-lg leading-none text-ivory">PIKORUA</p>
-            <p className="mt-1 font-label text-[9px] tracking-luxury text-champagne">
+            <p
+              className="font-label tracking-luxury mt-1 text-champagne"
+              style={{ fontSize: "var(--step--2)" }}
+            >
               Property Consultant
             </p>
           </div>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav.
+            Gold in this bar is now just two things: the wordmark above, and
+            the Contact button below — a nav item lighting up gold every time
+            its section scrolls into view, and every control's border tinted
+            gold at rest, made permanent chrome look like a special occasion. */}
         <nav className="hidden items-center gap-8 sm:flex">
           {NAV_LINKS.map((l) => {
             const active = activeSection === l.href;
@@ -116,13 +123,14 @@ export function SiteHeader() {
                 key={l.href}
                 href={l.href}
                 aria-current={active ? "true" : undefined}
-                className={`relative text-[11px] tracking-luxury transition-colors hover:text-champagne ${
-                  active ? "text-champagne" : "text-ivory/70"
+                className={`tracking-luxury relative transition-colors hover:text-foreground ${
+                  active ? "text-foreground" : "text-ivory/70"
                 }`}
+                style={{ fontSize: "var(--step--2)" }}
               >
                 {l.label}
                 <span
-                  className={`absolute -bottom-1.5 left-0 h-px bg-champagne transition-all duration-300 ${
+                  className={`absolute -bottom-1.5 left-0 h-px bg-foreground transition-all duration-300 ${
                     active ? "w-full" : "w-0"
                   }`}
                 />
@@ -135,7 +143,8 @@ export function SiteHeader() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Contact on WhatsApp"
-            className="inline-flex items-center gap-1.5 rounded-full border border-champagne/40 bg-champagne/10 px-3 py-1.5 text-[11px] tracking-luxury text-ivory transition hover:border-champagne hover:bg-champagne/20 hover:text-champagne"
+            className="tracking-luxury inline-flex items-center gap-1.5 rounded-full border border-champagne/40 bg-champagne/10 px-3 py-1.5 text-ivory transition hover:border-champagne hover:bg-champagne/20 hover:text-champagne"
+            style={{ fontSize: "var(--step--2)" }}
           >
             <MessageCircle className="h-3.5 w-3.5" />
             Contact
@@ -144,12 +153,16 @@ export function SiteHeader() {
           <Link
             to="/favorites"
             aria-label="Saved residences"
-            className="relative flex items-center gap-2 text-[11px] tracking-luxury text-ivory/70 transition hover:text-champagne"
+            className="tracking-luxury relative flex items-center gap-2 text-ivory/70 transition hover:text-foreground"
+            style={{ fontSize: "var(--step--2)" }}
           >
             <Heart data-saved-target className="h-3.5 w-3.5" />
             Saved
             {hydrated && favCount > 0 && (
-              <span className="grid h-4 min-w-4 place-items-center rounded-full bg-champagne px-1 text-[9px] font-medium text-lux-black">
+              <span
+                className="grid h-4 min-w-4 place-items-center rounded-full bg-champagne px-1 font-medium text-lux-black"
+                style={{ fontSize: "var(--step--2)" }}
+              >
                 {favCount}
               </span>
             )}
@@ -159,7 +172,7 @@ export function SiteHeader() {
             onClick={toggle}
             aria-label="Toggle theme"
             title={theme === "dark" ? "Switch to light" : "Switch to dark"}
-            className="grid h-8 w-8 place-items-center rounded-full border border-champagne/30 text-ivory/80 transition hover:border-champagne hover:text-champagne focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50"
+            className="grid h-8 w-8 place-items-center rounded-full border border-[var(--rule)] text-ivory/80 transition hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50"
           >
             {hydrated && theme === "dark" ? (
               <Sun className="h-3.5 w-3.5" />
@@ -170,7 +183,8 @@ export function SiteHeader() {
           {userProfile ? (
             <Link
               to="/account"
-              className="flex items-center gap-2 rounded-full border border-champagne/30 bg-champagne/5 py-1 pr-3 pl-1 text-[11px] tracking-luxury text-ivory hover:border-champagne/60"
+              className="tracking-luxury flex items-center gap-2 rounded-full border border-[var(--rule)] py-1 pr-3 pl-1 text-ivory transition hover:border-foreground/40"
+              style={{ fontSize: "var(--step--2)" }}
             >
               <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-champagne to-muted-gold font-display text-xs text-lux-black">
                 {initials}
@@ -180,7 +194,8 @@ export function SiteHeader() {
           ) : (
             <Link
               to="/account"
-              className="flex items-center gap-2 rounded-full border border-champagne/30 px-3 py-1.5 text-[11px] tracking-luxury text-ivory/80 transition hover:border-champagne hover:text-champagne"
+              className="tracking-luxury flex items-center gap-2 rounded-full border border-[var(--rule)] px-3 py-1.5 text-ivory/80 transition hover:border-foreground/40 hover:text-foreground"
+              style={{ fontSize: "var(--step--2)" }}
             >
               <UserRound className="h-3.5 w-3.5" />
               Account
@@ -194,7 +209,7 @@ export function SiteHeader() {
             type="button"
             onClick={toggle}
             aria-label="Toggle theme"
-            className="grid h-9 w-9 place-items-center rounded-full border border-champagne/30 text-ivory/80 transition hover:border-champagne hover:text-champagne"
+            className="grid h-9 w-9 place-items-center rounded-full border border-[var(--rule)] text-ivory/80 transition hover:border-foreground/40 hover:text-foreground"
           >
             {hydrated && theme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -205,11 +220,14 @@ export function SiteHeader() {
           <Link
             to="/favorites"
             aria-label="Saved residences"
-            className="relative grid h-9 w-9 place-items-center rounded-full border border-champagne/30 text-ivory/80 transition hover:border-champagne hover:text-champagne"
+            className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--rule)] text-ivory/80 transition hover:border-foreground/40 hover:text-foreground"
           >
             <Heart data-saved-target className="h-4 w-4" />
             {hydrated && favCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-champagne px-1 text-[9px] font-medium text-lux-black">
+              <span
+                className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-champagne px-1 font-medium text-lux-black"
+                style={{ fontSize: "var(--step--2)" }}
+              >
                 {favCount}
               </span>
             )}
@@ -219,7 +237,7 @@ export function SiteHeader() {
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
-            className="grid h-9 w-9 place-items-center rounded-full border border-champagne/30 text-ivory transition hover:border-champagne hover:text-champagne focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50"
+            className="grid h-9 w-9 place-items-center rounded-full border border-[var(--rule)] text-ivory transition hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50"
           >
             {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
@@ -235,7 +253,7 @@ export function SiteHeader() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-[var(--glass-border)] bg-lux-black/95 backdrop-blur-xl sm:hidden"
+            className="overflow-hidden border-t border-[var(--glass-border)] bg-card/95 text-foreground backdrop-blur-xl sm:hidden"
           >
             <div className="flex flex-col gap-1 px-4 py-4">
               {NAV_LINKS.map((l) => (
@@ -243,7 +261,8 @@ export function SiteHeader() {
                   key={l.href}
                   href={l.href}
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-xl px-4 py-3.5 text-[12px] tracking-luxury text-ivory/80 transition hover:bg-champagne/10 hover:text-champagne"
+                  className="tracking-luxury rounded-xl px-4 py-3.5 text-foreground/80 transition hover:bg-muted hover:text-foreground touch-manipulation active:scale-[0.99]"
+                  style={{ fontSize: "var(--step--1)" }}
                 >
                   {l.label}
                 </a>
@@ -251,13 +270,17 @@ export function SiteHeader() {
               <Link
                 to="/favorites"
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[12px] tracking-luxury text-ivory/80 transition hover:bg-champagne/10 hover:text-champagne"
+                className="tracking-luxury flex items-center justify-between rounded-xl px-4 py-3.5 text-foreground/80 transition hover:bg-muted hover:text-foreground touch-manipulation active:scale-[0.99]"
+                style={{ fontSize: "var(--step--1)" }}
               >
                 <span className="inline-flex items-center gap-2">
                   <Heart className="h-3.5 w-3.5" /> Saved
                 </span>
                 {hydrated && favCount > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-champagne px-1.5 text-[10px] font-medium text-lux-black">
+                  <span
+                    className="grid h-5 min-w-5 place-items-center rounded-full bg-champagne px-1.5 font-medium text-lux-black"
+                    style={{ fontSize: "var(--step--2)" }}
+                  >
                     {favCount}
                   </span>
                 )}
@@ -265,7 +288,8 @@ export function SiteHeader() {
               <Link
                 to="/account"
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-[12px] tracking-luxury text-ivory/80 transition hover:bg-champagne/10 hover:text-champagne"
+                className="tracking-luxury flex items-center gap-3 rounded-xl px-4 py-3.5 text-foreground/80 transition hover:bg-muted hover:text-foreground touch-manipulation active:scale-[0.99]"
+                style={{ fontSize: "var(--step--1)" }}
               >
                 {userProfile ? (
                   <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-champagne to-muted-gold font-display text-xs text-lux-black">
@@ -281,9 +305,10 @@ export function SiteHeader() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMenuOpen(false)}
-                className="mt-2 inline-flex items-center justify-center gap-2 rounded-full border border-champagne/40 bg-champagne/10 px-4 py-3 text-[12px] tracking-luxury text-ivory transition hover:border-champagne hover:text-champagne"
+                className="tracking-luxury mt-2 inline-flex items-center justify-center gap-2 rounded-full border border-champagne/40 bg-champagne/10 px-4 py-3 text-foreground transition hover:border-champagne hover:text-champagne touch-manipulation active:scale-[0.99]"
+                style={{ fontSize: "var(--step--1)" }}
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4 text-champagne" />
                 Contact on WhatsApp
               </a>
             </div>

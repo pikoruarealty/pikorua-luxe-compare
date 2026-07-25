@@ -7,7 +7,7 @@ const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-[var(--glass-border)] bg-card/40">
+    <footer className="mt-24 border-t border-[var(--rule)] bg-card/40">
       <div className="container-lux py-14">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           {/* Brand */}
@@ -21,30 +21,47 @@ export function SiteFooter() {
               </span>
               <div className="leading-tight">
                 <p className="font-display text-xl leading-none text-ivory">PIKORUA</p>
-                <p className="mt-1 font-label text-[9px] tracking-luxury text-champagne">
+                <p
+                  className="font-label tracking-luxury mt-1 text-champagne"
+                  style={{ fontSize: "var(--step--2)" }}
+                >
                   Property Consultant
                 </p>
               </div>
             </Link>
-            <p className="mt-5 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
+            <p
+              className="mt-5 max-w-sm leading-relaxed text-muted-foreground"
+              style={{ fontSize: "var(--step--1)" }}
+            >
               An editorial suite for comparing ultra-luxury residences. Curated by Pikorua's
               private-client advisory to help you decide with clarity.
             </p>
           </div>
 
-          {/* Explore */}
+          {/* Explore.
+              Plain links hover to foreground now, not champagne — gold in
+              this footer marks two things (the wordmark, the WhatsApp CTA),
+              not a shared hover color for every link on the page. */}
           <div>
-            <p className="font-label text-[10px] tracking-luxury text-champagne">Explore</p>
-            <ul className="mt-4 space-y-3 text-[13px]">
+            <p
+              className="font-label tracking-luxury text-champagne"
+              style={{ fontSize: "var(--step--2)" }}
+            >
+              Explore
+            </p>
+            <ul className="mt-4 space-y-3" style={{ fontSize: "var(--step--1)" }}>
               <li>
-                <a href="/#suite" className="text-muted-foreground transition hover:text-champagne">
+                <a
+                  href="/#suite"
+                  className="text-muted-foreground transition hover:text-foreground"
+                >
                   Comparison Suite
                 </a>
               </li>
               <li>
                 <a
                   href="/#collection"
-                  className="text-muted-foreground transition hover:text-champagne"
+                  className="text-muted-foreground transition hover:text-foreground"
                 >
                   The Collection
                 </a>
@@ -52,7 +69,7 @@ export function SiteFooter() {
               <li>
                 <Link
                   to="/favorites"
-                  className="inline-flex items-center gap-1.5 text-muted-foreground transition hover:text-champagne"
+                  className="inline-flex items-center gap-1.5 text-muted-foreground transition hover:text-foreground"
                 >
                   <Heart className="h-3 w-3" /> Saved Residences
                 </Link>
@@ -62,8 +79,16 @@ export function SiteFooter() {
 
           {/* Contact */}
           <div>
-            <p className="font-label text-[10px] tracking-luxury text-champagne">Speak with us</p>
-            <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
+            <p
+              className="font-label tracking-luxury text-champagne"
+              style={{ fontSize: "var(--step--2)" }}
+            >
+              Speak with us
+            </p>
+            <p
+              className="mt-4 leading-relaxed text-muted-foreground"
+              style={{ fontSize: "var(--step--1)" }}
+            >
               Questions about a residence, pricing, or possession? Our advisors reply within the
               hour.
             </p>
@@ -71,7 +96,8 @@ export function SiteFooter() {
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-champagne/40 bg-champagne/10 px-5 py-2.5 text-[11px] tracking-luxury text-ivory transition hover:border-champagne hover:bg-champagne/20 hover:text-champagne"
+              className="tracking-luxury mt-5 inline-flex items-center gap-2 rounded-full border border-champagne/40 bg-champagne/10 px-5 py-2.5 text-ivory transition hover:border-champagne hover:bg-champagne/20 hover:text-champagne"
+              style={{ fontSize: "var(--step--2)" }}
             >
               <MessageCircle className="h-3.5 w-3.5" />
               WhatsApp Advisory
@@ -79,11 +105,14 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--glass-border)] pt-6 sm:flex-row">
-          <p className="text-[11px] text-muted-foreground">
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--rule)] pt-6 sm:flex-row">
+          <p className="text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
             © {new Date().getFullYear()} Pikorua Realty. All rights reserved.
           </p>
-          <p className="font-label text-[10px] tracking-luxury text-muted-foreground">
+          <p
+            className="font-label tracking-luxury text-muted-foreground"
+            style={{ fontSize: "var(--step--2)" }}
+          >
             Compare · Decide · Reside
           </p>
         </div>

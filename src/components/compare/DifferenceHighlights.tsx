@@ -97,17 +97,26 @@ export function DifferenceHighlights({ properties }: DifferenceHighlightsProps) 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, delay: i * 0.06 }}
-            className="glass rounded-[32px] p-7"
+            className="rounded-card border border-[var(--rule)] bg-card p-7"
           >
             <div className="flex items-center justify-between">
-              <p className="text-[10px] tracking-luxury text-champagne">{h.label}</p>
+              <span className="rounded-full border border-champagne/40 bg-champagne/10 px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase text-champagne">
+                {h.label}
+              </span>
               <TrendingUp className="h-4 w-4 text-champagne" />
             </div>
-            <p className="mt-4 font-display text-2xl text-ivory">
+            <p className="mt-4 font-display text-ivory" style={{ fontSize: "var(--step-1)" }}>
               {properties[h.winnerIndex].name}
             </p>
-            <p className="mt-1 gold-text font-display text-lg">{h.winnerValue}</p>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{h.detail}</p>
+            <p className="gold-text mt-1 font-display" style={{ fontSize: "var(--step-0)" }}>
+              {h.winnerValue}
+            </p>
+            <p
+              className="mt-3 leading-relaxed text-muted-foreground"
+              style={{ fontSize: "var(--step--1)" }}
+            >
+              {h.detail}
+            </p>
           </motion.div>
         ))}
       </div>

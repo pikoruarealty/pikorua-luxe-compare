@@ -31,7 +31,8 @@ export function ComparisonHero({ properties }: ComparisonHeroProps) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 rounded-full border border-[var(--glass-border)] bg-[var(--card)]/60 px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.24em] text-champagne backdrop-blur-md sm:px-4 sm:text-[10px] sm:tracking-[0.32em]"
+          className="tracking-luxury inline-flex items-center gap-2 rounded-full border border-[var(--rule)] bg-card px-4 py-1.5 font-medium text-champagne"
+          style={{ fontSize: "var(--step--2)" }}
         >
           <span className="h-1 w-1 rounded-full bg-champagne" />
           The Comparison Suite
@@ -61,7 +62,8 @@ export function ComparisonHero({ properties }: ComparisonHeroProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="mx-auto mt-7 max-w-xl text-[15px] font-medium leading-relaxed text-muted-foreground sm:mt-10 sm:text-[18px]"
+          className="mx-auto mt-7 max-w-xl font-medium leading-relaxed text-muted-foreground sm:mt-10"
+          style={{ fontSize: "var(--step-0)" }}
         >
           A side-by-side study of design, scale and quiet privilege — curated by Pikorua's
           private-client advisory.

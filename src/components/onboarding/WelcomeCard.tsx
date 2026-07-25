@@ -21,8 +21,13 @@ export function WelcomeCard() {
         <Sparkles className="h-8 w-8 text-champagne" />
       </motion.div>
 
-      <h2 className="mt-6 font-display text-4xl text-foreground">Welcome, {firstName}.</h2>
-      <p className="mt-3 font-display text-2xl text-champagne" style={{ fontStyle: "normal" }}>
+      <h2 className="mt-6 font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
+        Welcome, {firstName}.
+      </h2>
+      <p
+        className="mt-3 font-display text-champagne"
+        style={{ fontStyle: "normal", fontSize: "var(--step-1)" }}
+      >
         Compare confidently. Decide clearly.
       </p>
 
@@ -40,7 +45,8 @@ export function WelcomeCard() {
       <div className="mt-10 w-full max-w-[320px]">
         <button
           onClick={() => setPhase("site-preview")}
-          className="flex h-12 w-full items-center justify-center rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
+          className="flex h-12 w-full items-center justify-center rounded-full bg-champagne font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
+          style={{ fontSize: "var(--step--1)" }}
         >
           Start comparing →
         </button>

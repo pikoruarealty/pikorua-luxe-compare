@@ -41,28 +41,34 @@ export function OverviewSection({ properties }: OverviewSectionProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6, delay: rowIdx * 0.05 }}
-            className="compare-cols grid items-center gap-3 rounded-3xl bg-card/60 p-4 sm:p-6"
+            className="compare-cols grid items-center gap-3 rounded-card border border-[var(--rule)] bg-card/60 p-4 sm:p-6"
             style={
               {
                 gridTemplateColumns: `minmax(120px, 200px) repeat(${properties.length}, minmax(0, 1fr))`,
-                border: "1px solid var(--glass-border)",
                 "--compare-cols": properties.length,
               } as React.CSSProperties
             }
           >
-            <p className="compare-label text-[10px] tracking-luxury text-muted-foreground sm:text-[11px]">
+            <p
+              className="compare-label tracking-luxury text-muted-foreground"
+              style={{ fontSize: "var(--step--2)" }}
+            >
               {row.label}
             </p>
             {row.values.map((val, i) => (
               <div
                 key={i}
-                className={`rounded-2xl px-2.5 py-3 text-[13px] transition-colors sm:px-4 sm:text-center sm:text-base ${
+                className={`rounded-card px-2.5 py-3 transition-colors sm:px-4 sm:text-center ${
                   row.highlightIndex === i
                     ? "bg-gradient-to-br from-champagne/20 to-transparent text-ivory ring-1 ring-champagne/40"
                     : "text-ivory/85"
                 }`}
+                style={{ fontSize: "var(--step--1)" }}
               >
-                <p className="mb-0.5 truncate text-[9px] tracking-luxury text-muted-foreground sm:hidden">
+                <p
+                  className="tracking-luxury mb-0.5 truncate text-muted-foreground sm:hidden"
+                  style={{ fontSize: "var(--step--2)" }}
+                >
                   {properties[i].name}
                 </p>
                 {val}

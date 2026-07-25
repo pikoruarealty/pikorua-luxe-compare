@@ -12,6 +12,11 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  /* Editorial-print radius scale — three sizes, not fifteen. `rounded-card`
+     is the target for every media frame, panel and dialog; `rounded-none`
+     and `rounded-full` cover the other two cases (structural bands / table
+     cells, and pills / buttons). Introduced here; rolled out file-by-file. */
+  --radius-card: 12px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -51,6 +56,10 @@
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-label:
     "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Partner marquee — duration is overridden inline by useMarqueeSpeed so the
+     scroll velocity stays constant regardless of track length or viewport size. */
+  --animate-marquee-continuous: marquee-continuous var(--marquee-duration, 60s) linear infinite;
 }
 
 /* =========================================================
@@ -64,14 +73,23 @@
   --radius: 0.75rem;
 
   /* ===== Editorial foundation tokens (Phase 1) ===== */
-  /* Fluid modular type scale — min size on phones, max on wide screens. */
-  --step--1: clamp(0.83rem, 0.79rem + 0.18vw, 0.94rem);
+  /* Fluid modular type scale — min size on phones, max on wide screens.
+     --step--2 is the label/eyebrow floor: nothing in the app should render
+     smaller than this. It replaces the 8px/9px/10px sizes that used to carry
+     real information (developer names, locations, table row headers) below
+     the point where uppercase + wide tracking is still legible. */
+  --step--2: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --step--1: clamp(0.85rem, 0.8rem + 0.2vw, 0.95rem);
   --step-0: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
   --step-1: clamp(1.2rem, 1.09rem + 0.55vw, 1.55rem);
   --step-2: clamp(1.5rem, 1.28rem + 1.1vw, 2.2rem);
   --step-3: clamp(1.85rem, 1.45rem + 2vw, 3.1rem);
   --step-4: clamp(2.3rem, 1.6rem + 3.4vw, 4.5rem);
   --step-5: clamp(2.9rem, 1.7rem + 5.6vw, 6.5rem);
+
+  /* Refined letter spacing scale for crisp, readable uppercase eyebrows */
+  --tracking-eyebrow: 0.14em;
+  --tracking-display: -0.02em;
 
   /* 8pt spacing scale, an editorial section rhythm, and a prose reading measure. */
   --space-2: 0.5rem;
@@ -84,6 +102,14 @@
   --space-24: 6rem;
   --space-section: clamp(4rem, 3rem + 6vw, 9rem);
   --measure: 66ch;
+
+  /* Single elevation for editorial print — structure comes from --rule
+     hairlines, not shadows. Reserved for surfaces that genuinely detach from
+     the page (dropdowns, the lightbox), not cards or media frames. Target
+     replacement for --shadow-lift / --shadow-deep / --shadow-gold /
+     --shadow-glass, which currently disagree with each other across ~15
+     components; those stay defined below until each caller migrates. */
+  --shadow-pop: 0 12px 32px -12px color-mix(in oklab, var(--foreground) 22%, transparent);
 
   /* Metallic "foil" accent — for primary CTAs and the wordmark, so gold reads
      as a material with a sheen rather than a flat fill. Resolves against the
@@ -153,64 +179,79 @@
 
   --glass-bg: rgba(21, 21, 21, 0.82);
   --glass-border: rgba(255, 255, 255, 0.16);
+
+  /* Sticky label column in the comparison matrix — a subtly lighter graphite
+     surface that visually anchors the pinned column against the scrolling data.
+     Needs to be opaque so content never bleeds through during h-scroll. */
+  --sticky-col-bg: #1b1b1b;
 }
 
 .light {
   --lux-black: #ffffff;
   --soft-black: #ffffff;
-  --graphite: #f4f4f4;
-  --ivory: #080808;
+  --graphite: #f4f4f5;
+  --ivory: #09090b;
 
-  --champagne-gold: #080808;
-  --antique-gold: #080808;
-  --muted-gold: #3f3f3f;
+  --champagne-gold: #b89343;
+  --antique-gold: #9a7830;
+  --muted-gold: #735921;
 
   --background: #ffffff;
-  --foreground: #080808;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #080808;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #080808;
-  --primary: #080808;
+  --popover-foreground: #09090b;
+  --primary: #09090b;
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f4;
-  --secondary-foreground: #080808;
-  --muted: #f6f6f6;
-  --muted-foreground: #2a2a2a;
-  --accent: #080808;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #09090b;
   --accent-foreground: #ffffff;
-  --border: rgba(8, 8, 8, 0.16);
-  --input: rgba(8, 8, 8, 0.24);
-  --ring: #080808;
+  --border: rgba(0, 0, 0, 0.09);
+  --input: rgba(0, 0, 0, 0.12);
+  --ring: #b89343;
 
-  --gradient-gold: linear-gradient(135deg, #080808 0%, #343434 100%);
-  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #f7f7f7 100%);
+  --gradient-gold: linear-gradient(135deg, #09090b 0%, #27272a 100%);
+  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
   --gradient-radial-gold: none;
 
-  --shadow-gold: 0 18px 44px -30px rgba(8, 8, 8, 0.26);
-  --shadow-deep: 0 24px 60px -38px rgba(8, 8, 8, 0.28);
-  --shadow-glass: 0 8px 24px -14px rgba(8, 8, 8, 0.18);
+  --shadow-gold: 0 18px 44px -30px rgba(0, 0, 0, 0.08);
+  --shadow-deep: 0 24px 60px -38px rgba(0, 0, 0, 0.1);
+  --shadow-glass: 0 8px 24px -14px rgba(0, 0, 0, 0.06);
 
   --glass-bg: rgba(255, 255, 255, 0.92);
-  --glass-border: rgba(8, 8, 8, 0.16);
+  --glass-border: rgba(0, 0, 0, 0.09);
+
+  /* Warm champagne-ivory sticky column — a creamy off-white that lifts the
+     pinned label column slightly above the pure #ffffff card surface so it
+     reads as "anchored" without feeling harsh. */
+  --sticky-col-bg: #f4f4f5;
+  --border-strong: rgba(18, 16, 14, 0.18);
 }
 
 .light body {
   background:
-    linear-gradient(rgba(8, 8, 8, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(8, 8, 8, 0.035) 1px, transparent 1px), #ffffff;
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px), #ffffff;
   background-size: 44px 44px;
 }
 
 .light header,
 .light .glass,
 .light .glass-strong {
-  background: rgba(255, 255, 255, 0.94) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   color: var(--foreground) !important;
 }
 
 /* ----------------- Compat overrides for legacy luxury classes ----------------- */
-/* Map all `lux-black` / `soft-black` / `graphite` surface utilities to current tokens. */
+/* Map all `lux-black` / `soft-black` / `graphite` surface utilities to current
+   tokens. This is the only definition of these four groups — unlike the
+   champagne/gold-text/gold-border rules below, they weren't duplicated
+   further down the file, so there's nothing to consolidate here. Still used
+   by ~28 components; not migrated off in this pass. */
 .bg-lux-black {
   background-color: var(--background) !important;
 }
@@ -267,78 +308,17 @@
   color: color-mix(in oklab, var(--foreground) 60%, transparent) !important;
 }
 
-.text-champagne,
-.text-champagne\/90,
-.text-champagne\/80,
-.text-champagne\/70,
-.text-champagne\/60 {
-  color: var(--brand-strong, var(--brand)) !important;
-}
-.text-champagne\/40 {
-  color: color-mix(in oklab, var(--brand-strong, var(--brand)) 55%, transparent) !important;
-}
-
-/* Backgrounds tied to gold */
-.bg-champagne {
-  background-color: var(--brand) !important;
-  color: var(--brand-ink) !important;
-}
-.bg-champagne\/5 {
-  background-color: color-mix(in oklab, var(--brand) 8%, transparent) !important;
-}
-.bg-champagne\/10,
-.bg-champagne\/12 {
-  background-color: color-mix(in oklab, var(--brand) 14%, transparent) !important;
-}
-.bg-muted-gold {
-  background-color: color-mix(in oklab, var(--brand) 65%, var(--muted)) !important;
-}
-
-/* Borders tied to gold */
-.border-champagne\/12 {
-  border-color: color-mix(in oklab, var(--brand) 18%, transparent) !important;
-}
-.border-champagne\/15,
-.border-champagne\/18,
-.border-champagne\/20,
-.border-champagne\/22 {
-  border-color: color-mix(in oklab, var(--brand) 26%, transparent) !important;
-}
-.border-champagne\/25,
-.border-champagne\/30,
-.border-champagne\/40 {
-  border-color: color-mix(in oklab, var(--brand) 40%, transparent) !important;
-}
-.border-champagne\/50 {
-  border-color: color-mix(in oklab, var(--brand) 55%, transparent) !important;
-}
-.border-champagne {
-  border-color: var(--brand) !important;
-}
-.divide-champagne\/12 > :not([hidden]) ~ :not([hidden]) {
-  border-color: color-mix(in oklab, var(--brand) 18%, transparent) !important;
-}
-.ring-champagne\/35 {
-  --tw-ring-color: color-mix(in oklab, var(--brand) 40%, transparent) !important;
-}
-.ring-champagne\/40,
-.ring-champagne\/45 {
-  --tw-ring-color: color-mix(in oklab, var(--brand) 55%, transparent) !important;
-}
-
-/* Gold gradient text → active brand accent */
+/* The champagne / gold-text / gold-border rules used to be fully re-declared
+   again near the end of this file (a second "PALETTE SYSTEM" pass), so every
+   one of them silently ran as two competing !important rules with the later
+   one winning — e.g. .border-champagne\/30 was 40% here and 45% there, and
+   .gold-border had a transparent background here vs a tinted one there. That
+   version is now the single source; see it for the live values. The one
+   property genuinely unique to this earlier pass — -webkit-text-fill-color,
+   needed by older WebKit alongside `color: transparent` for the gradient-clip
+   to render — is kept below so nothing is lost by removing the duplicates. */
 .gold-text {
-  background: linear-gradient(120deg, var(--brand), var(--brand-soft)) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
-  color: transparent !important;
-}
-
-/* Gold-border becomes a brand hairline */
-.gold-border {
-  border: 1px solid color-mix(in oklab, var(--brand) 45%, transparent) !important;
-  background: transparent !important;
 }
 
 /* Theme transitions — applied ONLY while the theme is switching.
@@ -442,47 +422,70 @@ html.theme-anim * {
   box-shadow: var(--shadow-deep);
 }
 
-@utility tracking-luxury {
-  letter-spacing: 0.22em;
+/* This is the eyebrow/label treatment — kept under its existing name (105
+   call sites) but now sourced from --tracking-eyebrow so there's one place
+   that value lives, not two. */
+/* Eyebrow label tracking */
+.tracking-luxury {
+  letter-spacing: var(--tracking-eyebrow, 0.12em);
   text-transform: uppercase;
 }
 
-/* Metallic gold CTA surface — a foil gradient with a lit top edge and a soft
-   colored cast, so primary actions read as a precious material rather than a
-   flat fill. Text uses --brand-ink for contrast on the gold. */
-@utility foil {
-  background: var(--gradient-foil);
-  color: var(--brand-ink);
+/* Metallic gold CTA surface — a rich gold foil gradient with lit top edge and soft glow */
+.foil {
+  background: linear-gradient(135deg, #e8d097 0%, #c8a45d 50%, #ab853c 100%) !important;
+  color: #121212 !important;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, white 45%, transparent),
-    inset 0 -1px 0 color-mix(in oklab, black 22%, transparent),
-    0 10px 30px -12px color-mix(in oklab, var(--brand) 60%, transparent);
-  transition:
-    filter 0.4s ease,
-    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 8px 24px -8px rgba(200, 164, 93, 0.5) !important;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 .foil:hover {
-  filter: brightness(1.05) saturate(1.04);
+  filter: brightness(1.08) saturate(1.05);
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, white 55%, transparent),
-    inset 0 -1px 0 color-mix(in oklab, black 24%, transparent),
-    0 16px 42px -14px color-mix(in oklab, var(--brand) 72%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 14px 34px -8px rgba(200, 164, 93, 0.7) !important;
+  transform: translateY(-1px);
 }
 .foil:active {
   transform: translateY(1px);
 }
 
-/* Editorial hairline rule — a drawn-ink divider on the active palette. */
-@utility hairline {
+/* Gold bordered secondary CTA pill */
+.gold-border {
+  border: 1.5px solid rgba(200, 164, 93, 0.55) !important;
+  color: var(--champagne, #c8a45d) !important;
+  background: transparent !important;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+.gold-border:hover {
+  border-color: rgba(200, 164, 93, 0.95) !important;
+  background: var(--champagne, #c8a45d) !important;
+  color: #121212 !important;
+  box-shadow: 0 6px 22px -6px rgba(200, 164, 93, 0.45) !important;
+}
+
+/* Gold gradient text */
+.gold-text {
+  background: linear-gradient(135deg, #f3e5c8 0%, #c8a45d 50%, #ab853c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Editorial hairline rule */
+.hairline {
   border: 0;
   height: 1px;
   background: var(--rule);
 }
 
-/* Small uppercase UI / eyebrow labels stay in the geometric sans (Plus Jakarta),
-   which reads cleaner than a high-contrast serif at label sizes. */
-@utility font-label {
+/* Small uppercase UI / eyebrow labels */
+.font-label {
   font-family: var(--font-label);
 }
 
@@ -524,6 +527,17 @@ html.theme-anim * {
 @media (min-width: 768px) {
   .compare-row[style*="--row-cols"] {
     grid-template-columns: var(--row-cols) !important;
+  }
+}
+
+/* Mobile comparison table — sticky label column.
+   A subtle right-side shadow indicates scrollable content beyond the column,
+   without obscuring the values. Only needed below the md breakpoint where the
+   table switches from CSS grid to horizontal scroll + flex rows. */
+@media (max-width: 767px) {
+  .compare-row > *:first-child,
+  .compare-row > [class*="sticky"] {
+    box-shadow: 2px 0 6px -1px rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -659,26 +673,26 @@ body,
   margin-bottom: -0.18em;
 }
 
-/* ============ Editorial ticker strip ============ */
+/* ============ Editorial keyword band ============ */
+/* Static — see TickerStrip.tsx for why this is no longer a marquee. */
 .ticker-strip {
-  overflow: hidden;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: var(--background);
   padding: 14px 0;
 }
-.ticker-track {
+.ticker-list {
   display: flex;
-  width: max-content;
-  animation: ticker-scroll 46s linear infinite;
-  will-change: transform;
-}
-.ticker-strip:hover .ticker-track {
-  animation-play-state: paused;
-}
-.ticker-row {
-  display: flex;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  /* Horizontal rhythm comes from .ticker-dot's margins; this only spaces the
+     rows apart when the band wraps on narrow screens. */
+  row-gap: 6px;
+  column-gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .ticker-item {
   display: inline-flex;
@@ -692,65 +706,67 @@ body,
   opacity: 0.85;
 }
 .ticker-dot {
-  margin: 0 1.4rem;
+  margin: 0 1.1rem;
   opacity: 0.35;
 }
-@keyframes ticker-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
-  }
-}
 
-/* ============ Developer alliances strip ============ */
-.alliance-strip {
+/* ============ Partner marquee ============ */
+/* Scrolls on the page's own surface. Hairline borders delineate without
+   a colour break. The keyframe is registered in @theme as
+   animate-marquee-continuous; duration comes from useMarqueeSpeed inline. */
+@keyframes marquee-continuous {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.partner-strip {
+  position: relative;
   overflow: hidden;
-  background: var(--foreground);
-  padding: 40px 0;
-}
-.alliance-track {
-  display: flex;
-  width: max-content;
-  animation: ticker-scroll 38s linear infinite;
-  will-change: transform;
-}
-.alliance-strip:hover .alliance-track {
-  animation-play-state: paused;
-}
-.alliance-row {
-  display: flex;
-  flex-shrink: 0;
-}
-.alliance-card {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 190px;
-  height: 84px;
-  margin: 0 10px;
-  padding: 14px 18px;
-  border-radius: 14px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   background: var(--background);
-  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.4);
+  padding: 24px 0;
 }
-.alliance-card img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+/* Edge masks — page-background colour dissolves logos at both ends */
+.partner-strip::before,
+.partner-strip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: clamp(48px, 6vw, 160px);
+  z-index: 2;
+  pointer-events: none;
+}
+.partner-strip::before {
+  left: 0;
+  right: auto;
+  background: linear-gradient(
+    to right,
+    var(--background),
+    color-mix(in oklab, var(--background) 0%, transparent)
+  );
+}
+.partner-strip::after {
+  right: 0;
+  left: auto;
+  background: linear-gradient(
+    to left,
+    var(--background),
+    color-mix(in oklab, var(--background) 0%, transparent)
+  );
+}
+.partner-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
 }
 @media (prefers-reduced-motion: reduce) {
-  .alliance-track {
-    animation: none;
+  .partner-track {
+    animation: none !important;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 0 24px;
+    gap: 12px;
+    justify-content: center;
   }
 }
 
@@ -922,22 +938,28 @@ body.suggested-popup-open .suggested-marquee-track {
 }
 
 /* =========================================================
-   PALETTE SYSTEM
-   Four selectable palettes via [data-palette] on <html>.
-   Each palette defines a --brand (accent) plus light/dark
-   backgrounds, cards and borders. Compat rules re-route
-   the legacy "champagne"/"gold" utility classes to --brand
-   so accent colors carry through the whole app.
-   Default palette = warm-sand.
+   PALETTE
+   The app ships one palette — Bright Gold — in light and dark.
+   It used to be one of seven selectable via [data-palette] on <html>;
+   the other six (mono, warm-sand, sage, emerald, ocean, cloud) had no
+   picker UI (see ThemeContext.tsx), so their CSS was dead weight that
+   still shipped and had never been contrast-audited. Cut here rather
+   than fixed, in favour of one palette that's actually been checked.
+   [data-palette="bright"] is still how it's addressed — __root.tsx sets
+   it unconditionally in the SSR shell — so the selector stays even
+   though it's no longer selecting between anything.
    ========================================================= */
 
 :root {
-  --brand: #b8894a;
-  --brand-soft: #d9b985;
-  --brand-ink: #4a3218;
+  /* Defensive fallback for the (unreachable in practice) case of no
+     data-palette attribute at all — matches Bright Gold rather than a
+     deleted palette's colour. */
+  --brand: #f2a900;
+  --brand-soft: #ffd15e;
+  --brand-ink: #221603;
 }
 
-/* ---------- Bright Gold (default) — white canvas, vivid gold accents ----------
+/* ---------- Bright Gold — white canvas, vivid gold accents ----------
    --brand        bright gold for fills, buttons, gradients
    --brand-strong deeper gold for small text (readable on white)
    --brand-ink    near-black text placed ON gold surfaces */
@@ -1010,311 +1032,7 @@ body.suggested-popup-open .suggested-marquee-track {
   --glass-border: rgba(255, 201, 77, 0.2);
 }
 
-/* ---------- Monochrome — pure white / pure black ---------- */
-[data-palette="mono"] {
-  --brand: #000000;
-  --brand-soft: #3d3d3d;
-  --brand-ink: #ffffff;
-}
-.light[data-palette="mono"] {
-  --brand: #000000;
-  --brand-soft: #3d3d3d;
-  --brand-ink: #ffffff;
-  --background: #ffffff;
-  --foreground: #000000;
-  --card: #ffffff;
-  --card-foreground: #000000;
-  --popover: #ffffff;
-  --popover-foreground: #000000;
-  --primary: #000000;
-  --primary-foreground: #ffffff;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #000000;
-  --muted: #f5f5f5;
-  --muted-foreground: #3d3d3d;
-  --accent: #000000;
-  --accent-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.14);
-  --input: rgba(0, 0, 0, 0.22);
-  --ring: #000000;
-  --gradient-gold: linear-gradient(135deg, #000000 0%, #3d3d3d 100%);
-  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-  --shadow-gold: 0 18px 44px -30px rgba(0, 0, 0, 0.25);
-  --shadow-deep: 0 24px 60px -38px rgba(0, 0, 0, 0.28);
-  --shadow-glass: 0 8px 24px -14px rgba(0, 0, 0, 0.16);
-  --glass-bg: rgba(255, 255, 255, 0.94);
-  --glass-border: rgba(0, 0, 0, 0.12);
-}
-.dark[data-palette="mono"] {
-  --brand: #ffffff;
-  --brand-soft: #c4c4c4;
-  --brand-ink: #000000;
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #0d0d0d;
-  --card-foreground: #ffffff;
-  --popover: #0d0d0d;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ffffff;
-  --muted: #141414;
-  --muted-foreground: #c4c4c4;
-  --accent: #ffffff;
-  --accent-foreground: #000000;
-  --border: rgba(255, 255, 255, 0.16);
-  --input: rgba(255, 255, 255, 0.22);
-  --ring: #ffffff;
-  --gradient-gold: linear-gradient(135deg, #ffffff 0%, #c4c4c4 100%);
-  --gradient-dark: linear-gradient(180deg, #000000 0%, #0d0d0d 100%);
-  --shadow-gold: 0 18px 50px -22px rgba(0, 0, 0, 0.6);
-  --shadow-deep: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-  --glass-bg: rgba(13, 13, 13, 0.86);
-  --glass-border: rgba(255, 255, 255, 0.16);
-}
-
-/* ---------- Warm Sand & Clay ---------- */
-:root[data-palette="warm-sand"],
-:root:not([data-palette]) {
-  --brand: #b8894a;
-  --brand-soft: #d9b985;
-  --brand-ink: #4a3218;
-}
-.dark[data-palette="warm-sand"],
-.dark:not([data-palette]) {
-  --background: #17110a;
-  --foreground: #f6ecdb;
-  --card: #221810;
-  --card-foreground: #f6ecdb;
-  --popover: #221810;
-  --popover-foreground: #f6ecdb;
-  --secondary: #2b1f14;
-  --muted: #1e150d;
-  --muted-foreground: #c9b699;
-  --border: rgba(217, 185, 133, 0.18);
-  --input: rgba(217, 185, 133, 0.22);
-  --ring: #d9b985;
-  --glass-bg: rgba(34, 24, 16, 0.82);
-  --glass-border: rgba(217, 185, 133, 0.18);
-}
-.light[data-palette="warm-sand"],
-.light:not([data-palette]) {
-  --background: #faf7f2;
-  --foreground: #2c1f10;
-  --card: #ffffff;
-  --card-foreground: #2c1f10;
-  --popover: #ffffff;
-  --popover-foreground: #2c1f10;
-  --secondary: #efe6d6;
-  --muted: #f2ead9;
-  --muted-foreground: #6b533a;
-  --border: rgba(74, 50, 24, 0.14);
-  --input: rgba(74, 50, 24, 0.22);
-  --ring: #b8894a;
-  --glass-bg: rgba(255, 252, 245, 0.92);
-  --glass-border: rgba(74, 50, 24, 0.14);
-}
-
-/* ---------- Sage & Cream ---------- */
-[data-palette="sage"] {
-  --brand: #7d9b76;
-  --brand-soft: #a8c0a0;
-  --brand-ink: #2a3a2a;
-}
-.dark[data-palette="sage"] {
-  --background: #101610;
-  --foreground: #ecf3e8;
-  --card: #182018;
-  --card-foreground: #ecf3e8;
-  --popover: #182018;
-  --popover-foreground: #ecf3e8;
-  --secondary: #1e2a1e;
-  --muted: #16201a;
-  --muted-foreground: #b8c9b0;
-  --border: rgba(168, 192, 160, 0.18);
-  --input: rgba(168, 192, 160, 0.22);
-  --ring: #a8c0a0;
-  --glass-bg: rgba(24, 32, 24, 0.82);
-  --glass-border: rgba(168, 192, 160, 0.18);
-}
-.light[data-palette="sage"] {
-  --background: #f5f0e8;
-  --foreground: #1e2a1e;
-  --card: #ffffff;
-  --card-foreground: #1e2a1e;
-  --popover: #ffffff;
-  --popover-foreground: #1e2a1e;
-  --secondary: #dce5d4;
-  --muted: #e6ecdc;
-  --muted-foreground: #4a5f48;
-  --border: rgba(42, 58, 42, 0.14);
-  --input: rgba(42, 58, 42, 0.22);
-  --ring: #7d9b76;
-  --glass-bg: rgba(253, 251, 246, 0.92);
-  --glass-border: rgba(42, 58, 42, 0.14);
-}
-
-/* ---------- Emerald Prestige ---------- */
-[data-palette="emerald"] {
-  --brand: #c9a84c;
-  --brand-soft: #e6d18a;
-  --brand-ink: #064e3b;
-}
-.dark[data-palette="emerald"] {
-  --background: #0a1611;
-  --foreground: #f5f0e0;
-  --card: #0f2018;
-  --card-foreground: #f5f0e0;
-  --popover: #0f2018;
-  --popover-foreground: #f5f0e0;
-  --secondary: #113028;
-  --muted: #0e1c17;
-  --muted-foreground: #c9c2a5;
-  --border: rgba(201, 168, 76, 0.22);
-  --input: rgba(201, 168, 76, 0.26);
-  --ring: #c9a84c;
-  --glass-bg: rgba(15, 32, 24, 0.82);
-  --glass-border: rgba(201, 168, 76, 0.22);
-}
-.light[data-palette="emerald"] {
-  --background: #f7f3e6;
-  --foreground: #064e3b;
-  --card: #ffffff;
-  --card-foreground: #064e3b;
-  --popover: #ffffff;
-  --popover-foreground: #064e3b;
-  --secondary: #e8ecd8;
-  --muted: #eee7cf;
-  --muted-foreground: #3a5c4a;
-  --border: rgba(6, 78, 59, 0.16);
-  --input: rgba(6, 78, 59, 0.24);
-  --ring: #0d7a5f;
-  --glass-bg: rgba(255, 253, 244, 0.92);
-  --glass-border: rgba(6, 78, 59, 0.14);
-}
-
-/* ---------- Ocean & Champagne ---------- */
-[data-palette="ocean"] {
-  --brand: #2d8a9e;
-  --brand-soft: #7cc0ce;
-  --brand-ink: #0c2340;
-}
-.dark[data-palette="ocean"] {
-  --background: #0a141a;
-  --foreground: #eaf3f7;
-  --card: #12212b;
-  --card-foreground: #eaf3f7;
-  --popover: #12212b;
-  --popover-foreground: #eaf3f7;
-  --secondary: #17303c;
-  --muted: #101e26;
-  --muted-foreground: #a9c4cf;
-  --border: rgba(124, 192, 206, 0.2);
-  --input: rgba(124, 192, 206, 0.24);
-  --ring: #7cc0ce;
-  --glass-bg: rgba(18, 33, 43, 0.82);
-  --glass-border: rgba(124, 192, 206, 0.2);
-}
-.light[data-palette="ocean"] {
-  --background: #f4f7fa;
-  --foreground: #0c2340;
-  --card: #ffffff;
-  --card-foreground: #0c2340;
-  --popover: #ffffff;
-  --popover-foreground: #0c2340;
-  --secondary: #dfeaf2;
-  --muted: #e6eef5;
-  --muted-foreground: #3f5773;
-  --border: rgba(12, 35, 64, 0.14);
-  --input: rgba(12, 35, 64, 0.22);
-  --ring: #2d8a9e;
-  --glass-bg: rgba(252, 253, 255, 0.92);
-  --glass-border: rgba(12, 35, 64, 0.14);
-}
-
-/* ---------- Cloud White — editorial navy + amber accent ---------- */
-[data-palette="cloud"] {
-  --brand: #0a1f4d;
-  --brand-soft: #3b6fd6;
-  --brand-ink: #ffffff;
-  --brand-accent: #c9a24d;
-  --brand-accent-soft: #e6c987;
-}
-.dark[data-palette="cloud"] {
-  --background: #0b1220;
-  --foreground: #f5f7fb;
-  --card: #131a2b;
-  --card-foreground: #f5f7fb;
-  --popover: #131a2b;
-  --popover-foreground: #f5f7fb;
-  --secondary: #1a2338;
-  --muted: #131a2b;
-  --muted-foreground: #94a3b8;
-  --border: rgba(148, 163, 184, 0.22);
-  --input: rgba(148, 163, 184, 0.28);
-  --ring: #3b82f6;
-  --glass-bg: rgba(19, 26, 43, 0.82);
-  --glass-border: rgba(148, 163, 184, 0.22);
-}
-.light[data-palette="cloud"] {
-  --background: #f5f2ea;
-  --foreground: #0a1f4d;
-  --card: #ffffff;
-  --card-foreground: #0a1f4d;
-  --popover: #ffffff;
-  --popover-foreground: #0a1f4d;
-  --secondary: #ece7dc;
-  --muted: #efeadf;
-  --muted-foreground: #4a5878;
-  --border: rgba(10, 31, 77, 0.12);
-  --input: rgba(10, 31, 77, 0.22);
-  --ring: #0a1f4d;
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(10, 31, 77, 0.1);
-}
-
-/* ---------- Body backgrounds with soft gradients per palette ---------- */
-.light[data-palette="warm-sand"] body,
-.light:not([data-palette]) body {
-  background:
-    radial-gradient(1200px 700px at 10% -10%, rgba(184, 137, 74, 0.1), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(217, 185, 133, 0.14), transparent 55%), #faf7f2;
-}
-.light[data-palette="sage"] body {
-  background:
-    radial-gradient(1200px 700px at 10% -10%, rgba(125, 155, 118, 0.1), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(168, 192, 160, 0.16), transparent 55%), #f5f0e8;
-}
-.light[data-palette="emerald"] body {
-  background:
-    radial-gradient(1200px 700px at 10% -10%, rgba(13, 122, 95, 0.1), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(201, 168, 76, 0.16), transparent 55%), #f7f3e6;
-}
-.light[data-palette="ocean"] body {
-  background:
-    radial-gradient(1200px 700px at 10% -10%, rgba(45, 138, 158, 0.1), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(201, 168, 76, 0.14), transparent 55%), #f4f7fa;
-}
-.light[data-palette="cloud"] body {
-  background:
-    radial-gradient(1100px 700px at 8% -8%, rgba(201, 162, 77, 0.2), transparent 60%),
-    radial-gradient(900px 700px at 100% 0%, rgba(59, 111, 214, 0.14), transparent 55%),
-    radial-gradient(700px 500px at 50% 100%, rgba(10, 31, 77, 0.06), transparent 60%), #f5f2ea;
-}
-.light[data-palette="cloud"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background-image:
-    linear-gradient(rgba(10, 31, 77, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(10, 31, 77, 0.045) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%);
-}
+/* ---------- Body background ---------- */
 .dark body {
   background:
     radial-gradient(
@@ -1328,14 +1046,6 @@ body.suggested-popup-open .suggested-marquee-track {
       transparent 55%
     ),
     var(--background);
-}
-
-/* Monochrome: flat, pure surfaces — no tints, no grid pattern. */
-.light[data-palette="mono"] body {
-  background: #ffffff;
-}
-.dark[data-palette="mono"] body {
-  background: #000000;
 }
 
 /* Bright Gold: white canvas with soft golden washes. */
@@ -1401,11 +1111,20 @@ body.suggested-popup-open .suggested-marquee-track {
   --tw-ring-color: color-mix(in oklab, var(--brand) 45%, transparent) !important;
 }
 
+/* The accent headline face. This carries the largest type on the site (hero
+   line 2, section headings, the wordmark), so both gradient stops have to
+   clear contrast on the page background — the old --brand → --brand-soft ramp
+   ran #f2a900 → #ffd15e on white, i.e. 2.0:1 down to 1.5:1, and failed WCAG
+   large-text (3:1) across its whole length.
+   --brand-strong is the palette's deep, readable gold (it already backs
+   .text-champagne); ramping it toward --brand keeps the metallic sheen while
+   holding ~4.8:1 at the dark stop and ~3.6:1 at the light one. */
 .gold-text {
+  --gold-text-base: var(--brand-strong, var(--brand-accent, var(--brand)));
   background: linear-gradient(
     135deg,
-    var(--brand-accent, var(--brand)) 0%,
-    var(--brand-accent-soft, var(--brand-soft)) 100%
+    var(--gold-text-base) 0%,
+    color-mix(in oklab, var(--gold-text-base) 70%, var(--brand)) 100%
   ) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
@@ -1413,7 +1132,7 @@ body.suggested-popup-open .suggested-marquee-track {
 }
 .gold-border {
   border: 1px solid color-mix(in oklab, var(--brand) 55%, transparent) !important;
-  background: color-mix(in oklab, var(--brand) 6%, transparent) !important;
+  background: transparent !important;
 }
 
 /* ---------- Text placed ON gold surfaces always uses brand ink ---------- */

@@ -58,11 +58,17 @@ export function Lightbox({ images, index, open, title, onClose, onIndexChange }:
           >
             <div className="min-w-0">
               {title && (
-                <p className="descender-safe truncate font-display text-[16px] sm:text-[18px]">
+                <p
+                  className="descender-safe truncate font-display"
+                  style={{ fontSize: "var(--step-0)" }}
+                >
                   {title}
                 </p>
               )}
-              <p className="text-[11px] tracking-[0.24em] text-white/50 tabular-nums">
+              <p
+                className="tracking-luxury text-white/50 tabular-nums"
+                style={{ fontSize: "var(--step--2)" }}
+              >
                 {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
               </p>
             </div>
@@ -87,7 +93,7 @@ export function Lightbox({ images, index, open, title, onClose, onIndexChange }:
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.01 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="max-h-full max-w-full rounded-xl object-contain shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]"
+                className="max-h-full max-w-full rounded-card object-contain shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]"
                 onClick={(e) => e.stopPropagation()}
                 draggable={false}
               />
@@ -133,7 +139,7 @@ export function Lightbox({ images, index, open, title, onClose, onIndexChange }:
                   type="button"
                   onClick={() => onIndexChange(i)}
                   aria-label={`Photo ${i + 1}`}
-                  className={`h-12 w-16 shrink-0 overflow-hidden rounded-lg transition-all sm:h-14 sm:w-20 ${
+                  className={`h-12 w-16 shrink-0 overflow-hidden rounded-card transition-all sm:h-14 sm:w-20 ${
                     i === index ? "ring-2 ring-white opacity-100" : "opacity-40 hover:opacity-80"
                   }`}
                 >

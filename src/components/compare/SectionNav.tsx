@@ -31,16 +31,20 @@ export function SectionNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-6 z-40 mx-auto hidden w-fit max-w-[92vw] px-6 lg:block">
-      <div className="glass-strong flex items-center justify-center gap-1 rounded-2xl p-2">
+      {/* A floating bar over scrolling content is the one place a blur earns
+          its keep — legibility while the page moves underneath it — so it
+          keeps backdrop-blur, just not the .glass utility's naming/values. */}
+      <div className="flex items-center justify-center gap-1 rounded-card border border-[var(--rule)] bg-[color-mix(in_oklab,var(--background)_92%,transparent)] p-2 backdrop-blur-md">
         {SECTIONS.map((s) => (
           <a
             key={s.id}
             href={`#${s.id}`}
-            className={`rounded-full px-4 py-2 text-[10px] tracking-luxury transition-all duration-300 ${
+            className={`tracking-luxury rounded-full px-4 py-2 transition-all duration-300 ${
               active === s.id
                 ? "bg-gradient-to-r from-champagne to-muted-gold text-lux-black"
                 : "text-muted-foreground hover:text-ivory"
             }`}
+            style={{ fontSize: "var(--step--2)" }}
           >
             {s.label}
           </a>

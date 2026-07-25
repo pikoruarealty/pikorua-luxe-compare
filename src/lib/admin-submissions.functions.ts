@@ -26,7 +26,9 @@ export const listSubmissions = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: subs, error } = await supabaseAdmin
       .from("property_submissions")
-      .select("id, action, status, property_id, developer_id, payload, reviewer_note, created_at, reviewed_at")
+      .select(
+        "id, action, status, property_id, developer_id, payload, reviewer_note, created_at, reviewed_at",
+      )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 

@@ -190,24 +190,29 @@ export function SuggestedComparisons() {
   if (pairs.length === 0) return null;
 
   return (
-    <section className="relative scroll-mt-28 border-t border-champagne/10 py-14 sm:py-20">
+    <section className="relative scroll-mt-28 border-t border-[var(--rule)] py-14 sm:py-20">
       <div className="container-lux">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-[28px] leading-tight text-ivory sm:text-[36px]">
+            <h2
+              className="font-display leading-tight text-ivory"
+              style={{ fontSize: "var(--step-2)", letterSpacing: "var(--tracking-display)" }}
+            >
               {heading.split(" ").slice(0, -1).join(" ")}{" "}
               <span className="gold-text">{heading.split(" ").slice(-1)[0]}</span>
             </h2>
-            <p className="mt-1.5 text-[13px] text-muted-foreground">
+            <p className="mt-1.5 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
               Head-to-head matchups picked from your budget and preferences.
             </p>
           </div>
+          {/* Pagination arrows, not a themed accent — every other prev/next
+              control in the app is neutral (Lightbox, PickerCard carousel). */}
           <div className="hidden gap-2 sm:flex">
             <button
               onClick={() => nudge(-1)}
               disabled={!canLeft}
               aria-label="Previous"
-              className="grid h-10 w-10 place-items-center rounded-full gold-border text-champagne transition-opacity disabled:opacity-30 hover:bg-champagne/10"
+              className="grid h-10 w-10 place-items-center rounded-full border border-[var(--rule)] text-foreground transition-colors disabled:opacity-30 hover:border-foreground/40"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -215,7 +220,7 @@ export function SuggestedComparisons() {
               onClick={() => nudge(1)}
               disabled={!canRight}
               aria-label="Next"
-              className="grid h-10 w-10 place-items-center rounded-full gold-border text-champagne transition-opacity disabled:opacity-30 hover:bg-champagne/10"
+              className="grid h-10 w-10 place-items-center rounded-full border border-[var(--rule)] text-foreground transition-colors disabled:opacity-30 hover:border-foreground/40"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -289,10 +294,10 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.3) }}
-      className="group relative flex w-[320px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl sm:w-[380px]"
+      className="group relative flex w-[calc(100vw-2.5rem)] shrink-0 snap-center flex-col overflow-hidden rounded-card sm:w-[380px] sm:snap-start"
       style={{
         background: "var(--card)",
-        border: "1px solid var(--glass-border)",
+        border: "1px solid var(--rule)",
         boxShadow:
           "0 1px 0 0 color-mix(in oklab, var(--foreground) 6%, transparent) inset, 0 22px 46px -28px color-mix(in oklab, var(--foreground) 32%, transparent), 0 6px 14px -8px color-mix(in oklab, var(--foreground) 18%, transparent)",
       }}
@@ -347,22 +352,20 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
       <div className="relative grid grid-cols-2 gap-3 p-4 pt-7">
         <PropertyBrief property={a} />
 
-        {/* Solid champagne divider spanning the brief row */}
+        {/* Plain hairline — the gold "vs" marker already lives on the image
+            divider above and the badge below; a second glowing gold line
+            here was doubling up the one accent this card needs. */}
         <div
           className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2"
-          style={{
-            width: "2px",
-            background:
-              "linear-gradient(to bottom, transparent 0%, var(--champagne, #c8a45d) 20%, var(--champagne, #c8a45d) 80%, transparent 100%)",
-            opacity: 0.7,
-          }}
+          style={{ width: "1px", background: "var(--rule-strong)" }}
         />
 
         {/* VS badge centered over the property-name row */}
         <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 z-10">
           <div
-            className="grid h-11 w-11 place-items-center rounded-full font-display text-[13px] font-semibold tracking-wider"
+            className="grid h-11 w-11 place-items-center rounded-full font-display font-semibold tracking-wider"
             style={{
+              fontSize: "var(--step--2)",
               background: "var(--foreground)",
               color: "var(--background)",
               border: "2px solid var(--card)",
@@ -380,7 +383,8 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
         <button
           type="button"
           onClick={handleCompare}
-          className="flex w-full items-center justify-center gap-2 rounded-full gold-border py-2.5 text-[11px] tracking-luxury text-champagne transition-colors hover:bg-champagne hover:text-lux-black"
+          className="tracking-luxury flex w-full items-center justify-center gap-2 rounded-full gold-border py-2.5 text-champagne transition-colors hover:bg-champagne hover:text-lux-black"
+          style={{ fontSize: "var(--step--2)" }}
         >
           <GitCompareArrows className="h-3.5 w-3.5" /> Compare Now
         </button>
@@ -400,11 +404,14 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
           {/* Lead with the loss, not the option — the visitor needs to know the
               current suite is unsaved before they weigh replacing it. */}
           {canSaveOutgoing && (
-            <div className="rounded-lg border border-champagne/30 bg-champagne/5 px-3.5 py-3">
-              <p className="text-[12px] font-medium text-foreground">
+            <div className="rounded-card border border-[var(--rule)] bg-muted/40 px-3.5 py-3">
+              <p className="font-medium text-foreground" style={{ fontSize: "var(--step--1)" }}>
                 This comparison isn't saved yet.
               </p>
-              <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+              <p
+                className="mt-1 leading-snug text-muted-foreground"
+                style={{ fontSize: "var(--step--1)" }}
+              >
                 Replace it and it's gone. Save it first and you can reopen it any time from your
                 saved list.
               </p>
@@ -436,14 +443,22 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
 function PropertyBrief({ property }: { property: Property }) {
   return (
     <div className="min-w-0">
-      <p className="truncate text-[9px] font-semibold tracking-luxury text-muted-foreground">
+      <p
+        className="tracking-luxury truncate font-semibold text-muted-foreground"
+        style={{ fontSize: "var(--step--2)" }}
+      >
         {property.developer}
       </p>
-      <h3 className="descender-safe mt-1 truncate font-display text-[15px] font-medium text-foreground">
+      <h3
+        className="descender-safe mt-1 truncate font-display font-medium text-foreground"
+        style={{ fontSize: "var(--step--1)" }}
+      >
         {property.name}
       </h3>
       {property.location ? (
-        <p className="mt-1 truncate text-[11px] text-muted-foreground">{property.location}</p>
+        <p className="mt-1 truncate text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
+          {property.location}
+        </p>
       ) : null}
     </div>
   );

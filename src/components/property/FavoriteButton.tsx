@@ -159,7 +159,7 @@ export function FavoriteButton({ propertyId, propertyName, propertyImage, classN
                   zIndex: 9999,
                   willChange: "transform",
                 }}
-                className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-champagne bg-lux-black shadow-[0_10px_28px_-8px_rgba(0,0,0,0.4)]"
+                className="grid h-16 w-16 place-items-center overflow-hidden rounded-card border border-champagne bg-lux-black shadow-[0_10px_28px_-8px_rgba(0,0,0,0.4)]"
               >
                 {fly.image ? (
                   <img

@@ -11,7 +11,11 @@ export const Route = createFileRoute("/admin/developers")({
   component: AdminDevelopers,
 });
 
-const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
 
 function randomPassword(): string {
   // Readable-ish default the owner can hand over as-is, or overwrite before creating.
@@ -126,7 +130,13 @@ function AdminDevelopers() {
   );
 }
 
-function AddDeveloperDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function AddDeveloperDialog({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState(randomPassword);

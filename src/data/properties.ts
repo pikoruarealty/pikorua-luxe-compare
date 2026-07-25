@@ -68,7 +68,6 @@ import kalravAlpinesExterior from "@/assets/kalrav-alpines-exterior.jpg";
 import kimanaTowers from "@/assets/kimana-towers.jpg";
 import kimanaLobby from "@/assets/kimana-lobby.jpg";
 import kimanaDusk from "@/assets/kimana-tower-dusk.jpg";
-import maruti360Exterior from "@/assets/maruti-360-exterior.jpeg";
 import maruti360Bedroom from "@/assets/maruti-360-bedroom.png";
 import maruti360PlayArea from "@/assets/maruti-360-play-area.png";
 import maruti360Pool from "@/assets/maruti-360-pool.png";
@@ -278,12 +277,12 @@ const imageOverrides: Record<string, { cover?: string; gallery?: Partial<typeof 
       },
     },
     "maruti-360": {
-      cover: maruti360Exterior,
+      cover: maruti360View,
       gallery: {
-        livingRoom: maruti360View,
-        masterBedroom: maruti360Bedroom,
-        pool: maruti360Pool,
-        clubhouse: maruti360PlayArea,
+        livingRoom: maruti360Bedroom,
+        masterBedroom: maruti360Pool,
+        pool: maruti360PlayArea,
+        clubhouse: maruti360View,
       },
     },
     "venus-universe": {

@@ -8,6 +8,11 @@ import type {
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 import { parseNumeric } from "@/lib/property-derivations";
 
+import maruti360View from "@/assets/maruti-360-view.jpg";
+import maruti360Bedroom from "@/assets/maruti-360-bedroom.png";
+import maruti360Pool from "@/assets/maruti-360-pool.png";
+import maruti360PlayArea from "@/assets/maruti-360-play-area.png";
+
 // Columns needed to build a Property. Kept in one place so the public and admin
 // readers can't drift apart.
 const PROPERTY_COLUMNS =
@@ -84,14 +89,34 @@ const EMPTY_GALLERY: PropertyGallery = {
 // The public site keeps using the slug as `id` (URLs like /residence/ikebana and
 // ?ids=<slug> predate the DB and must keep working).
 function toProperty(row: PropertyRow): Property {
-  const gallery = (row.gallery ?? {}) as Partial<PropertyGallery>;
+  const isMaruti = row.slug === "maruti-360" || (row.name && row.name.toLowerCase().includes("maruti 360"));
+  let coverImg = row.image_url ?? "";
+  if (isMaruti || coverImg.includes("maruti-360-exterior")) {
+    coverImg = maruti360View;
+  }
+
+  const rawGallery = (row.gallery ?? {}) as Record<string, string>;
+  const gallery: PropertyGallery = isMaruti
+    ? {
+        livingRoom: maruti360Bedroom,
+        masterBedroom: maruti360Pool,
+        pool: maruti360PlayArea,
+        clubhouse: maruti360View,
+      }
+    : {
+        livingRoom: rawGallery.livingRoom?.includes("maruti-360-exterior") ? maruti360Bedroom : (rawGallery.livingRoom ?? ""),
+        masterBedroom: rawGallery.masterBedroom?.includes("maruti-360-exterior") ? maruti360Pool : (rawGallery.masterBedroom ?? ""),
+        pool: rawGallery.pool?.includes("maruti-360-exterior") ? maruti360PlayArea : (rawGallery.pool ?? ""),
+        clubhouse: rawGallery.clubhouse?.includes("maruti-360-exterior") ? maruti360View : (rawGallery.clubhouse ?? ""),
+      };
+
   return {
     id: row.slug,
     name: row.name,
     developer: row.developer ?? "-",
     category: (row.category as PropertyCategory) ?? "Apartment",
     tagline: row.tagline ?? "",
-    image: row.image_url ?? "",
+    image: coverImg,
     size: row.size ?? "-",
     // Recompute from the area string rather than trusting the stored column:
     // rows written before the parseNumeric comma fix hold collapsed values

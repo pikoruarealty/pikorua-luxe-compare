@@ -25,8 +25,10 @@ export function RecentlyViewed() {
     <section className="container-lux py-10">
       <div className="flex items-center gap-3">
         <History className="h-3.5 w-3.5 text-champagne" />
-        <span className="text-[10px] tracking-luxury text-champagne">You were looking at</span>
-        <span className="h-px flex-1 bg-champagne/15" />
+        <span className="tracking-luxury text-champagne" style={{ fontSize: "var(--step--2)" }}>
+          You were looking at
+        </span>
+        <span className="h-px flex-1 bg-[var(--rule)]" />
       </div>
       <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {items.map((p, i) => (
@@ -40,9 +42,9 @@ export function RecentlyViewed() {
             <Link
               to="/residence/$id"
               params={{ id: p.id }}
-              className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-2.5 transition hover:border-foreground/35"
+              className="group flex items-center gap-3 rounded-card border border-[var(--rule)] bg-card p-2.5 transition hover:border-foreground/35"
             >
-              <div className="h-14 w-16 shrink-0 overflow-hidden rounded-xl">
+              <div className="h-14 w-16 shrink-0 overflow-hidden rounded-card">
                 <img
                   src={p.image}
                   alt=""
@@ -51,10 +53,16 @@ export function RecentlyViewed() {
                 />
               </div>
               <div className="min-w-0">
-                <p className="descender-safe truncate font-display text-[14px] leading-tight text-ivory">
+                <p
+                  className="descender-safe truncate font-display leading-tight text-ivory"
+                  style={{ fontSize: "var(--step--1)" }}
+                >
                   {p.name}
                 </p>
-                <p className="mt-0.5 truncate text-[10px] tracking-luxury text-muted-foreground">
+                <p
+                  className="tracking-luxury mt-0.5 truncate text-muted-foreground"
+                  style={{ fontSize: "var(--step--2)" }}
+                >
                   {p.location}
                 </p>
               </div>

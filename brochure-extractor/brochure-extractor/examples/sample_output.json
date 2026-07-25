@@ -15,10 +15,7 @@
     },
     "project_structure": {
       "plot_size": "5400 sq ft",
-      "available_bhk_types": [
-        "4 BHK",
-        "5 BHK"
-      ],
+      "available_bhk_types": ["4 BHK", "5 BHK"],
       "total_towers": 3,
       "total_floors": 24,
       "units_per_floor": 4,
@@ -79,15 +76,8 @@
         "floor_plan_page": 13
       }
     ],
-    "amenities": [
-      "Gym",
-      "Yoga Deck",
-      "Spa",
-      "Infinity Pool"
-    ],
-    "highlights": [
-      "Handover within 9 months"
-    ],
+    "amenities": ["Gym", "Yoga Deck", "Spa", "Infinity Pool"],
+    "highlights": ["Handover within 9 months"],
     "images": {
       "cover": null,
       "living_room": null,
@@ -508,10 +498,7 @@
   ],
   "needs_review": [],
   "missing_required": [],
-  "source_files": [
-    "ikebana-brochure.pdf",
-    "rera-certificate.pdf"
-  ],
+  "source_files": ["ikebana-brochure.pdf", "rera-certificate.pdf"],
   "completeness": {
     "fields_filled": 21,
     "fields_total": 38,
@@ -532,10 +519,7 @@
     "tagline": "Where light lives",
     "expert_note": null,
     "plot_size": "5400 sq ft",
-    "available_bhk_types": [
-      "4 BHK",
-      "5 BHK"
-    ],
+    "available_bhk_types": ["4 BHK", "5 BHK"],
     "total_towers": 3,
     "total_floors": 24,
     "units_per_floor": 4,
@@ -589,15 +573,8 @@
         "floor_plan_page": 13
       }
     ],
-    "amenities": [
-      "Gym",
-      "Yoga Deck",
-      "Spa",
-      "Infinity Pool"
-    ],
-    "highlights": [
-      "Handover within 9 months"
-    ],
+    "amenities": ["Gym", "Yoga Deck", "Spa", "Infinity Pool"],
+    "highlights": ["Handover within 9 months"],
     "images": {
       "cover": null,
       "living_room": null,
