@@ -35,28 +35,58 @@ function getAmenityMeta(name: string): { Icon: typeof Sparkles; subtitle: string
   if (n.includes("spa") || n.includes("sauna") || n.includes("wellness") || n.includes("jacuzzi")) {
     return { Icon: Sparkles, subtitle: "Thermal & Hydrotherapy Suites" };
   }
-  if (n.includes("concierge") || n.includes("butler") || n.includes("24/7") || n.includes("reception")) {
+  if (
+    n.includes("concierge") ||
+    n.includes("butler") ||
+    n.includes("24/7") ||
+    n.includes("reception")
+  ) {
     return { Icon: BellRing, subtitle: "White-Glove Hospitality Services" };
   }
   if (n.includes("lounge") || n.includes("sky") || n.includes("deck") || n.includes("terrace")) {
     return { Icon: Wine, subtitle: "Private Members Panorama Bar" };
   }
-  if (n.includes("banquet") || n.includes("hall") || n.includes("dining") || n.includes("ballroom")) {
+  if (
+    n.includes("banquet") ||
+    n.includes("hall") ||
+    n.includes("dining") ||
+    n.includes("ballroom")
+  ) {
     return { Icon: Utensils, subtitle: "Exclusive Event & Gala Suite" };
   }
-  if (n.includes("cinema") || n.includes("theater") || n.includes("theatre") || n.includes("movie")) {
+  if (
+    n.includes("cinema") ||
+    n.includes("theater") ||
+    n.includes("theatre") ||
+    n.includes("movie")
+  ) {
     return { Icon: Clapperboard, subtitle: "4K Dolby Atmos Private Screening" };
   }
-  if (n.includes("fitness") || n.includes("gym") || n.includes("workout") || n.includes("training")) {
+  if (
+    n.includes("fitness") ||
+    n.includes("gym") ||
+    n.includes("workout") ||
+    n.includes("training")
+  ) {
     return { Icon: Dumbbell, subtitle: "State-of-the-Art Wellness Center" };
   }
-  if (n.includes("ev") || n.includes("charge") || n.includes("electric") || n.includes("charging")) {
+  if (
+    n.includes("ev") ||
+    n.includes("charge") ||
+    n.includes("electric") ||
+    n.includes("charging")
+  ) {
     return { Icon: Zap, subtitle: "Ultra-Fast Green Energy Station" };
   }
   if (n.includes("security") || n.includes("cctv") || n.includes("guard") || n.includes("gate")) {
     return { Icon: ShieldCheck, subtitle: "Multi-Tier Biometric Protection" };
   }
-  if (n.includes("tennis") || n.includes("squash") || n.includes("badminton") || n.includes("sports")) {
+  if (
+    n.includes("tennis") ||
+    n.includes("squash") ||
+    n.includes("badminton") ||
+    n.includes("sports")
+  ) {
     return { Icon: Trophy, subtitle: "Championship Athletic Courts" };
   }
   if (n.includes("club") || n.includes("house")) {
@@ -87,7 +117,8 @@ export const Route = createFileRoute("/residence/$id")({
       { title: "Residence — Pikorua" },
       {
         name: "description",
-        content: "Explore this luxury residence in detail — gallery, floor plans, amenities and private advisory perspective.",
+        content:
+          "Explore this luxury residence in detail — gallery, floor plans, amenities and private advisory perspective.",
       },
     ],
   }),
@@ -577,9 +608,7 @@ function ResidenceContent({ property }: { property: Property }) {
                     <p className="font-display text-lg font-bold text-foreground mt-0.5">
                       {p.name}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground truncate">
-                      {p.location}
-                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground truncate">{p.location}</p>
                   </div>
                 </Link>
               ))}
@@ -594,9 +623,7 @@ function ResidenceContent({ property }: { property: Property }) {
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Starting Price
           </p>
-          <p className="font-display text-base font-bold text-champagne">
-            {priceLabel(property)}
-          </p>
+          <p className="font-display text-base font-bold text-champagne">{priceLabel(property)}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -608,7 +635,11 @@ function ResidenceContent({ property }: { property: Property }) {
                 : "border border-champagne/40 bg-champagne/10 text-champagne"
             }`}
           >
-            {selectedFlag ? <Check className="h-3.5 w-3.5" /> : <GitCompareArrows className="h-3.5 w-3.5" />}
+            {selectedFlag ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <GitCompareArrows className="h-3.5 w-3.5" />
+            )}
             {selectedFlag ? "In Suite" : "Compare"}
           </button>
           <a
@@ -642,9 +673,7 @@ function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <span className="tracking-luxury inline-flex items-center gap-2 text-[10px] font-semibold uppercase text-muted-foreground">
         {icon} {label}
       </span>
-      <span className="font-display text-base font-bold text-foreground truncate">
-        {value}
-      </span>
+      <span className="font-display text-base font-bold text-foreground truncate">{value}</span>
     </div>
   );
 }

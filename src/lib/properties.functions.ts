@@ -89,7 +89,8 @@ const EMPTY_GALLERY: PropertyGallery = {
 // The public site keeps using the slug as `id` (URLs like /residence/ikebana and
 // ?ids=<slug> predate the DB and must keep working).
 function toProperty(row: PropertyRow): Property {
-  const isMaruti = row.slug === "maruti-360" || (row.name && row.name.toLowerCase().includes("maruti 360"));
+  const isMaruti =
+    row.slug === "maruti-360" || (row.name && row.name.toLowerCase().includes("maruti 360"));
   let coverImg = row.image_url ?? "";
   if (isMaruti || coverImg.includes("maruti-360-exterior")) {
     coverImg = maruti360View;
@@ -104,10 +105,18 @@ function toProperty(row: PropertyRow): Property {
         clubhouse: maruti360View,
       }
     : {
-        livingRoom: rawGallery.livingRoom?.includes("maruti-360-exterior") ? maruti360Bedroom : (rawGallery.livingRoom ?? ""),
-        masterBedroom: rawGallery.masterBedroom?.includes("maruti-360-exterior") ? maruti360Pool : (rawGallery.masterBedroom ?? ""),
-        pool: rawGallery.pool?.includes("maruti-360-exterior") ? maruti360PlayArea : (rawGallery.pool ?? ""),
-        clubhouse: rawGallery.clubhouse?.includes("maruti-360-exterior") ? maruti360View : (rawGallery.clubhouse ?? ""),
+        livingRoom: rawGallery.livingRoom?.includes("maruti-360-exterior")
+          ? maruti360Bedroom
+          : (rawGallery.livingRoom ?? ""),
+        masterBedroom: rawGallery.masterBedroom?.includes("maruti-360-exterior")
+          ? maruti360Pool
+          : (rawGallery.masterBedroom ?? ""),
+        pool: rawGallery.pool?.includes("maruti-360-exterior")
+          ? maruti360PlayArea
+          : (rawGallery.pool ?? ""),
+        clubhouse: rawGallery.clubhouse?.includes("maruti-360-exterior")
+          ? maruti360View
+          : (rawGallery.clubhouse ?? ""),
       };
 
   return {

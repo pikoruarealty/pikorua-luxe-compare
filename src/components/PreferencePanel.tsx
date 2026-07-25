@@ -217,9 +217,7 @@ function Group({
           </h4>
         </div>
         {subtitle && (
-          <p className="mt-0.5 pl-3.5 text-[11px] font-medium text-muted-foreground">
-            {subtitle}
-          </p>
+          <p className="mt-0.5 pl-3.5 text-[11px] font-medium text-muted-foreground">{subtitle}</p>
         )}
       </div>
       <div className="pl-1">{children}</div>

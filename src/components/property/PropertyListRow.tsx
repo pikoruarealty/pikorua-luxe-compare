@@ -104,9 +104,7 @@ export function PropertyListRow({ property, index = 0 }: Props) {
           <span aria-hidden className="shine" />
           {/* Solid scrim, not the frosted-glass treatment — a print label sits
               on the photo, it doesn't blur it. */}
-          <span
-            className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-4rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md"
-          >
+          <span className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-4rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md">
             {property.status}
           </span>
           <div className="absolute right-3 top-3 z-10">
@@ -216,7 +214,8 @@ export function PropertyListRow({ property, index = 0 }: Props) {
                 </>
               ) : (
                 <>
-                  <Plus className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:rotate-90" /> Add to Compare
+                  <Plus className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:rotate-90" />{" "}
+                  Add to Compare
                 </>
               )}
             </button>
@@ -226,7 +225,8 @@ export function PropertyListRow({ property, index = 0 }: Props) {
               params={{ id: property.id }}
               className="group/link inline-flex items-center gap-1 pt-0.5 text-[11px] font-medium tracking-wide text-muted-foreground transition-colors hover:text-foreground"
             >
-              View Full Details <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+              View Full Details{" "}
+              <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
             </Link>
           </div>
         </div>

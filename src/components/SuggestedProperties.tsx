@@ -338,21 +338,15 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
                 "linear-gradient(to top, color-mix(in oklab, #000 28%, transparent) 0%, transparent 38%)",
             }}
           />
-          <span
-            className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md"
-          >
+          <span className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md">
             {property.status}
           </span>
           {chipLabel && (
-            <span
-              className="absolute bottom-2.5 left-2.5 z-10 max-w-[calc(60%-1rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md"
-            >
+            <span className="absolute bottom-2.5 left-2.5 z-10 max-w-[calc(60%-1rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md">
               {chipLabel}
             </span>
           )}
-          <span
-            className="absolute bottom-2.5 right-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground opacity-0 shadow-xs backdrop-blur-md transition-opacity group-hover/card:opacity-100"
-          >
+          <span className="absolute bottom-2.5 right-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground opacity-0 shadow-xs backdrop-blur-md transition-opacity group-hover/card:opacity-100">
             Compare <ArrowUpRight className="h-3 w-3" />
           </span>
         </div>

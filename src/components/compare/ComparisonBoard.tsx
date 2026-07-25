@@ -132,8 +132,18 @@ export function ComparisonBoard({
             </h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {ready && <SaveCompareButton properties={items} className="px-3.5 py-1.5 min-h-[36px] touch-manipulation active:scale-95" />}
-            {ready && <ShareCompareButton properties={items} className="min-h-[36px] touch-manipulation active:scale-95" />}
+            {ready && (
+              <SaveCompareButton
+                properties={items}
+                className="px-3.5 py-1.5 min-h-[36px] touch-manipulation active:scale-95"
+              />
+            )}
+            {ready && (
+              <ShareCompareButton
+                properties={items}
+                className="min-h-[36px] touch-manipulation active:scale-95"
+              />
+            )}
             {ready && (
               <Link
                 to="/compare"

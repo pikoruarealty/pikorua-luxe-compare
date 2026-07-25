@@ -2,7 +2,17 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Calendar, Check, ChevronLeft, ChevronRight, MapPin, Plus, Ruler, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Plus,
+  Ruler,
+  X,
+} from "lucide-react";
 import type { Property } from "@/types/property";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { useImagePrewarm } from "@/hooks/use-image-prewarm";
@@ -250,16 +260,28 @@ export function PropertyHoverCard({
                 {/* High-Luxury 3-Column Specifications Card */}
                 <div className="mt-3.5 grid grid-cols-3 gap-1.5 rounded-2xl border border-border/60 bg-muted/30 p-2.5 text-center">
                   <div className="min-w-0">
-                    <p className="font-bold uppercase tracking-wide text-muted-foreground text-[8px] sm:text-[9px]">Location</p>
-                    <p className="truncate font-semibold text-foreground text-[11px] sm:text-xs mt-0.5">{property.location}</p>
+                    <p className="font-bold uppercase tracking-wide text-muted-foreground text-[8px] sm:text-[9px]">
+                      Location
+                    </p>
+                    <p className="truncate font-semibold text-foreground text-[11px] sm:text-xs mt-0.5">
+                      {property.location}
+                    </p>
                   </div>
                   <div className="min-w-0 border-x border-border/50 px-1">
-                    <p className="font-bold uppercase tracking-wide text-muted-foreground text-[8px] sm:text-[9px]">Size</p>
-                    <p className="truncate font-semibold text-foreground text-[11px] sm:text-xs mt-0.5">{property.size}</p>
+                    <p className="font-bold uppercase tracking-wide text-muted-foreground text-[8px] sm:text-[9px]">
+                      Size
+                    </p>
+                    <p className="truncate font-semibold text-foreground text-[11px] sm:text-xs mt-0.5">
+                      {property.size}
+                    </p>
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold uppercase tracking-wide text-muted-foreground text-[8px] sm:text-[9px]">Possession</p>
-                    <p className="truncate font-semibold text-foreground text-[11px] sm:text-xs mt-0.5">{property.possession}</p>
+                    <p className="font-bold uppercase tracking-wide text-muted-foreground text-[8px] sm:text-[9px]">
+                      Possession
+                    </p>
+                    <p className="truncate font-semibold text-foreground text-[11px] sm:text-xs mt-0.5">
+                      {property.possession}
+                    </p>
                   </div>
                 </div>
 
@@ -326,7 +348,8 @@ export function PropertyHoverCard({
                 background: "var(--card)",
                 backdropFilter: "blur(28px) saturate(140%)",
                 border: "1px solid var(--glass-border)",
-                boxShadow: "0 40px 100px -20px color-mix(in oklab, var(--foreground) 35%, transparent)",
+                boxShadow:
+                  "0 40px 100px -20px color-mix(in oklab, var(--foreground) 35%, transparent)",
                 overflow: "hidden",
                 gridTemplateColumns: "55% 45%",
                 backfaceVisibility: "hidden",
@@ -366,9 +389,7 @@ export function PropertyHoverCard({
                   />
                 </AnimatePresence>
 
-                <span
-                  className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-4rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md"
-                >
+                <span className="absolute left-2.5 top-2.5 z-10 max-w-[calc(100%-4rem)] truncate rounded-full border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-foreground shadow-xs backdrop-blur-md">
                   {property.status}
                 </span>
                 <div className="absolute right-4 top-4 z-10">
@@ -549,7 +570,8 @@ export function PropertyHoverCard({
                       params={{ id: property.id }}
                       className="group/link inline-flex items-center justify-center gap-1.5 py-1 text-xs font-medium tracking-wide text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      View Full Details <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+                      View Full Details{" "}
+                      <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
                     </Link>
                   </div>
                 </div>

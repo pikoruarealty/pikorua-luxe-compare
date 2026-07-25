@@ -504,9 +504,7 @@ function Index() {
             <div>
               <div className="flex items-center gap-3">
                 <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
-                <p
-                  className="font-label tracking-luxury text-xs font-semibold uppercase text-champagne"
-                >
+                <p className="font-label tracking-luxury text-xs font-semibold uppercase text-champagne">
                   The Collection
                 </p>
               </div>

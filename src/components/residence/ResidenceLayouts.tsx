@@ -141,11 +141,7 @@ export function ResidenceLayouts({ property }: { property: Property }) {
               {isSingle ? (
                 <SingleLayoutCard variant={variants[0]} fields={fields} />
               ) : (
-                <MultiLayoutMatrix
-                  variants={variants}
-                  fields={fields}
-                  bestIdx={bestIdx}
-                />
+                <MultiLayoutMatrix variants={variants} fields={fields} bestIdx={bestIdx} />
               )}
             </motion.div>
           );

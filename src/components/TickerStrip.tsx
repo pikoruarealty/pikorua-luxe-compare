@@ -8,13 +8,7 @@ export function TickerStrip() {
   const properties = useProperties();
 
   const locations = Array.from(new Set(properties.map((p) => p.location))).slice(0, 4);
-  const items = [
-    ...locations,
-    "Ready to Move",
-    "Penthouses",
-    "Duplexes",
-    "Private Bungalows",
-  ];
+  const items = [...locations, "Ready to Move", "Penthouses", "Duplexes", "Private Bungalows"];
 
   const handleClick = (category: string) => {
     const el = document.getElementById("collection");
@@ -24,7 +18,10 @@ export function TickerStrip() {
   };
 
   return (
-    <section className="border-y border-border bg-background py-5" aria-label="Featured locations and categories">
+    <section
+      className="border-y border-border bg-background py-5"
+      aria-label="Featured locations and categories"
+    >
       <div className="container-lux">
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
           <span className="mr-1 text-[10px] font-bold tracking-luxury text-muted-foreground uppercase">
