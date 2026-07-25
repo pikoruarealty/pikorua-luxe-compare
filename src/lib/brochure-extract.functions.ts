@@ -16,7 +16,7 @@ const MAX_BASE64_LENGTH = 55_000_000; // ~40MB binary, matches the service's own
  *  developer portal's brochure-upload step. */
 export const extractFromBrochures = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
-  .inputValidator((data: { files: BrochureFile[] }) => {
+  .validator((data: { files: BrochureFile[] }) => {
     if (!Array.isArray(data?.files) || data.files.length === 0) {
       throw new Error("Upload at least one brochure PDF");
     }

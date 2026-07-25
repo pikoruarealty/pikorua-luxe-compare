@@ -45,7 +45,7 @@ export async function uniqueSlug(
 
 export const createProperty = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: PropertyFormValues) => propertyFormSchema.parse(data))
+  .validator((data: PropertyFormValues) => propertyFormSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { buildPropertyRow } = await import("./property-write.server");
@@ -65,7 +65,7 @@ export const createProperty = createServerFn({ method: "POST" })
 
 export const updateProperty = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { id: string; values: PropertyFormValues }) => {
+  .validator((data: { id: string; values: PropertyFormValues }) => {
     if (!data?.id || typeof data.id !== "string") throw new Error("Missing property id");
     return { id: data.id, values: propertyFormSchema.parse(data.values) };
   })
@@ -84,7 +84,7 @@ export const updateProperty = createServerFn({ method: "POST" })
 
 export const deleteProperty = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { id: string }) => {
+  .validator((data: { id: string }) => {
     if (!data?.id || typeof data.id !== "string") throw new Error("Missing property id");
     return { id: data.id };
   })
@@ -97,7 +97,7 @@ export const deleteProperty = createServerFn({ method: "POST" })
 
 export const setPropertyPublished = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { id: string; isPublished: boolean }) => {
+  .validator((data: { id: string; isPublished: boolean }) => {
     if (!data?.id || typeof data.id !== "string") throw new Error("Missing property id");
     return { id: data.id, isPublished: Boolean(data.isPublished) };
   })
@@ -114,7 +114,7 @@ export const setPropertyPublished = createServerFn({ method: "POST" })
 /** Owner-only: single property in editable form shape. */
 export const getPropertyForEdit = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { id: string }) => {
+  .validator((data: { id: string }) => {
     if (!data?.id || typeof data.id !== "string") throw new Error("Missing property id");
     return { id: data.id };
   })

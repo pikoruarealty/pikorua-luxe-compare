@@ -47,7 +47,7 @@ export const listDevelopers = createServerFn({ method: "GET" })
  *  the developer out of band (WhatsApp, email, in person). */
 export const createDeveloper = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { email: string; password: string; fullName?: string }) => {
+  .validator((data: { email: string; password: string; fullName?: string }) => {
     const email = data?.email?.trim().toLowerCase();
     const password = data?.password ?? "";
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -91,7 +91,7 @@ export const createDeveloper = createServerFn({ method: "POST" })
  *  is_active) without deleting their account or submission history. */
 export const setDeveloperActive = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { id: string; isActive: boolean }) => {
+  .validator((data: { id: string; isActive: boolean }) => {
     if (!data?.id) throw new Error("Missing developer id");
     return { id: data.id, isActive: Boolean(data.isActive) };
   })

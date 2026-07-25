@@ -14,7 +14,7 @@ interface UploadInput {
 
 export const uploadPropertyImage = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
-  .inputValidator((data: UploadInput) => {
+  .validator((data: UploadInput) => {
     if (!data?.fileBase64 || typeof data.fileBase64 !== "string") {
       throw new Error("No file provided");
     }

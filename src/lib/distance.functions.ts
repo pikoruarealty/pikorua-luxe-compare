@@ -106,7 +106,7 @@ export type DistanceResult =
  *  reach the client — only the resulting numbers — so no map or exact
  *  location is ever exposed. */
 export const calculatePropertyDistances = createServerFn({ method: "POST" })
-  .inputValidator((data: DistanceInput) => {
+  .validator((data: DistanceInput) => {
     if (!data || typeof data.address !== "string" || data.address.trim().length < 3) {
       throw new Error("Enter a more complete address");
     }
