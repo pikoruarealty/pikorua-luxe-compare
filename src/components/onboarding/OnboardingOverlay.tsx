@@ -10,9 +10,10 @@ import { ReviewPreferences } from "./ReviewPreferences";
 
 export function OnboardingOverlay() {
   const { phase, setPhase, quizAnswers, quizEditMode, cancelQuizEdit, hydrated } = useOnboarding();
-  // The public sign-in / quiz gate must never appear on the admin portal.
-  const isAdminRoute = useRouterState({
-    select: (s) => s.location.pathname.startsWith("/admin"),
+  // The public sign-in / quiz gate must never appear on the admin or
+  // developer portals — those have their own account-based auth entirely.
+  const isPortalRoute = useRouterState({
+    select: (s) => s.location.pathname.startsWith("/admin") || s.location.pathname.startsWith("/developer"),
   });
 
   // Auth and the first-time quiz are compulsory — the only way out is a
@@ -36,13 +37,13 @@ export function OnboardingOverlay() {
   // so a returning signed-in user's brief "idle" flash before the session
   // check resolves can't misfire this.
   useEffect(() => {
-    if (isAdminRoute || !hydrated || phase !== "idle") return;
+    if (isPortalRoute || !hydrated || phase !== "idle") return;
     const onScroll = () => {
       if (window.scrollY > 200) setPhase("auth");
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isAdminRoute, hydrated, phase, setPhase]);
+  }, [isPortalRoute, hydrated, phase, setPhase]);
 
   // welcome -> site-preview lands the visitor straight on the property
   // picker (the "suite" section, 3 comparison slots) instead of the top of
@@ -53,7 +54,7 @@ export function OnboardingOverlay() {
   // element's scroll-behavior to "auto" for the jump makes it truly instant,
   // so the listener can arm on the very next frame with nothing left to fire.
   useEffect(() => {
-    if (isAdminRoute || phase !== "site-preview") return;
+    if (isPortalRoute || phase !== "site-preview") return;
     const suite = document.getElementById("suite");
     if (suite) {
       const html = document.documentElement;
@@ -84,7 +85,7 @@ export function OnboardingOverlay() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointerdown", onInteract);
     };
-  }, [isAdminRoute, phase, setPhase]);
+  }, [isPortalRoute, phase, setPhase]);
 
   // Lock body scroll while overlay card is visible
   useEffect(() => {
@@ -99,7 +100,7 @@ export function OnboardingOverlay() {
   }, [phase]);
 
   const active =
-    !isAdminRoute &&
+    !isPortalRoute &&
     (phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz");
 
   return (
