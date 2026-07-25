@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
@@ -43,7 +43,7 @@ import { AreaUnitToggle } from "@/components/compare/AreaUnitToggle";
 import { RoomFieldValue } from "@/components/compare/RoomFieldValue";
 import { formatAreaNumber, parseBareSqFt, unitLabel } from "@/lib/area-units";
 import { livePossessionLabel } from "@/lib/possession-format";
-import { calculatePropertyDistances } from "@/lib/distance.functions";
+import { calculatePropertyDistances, suggestAddresses } from "@/lib/distance.functions";
 import { useAreaUnitStore } from "@/stores/area-unit-store";
 
 const TERM_INFO: Record<string, { title: string; body: string }> = {
@@ -1402,13 +1402,41 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [distances, setDistances] = useState<Record<string, number | null>>({});
 
-  const handleCalculate = async () => {
-    if (!address.trim() || status === "loading") return;
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const query = address.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const thisRequest = ++requestIdRef.current;
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const result = await suggestAddresses({ data: { query } });
+        if (requestIdRef.current === thisRequest) setSuggestions(result.suggestions);
+      } catch {
+        if (requestIdRef.current === thisRequest) setSuggestions([]);
+      }
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [address]);
+
+  const handleCalculate = async (addressOverride?: string) => {
+    const value = (addressOverride ?? address).trim();
+    if (!value || status === "loading") return;
+    setShowSuggestions(false);
     setStatus("loading");
     try {
       const result = await calculatePropertyDistances({
         data: {
-          address,
+          address: value,
           properties: items.map((p) => ({
             id: p.id,
             address: [p.location, p.city, p.state].filter(Boolean).join(", "),
@@ -1426,6 +1454,12 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
     }
   };
 
+  const selectSuggestion = (value: string) => {
+    setAddress(value);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
   return (
     <>
       <div className="border-b border-border bg-muted/10 px-4 py-3">
@@ -1434,17 +1468,42 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
           distance only, no map or exact location shown.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCalculate()}
-            placeholder="e.g. Prahlad Nagar, Ahmedabad"
-            className="min-w-0 flex-1 rounded-full border border-border bg-background px-4 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-champagne"
-          />
+          <div className="relative min-w-0 flex-1">
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onKeyDown={(e) => e.key === "Enter" && handleCalculate()}
+              placeholder="e.g. Prahlad Nagar, Ahmedabad"
+              autoComplete="off"
+              className="w-full min-w-0 rounded-full border border-border bg-background px-4 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-champagne"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="absolute top-[calc(100%+4px)] left-0 z-20 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-background py-1.5 shadow-lg">
+                {suggestions.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectSuggestion(s)}
+                      className="block w-full truncate px-4 py-2 text-left text-[13px] text-foreground transition-colors hover:bg-muted/60"
+                      title={s}
+                    >
+                      {s}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <button
             type="button"
-            onClick={handleCalculate}
+            onClick={() => handleCalculate()}
             disabled={!address.trim() || status === "loading"}
             className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[11px] font-medium tracking-wide text-background transition hover:opacity-85 disabled:opacity-50"
           >
