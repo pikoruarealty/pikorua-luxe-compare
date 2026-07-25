@@ -178,7 +178,7 @@ export function PropertyQuiz({
                         <button
                           key={city}
                           onClick={() => setSelectedCity(city)}
-                          className={`relative rounded-[16px] border p-3 text-center transition-all hover:scale-[1.03] ${
+                          className={`relative rounded-xl border p-3 text-center transition-all hover:scale-103 ${
                             selected
                               ? "border-champagne bg-champagne/10"
                               : "border-border bg-background hover:border-foreground/30"
@@ -225,7 +225,7 @@ export function PropertyQuiz({
                     <button
                       key={label}
                       onClick={() => toggleType(label)}
-                      className={`relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-[18px] border text-center transition-all hover:scale-[1.03] ${
+                      className={`relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-[18px] border text-center transition-all hover:scale-103 ${
                         selected
                           ? "border-champagne bg-champagne/10"
                           : "border-border bg-background hover:border-foreground/30"
@@ -272,7 +272,7 @@ export function PropertyQuiz({
                     <button
                       key={n}
                       onClick={() => toggleBhk(n)}
-                      className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-[18px] border text-center transition-all hover:scale-[1.03] ${
+                      className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-[18px] border text-center transition-all hover:scale-103 ${
                         selected
                           ? "border-champagne bg-champagne/10"
                           : disabled

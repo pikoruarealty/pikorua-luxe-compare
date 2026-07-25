@@ -86,7 +86,7 @@ export function ResidenceLayouts({ property }: { property: Property }) {
                   worse than a scrollbar. */}
               <div className="overflow-x-auto rounded-3xl border-2 border-border-strong bg-card/60">
                 <div
-                  className="min-w-[520px]"
+                  className="min-w-130"
                   style={
                     {
                       "--layout-cols": variants.length,

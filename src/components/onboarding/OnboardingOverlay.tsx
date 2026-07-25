@@ -113,7 +113,7 @@ export function OnboardingOverlay() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-[100] flex items-stretch justify-center overflow-y-auto sm:items-center"
+          className="fixed inset-0 z-100 flex items-stretch justify-center overflow-y-auto sm:items-center"
           style={{
             backgroundColor: "rgba(10, 10, 12, 0.18)",
             backdropFilter: "blur(2px)",
@@ -129,7 +129,7 @@ export function OnboardingOverlay() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-3xl border border-champagne/20 bg-card p-5 shadow-2xl sm:my-8 sm:p-8"
+            className="relative flex w-full max-w-120 flex-col overflow-hidden rounded-3xl border border-champagne/20 bg-card p-5 shadow-2xl sm:my-8 sm:p-8"
             style={{ minHeight: "min(100dvh, 580px)" }}
           >
             <div

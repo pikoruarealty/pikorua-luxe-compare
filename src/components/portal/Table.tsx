@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  *  render a card list instead (see the routes for the pattern). */
 export function TableWrap({
   children,
-  minWidth = "min-w-[820px]",
+  minWidth = "min-w-205",
   className = "",
 }: {
   children: ReactNode;

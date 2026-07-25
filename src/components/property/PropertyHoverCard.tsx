@@ -110,7 +110,7 @@ export function PropertyHoverCard({
             opacity: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
             scale: { type: "spring", stiffness: 260, damping: 32, mass: 0.9 },
           }}
-          className="pointer-events-auto fixed z-[80] hidden md:block"
+          className="pointer-events-auto fixed z-80 hidden md:block"
           style={{
             top: box.top,
             left: box.left,

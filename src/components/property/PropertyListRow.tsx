@@ -132,7 +132,7 @@ export function PropertyListRow({ property, index = 0 }: Props) {
               {slides.map((_, i) => (
                 <span
                   key={i}
-                  className={`h-[3px] rounded-full transition-all duration-500 ${
+                  className={`h-0.75 rounded-full transition-all duration-500 ${
                     i === slideIdx ? "w-4 bg-white" : "w-1 bg-white/40"
                   }`}
                 />

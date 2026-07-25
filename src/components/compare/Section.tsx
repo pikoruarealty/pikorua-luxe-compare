@@ -11,7 +11,7 @@ interface SectionProps {
 
 export function Section({ id, eyebrow, title, description, children }: SectionProps) {
   return (
-    <section id={id} className="scroll-mt-[260px] py-14 sm:py-24">
+    <section id={id} className="scroll-mt-65 py-14 sm:py-24">
       <motion.header
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}

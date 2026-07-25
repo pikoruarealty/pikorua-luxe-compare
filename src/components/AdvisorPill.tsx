@@ -42,7 +42,7 @@ export function AdvisorPill() {
           initial={{ opacity: 0, y: 24, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed bottom-5 right-5 z-[70] sm:bottom-7 sm:right-7"
+          className="fixed bottom-5 right-5 z-70 sm:bottom-7 sm:right-7"
         >
           <a
             href={WHATSAPP_URL}
@@ -55,7 +55,7 @@ export function AdvisorPill() {
               className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              <MessageCircle className="h-[18px] w-[18px]" />
+              <MessageCircle className="h-4.5 w-4.5" />
               <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" />
             </span>
             {/* Collapsed to zero width until hover/focus — 0fr→1fr animates the reveal */}

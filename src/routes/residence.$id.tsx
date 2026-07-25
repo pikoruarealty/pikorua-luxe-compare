@@ -198,7 +198,7 @@ function ResidenceContent({ property }: { property: Property }) {
             <img
               src={images[0]}
               alt={property.name}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover/main:scale-[1.04]"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-1200 ease-out group-hover/main:scale-[1.04]"
               loading="eager"
               decoding="async"
             />
@@ -212,12 +212,12 @@ function ResidenceContent({ property }: { property: Property }) {
               key={src}
               type="button"
               onClick={() => openLightbox(i + 1)}
-              className="media-frame group/thumb relative hidden aspect-[16/10] overflow-hidden rounded-2xl sm:block sm:aspect-auto sm:min-h-[180px]"
+              className="media-frame group/thumb relative hidden aspect-[16/10] overflow-hidden rounded-2xl sm:block sm:aspect-auto sm:min-h-45"
             >
               <img
                 src={src}
                 alt={`${property.name} — photo ${i + 2}`}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover/thumb:scale-[1.05]"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-1200 ease-out group-hover/thumb:scale-105"
                 loading="lazy"
                 decoding="async"
               />
@@ -299,7 +299,7 @@ function ResidenceContent({ property }: { property: Property }) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.7 }}
-                className="glass mt-12 rounded-[28px] p-8 sm:p-10"
+                className="glass mt-12 rounded-4xl p-8 sm:p-10"
               >
                 <Quote className="h-6 w-6 text-champagne/60" />
                 <p className="mt-4 font-display text-[22px] leading-snug text-ivory sm:text-[26px]">
@@ -314,7 +314,7 @@ function ResidenceContent({ property }: { property: Property }) {
 
           {/* Enquiry card */}
           <aside className="lg:sticky lg:top-28 lg:self-start">
-            <div className="rounded-[28px] border border-border bg-card p-7 shadow-(--shadow-glass)">
+            <div className="rounded-4xl border border-border bg-card p-7 shadow-(--shadow-glass)">
               <p className="text-[10px] tracking-luxury text-champagne">Private enquiry</p>
               <h3 className="mt-2 font-display text-[24px] leading-tight text-ivory">
                 Speak with our advisory desk
@@ -369,7 +369,7 @@ function ResidenceContent({ property }: { property: Property }) {
                       src={p.image}
                       alt={p.name}
                       loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] group-hover:scale-[1.05]"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] group-hover:scale-105"
                     />
                   </div>
                   <div className="p-4">

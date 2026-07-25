@@ -290,7 +290,7 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.3) }}
-      className="group relative flex w-[320px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl sm:w-[380px]"
+      className="group relative flex w-80 shrink-0 snap-start flex-col overflow-hidden rounded-2xl sm:w-95"
       style={{
         background: "var(--card)",
         border: "1px solid var(--glass-border)",
@@ -305,7 +305,7 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
             alt={a.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-900 ease-out group-hover:scale-105"
           />
           <div
             className="pointer-events-none absolute inset-0"
@@ -321,7 +321,7 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
             alt={b.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-900 ease-out group-hover:scale-105"
           />
           <div
             className="pointer-events-none absolute inset-0"

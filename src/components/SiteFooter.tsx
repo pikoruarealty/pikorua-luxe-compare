@@ -16,7 +16,7 @@ export function SiteFooter() {
               to="/"
               className="group inline-flex items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
             >
-              <span className="grid h-10 w-10 place-items-center rounded-full gold-border transition-transform duration-500 group-hover:rotate-[8deg]">
+              <span className="grid h-10 w-10 place-items-center rounded-full gold-border transition-transform duration-500 group-hover:rotate-8">
                 <span className="font-display text-base gold-text">P</span>
               </span>
               <div className="leading-tight">

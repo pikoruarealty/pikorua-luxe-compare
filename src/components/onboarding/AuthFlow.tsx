@@ -418,7 +418,7 @@ export function AuthFlow() {
                       autoComplete={i === 0 ? "one-time-code" : "off"}
                       maxLength={1}
                       disabled={verifying || Boolean(verificationToken)}
-                      className="h-[52px] w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne disabled:opacity-60"
+                      className="h-13 w-12 rounded-lg border border-border bg-background text-center text-lg text-foreground outline-none focus:border-champagne disabled:opacity-60"
                     />
                   ))}
                 </motion.div>

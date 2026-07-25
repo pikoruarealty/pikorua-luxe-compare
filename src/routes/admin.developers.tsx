@@ -205,7 +205,7 @@ function AdminDevelopers() {
           </div>
 
           {/* Desktop: table */}
-          <TableWrap className="hidden lg:block" minWidth="min-w-[720px]">
+          <TableWrap className="hidden lg:block" minWidth="min-w-180">
             <thead className="bg-muted/40">
               <tr className="border-b border-(--rule)">
                 <Th>Developer</Th>

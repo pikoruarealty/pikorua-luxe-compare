@@ -208,7 +208,7 @@ function AdminCustomers() {
           </div>
 
           {/* Desktop: table */}
-          <TableWrap className="hidden lg:block" minWidth="min-w-[980px]">
+          <TableWrap className="hidden lg:block" minWidth="min-w-245">
             <thead className="bg-muted/40">
               <tr className="border-b border-(--rule)">
                 <Th>Customer</Th>

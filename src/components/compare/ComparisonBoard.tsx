@@ -367,7 +367,7 @@ function SlotCard({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex h-full min-h-[140px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-transparent px-6 py-8 text-center transition-colors hover:border-foreground/40 hover:bg-muted/30"
+        className="group flex h-full min-h-35 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-transparent px-6 py-8 text-center transition-colors hover:border-foreground/40 hover:bg-muted/30"
       >
         <div className="grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground group-hover:text-foreground group-hover:border-foreground/40 transition-colors">
           <Plus className="h-4 w-4" />
@@ -829,7 +829,7 @@ function ComparisonGrid({
             <span className="grid h-4 w-4 place-items-center rounded-full bg-foreground text-background text-[9px]">
               {String.fromCharCode(65 + i)}
             </span>
-            <span className="truncate max-w-[100px]">{p.name}</span>
+            <span className="truncate max-w-25">{p.name}</span>
           </span>
         ))}
       </div>
@@ -1116,7 +1116,7 @@ function ComparisonGrid({
             <ul className="space-y-1.5">
               {p.advantages.slice(0, 5).map((a, idx) => (
                 <li key={a} className="flex gap-2 text-[13px] text-foreground/85 leading-snug">
-                  <span className="text-muted-foreground text-[11px] pt-0.5 min-w-[16px]">
+                  <span className="text-muted-foreground text-[11px] pt-0.5 min-w-4">
                     {idx + 1}.
                   </span>
                   <span>{a}</span>

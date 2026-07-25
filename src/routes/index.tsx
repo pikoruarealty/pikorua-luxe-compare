@@ -172,8 +172,8 @@ function Index() {
       >
         {/* Ambient decor — soft monochrome washes */}
         <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-          <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--foreground)_7%,transparent),transparent_70%)] blur-3xl" />
-          <div className="absolute top-10 right-[-160px] h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--foreground)_5%,transparent),transparent_70%)] blur-3xl" />
+          <div className="absolute -top-40 -left-40 h-130 w-130 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--foreground)_7%,transparent),transparent_70%)] blur-3xl" />
+          <div className="absolute top-10 right-[-160px] h-140 w-140 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--foreground)_5%,transparent),transparent_70%)] blur-3xl" />
         </div>
 
         <div className="container-lux relative z-10">
@@ -321,7 +321,7 @@ function Index() {
 
               {/* Featured slideshow — calendar page flip */}
               <div
-                className="shine-host relative overflow-hidden rounded-[28px] shadow-[0_50px_120px_-40px_rgba(0,0,0,0.45)]"
+                className="shine-host relative overflow-hidden rounded-4xl shadow-[0_50px_120px_-40px_rgba(0,0,0,0.45)]"
                 style={{ perspective: 1600 }}
                 onMouseEnter={() => setHeroPaused(true)}
                 onMouseLeave={() => setHeroPaused(false)}
@@ -413,7 +413,7 @@ function Index() {
                         type="button"
                         onClick={() => setHeroIdx(i)}
                         aria-label={`Show ${p.name}`}
-                        className={`h-[3px] rounded-full transition-all duration-500 ${
+                        className={`h-0.75 rounded-full transition-all duration-500 ${
                           i === heroIdx ? "w-7 bg-white" : "w-2.5 bg-white/40 hover:bg-white/70"
                         }`}
                       />

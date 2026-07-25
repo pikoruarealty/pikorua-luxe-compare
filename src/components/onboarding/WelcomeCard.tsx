@@ -30,14 +30,14 @@ export function WelcomeCard() {
         initial={{ width: 0 }}
         animate={{ width: "100%" }}
         transition={{ delay: 0.6, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-10 h-px max-w-[380px]"
+        className="mt-10 h-px max-w-95"
         style={{
           background:
             "linear-gradient(90deg, transparent 0%, var(--color-champagne) 50%, transparent 100%)",
         }}
       />
 
-      <div className="mt-10 w-full max-w-[320px]">
+      <div className="mt-10 w-full max-w-80">
         <button
           onClick={() => setPhase("site-preview")}
           className="flex h-12 w-full items-center justify-center rounded-full bg-champagne text-sm font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"

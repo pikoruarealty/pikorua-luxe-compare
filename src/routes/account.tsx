@@ -374,7 +374,7 @@ function AccountContent({ profile }: { profile: UserProfile }) {
 
               <Field label="What are you looking for? (optional)">
                 <textarea
-                  className={`${inputCls} min-h-[96px] resize-y`}
+                  className={`${inputCls} min-h-24 resize-y`}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   placeholder="e.g. A 4 BHK near Sindhu Bhavan Road, ready to move, with a park-facing view…"

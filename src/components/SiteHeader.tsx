@@ -88,7 +88,7 @@ export function SiteHeader() {
     >
       <div
         className={`mx-auto flex max-w-7xl items-center justify-between px-4 transition-[height] duration-300 sm:px-6 ${
-          scrolled ? "h-[58px]" : "h-[68px]"
+          scrolled ? "h-14.5" : "h-17"
         }`}
       >
         <Link
@@ -96,7 +96,7 @@ export function SiteHeader() {
           className="group flex items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
           onClick={() => setMenuOpen(false)}
         >
-          <span className="grid h-9 w-9 place-items-center rounded-full gold-border transition-transform duration-500 group-hover:rotate-[8deg]">
+          <span className="grid h-9 w-9 place-items-center rounded-full gold-border transition-transform duration-500 group-hover:rotate-8">
             <span className="font-display text-sm gold-text">P</span>
           </span>
           <div className="leading-tight">

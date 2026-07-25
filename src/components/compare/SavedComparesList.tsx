@@ -38,7 +38,7 @@ export function SavedComparesList() {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-[28px] border border-champagne/15 bg-card p-16 text-center">
+      <div className="rounded-4xl border border-champagne/15 bg-card p-16 text-center">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full gold-border text-champagne">
           <GitCompareArrows className="h-5 w-5" />
         </div>

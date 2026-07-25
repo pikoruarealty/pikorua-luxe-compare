@@ -104,7 +104,7 @@ export function SaveCompareButton({ properties, className = "", onSaved, saveLab
             {fly && (
               <motion.div
                 key={fly.key}
-                className="pointer-events-none fixed left-0 top-0 z-[200]"
+                className="pointer-events-none fixed left-0 top-0 z-200"
                 initial={{ x: fly.from.x, y: fly.from.y, scale: 1, opacity: 1, rotate: 0 }}
                 animate={{
                   // Same clamped arc as the favorite flight: rise above the

@@ -321,7 +321,7 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
             alt={property.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover/card:scale-105"
+            className="h-full w-full object-cover transition-transform duration-1200 ease-out group-hover/card:scale-105"
           />
           <div
             className="pointer-events-none absolute inset-0"
