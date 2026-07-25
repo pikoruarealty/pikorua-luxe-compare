@@ -6,7 +6,10 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  // brochure-extractor is a self-contained microservice with its own tooling;
+  // its property.d.ts is generated (gen_types.py), so the app's linter must not
+  // reach into it — formatting there would just be overwritten on regen.
+  { ignores: ["dist", ".output", ".vinxi", "brochure-extractor"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
