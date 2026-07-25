@@ -8,6 +8,7 @@ import { getCustomers, getCustomerDetail, type CustomerSummary } from "@/lib/cus
 import type { ActivityEvent } from "@/lib/activity.functions";
 import type { QuizAnswersDTO } from "@/lib/profile.functions";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
+import { parseBudget } from "@/lib/preference-filter";
 
 export const Route = createFileRoute("/admin/customers")({
   component: AdminCustomers,
@@ -57,6 +58,7 @@ function AdminCustomers() {
   });
   const [query, setQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
+  const [budgetFilter, setBudgetFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
   const cities = useMemo(
@@ -65,16 +67,26 @@ function AdminCustomers() {
     [customers],
   );
 
+  // Sorted by actual Cr value (lowest first), not alphabetically — "₹ 11 – 15 Cr"
+  // would otherwise sort before "₹ 6 – 10 Cr".
+  const budgetRanges = useMemo(() => {
+    const set = new Set((customers ?? []).map((c) => c.quizAnswers?.budgetRange).filter(Boolean));
+    return [...set].sort(
+      (a, b) => (parseBudget(a)?.[0] ?? Infinity) - (parseBudget(b)?.[0] ?? Infinity),
+    ) as string[];
+  }, [customers]);
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (customers ?? []).filter((c) => {
       if (cityFilter !== "all" && c.quizAnswers?.city !== cityFilter) return false;
+      if (budgetFilter !== "all" && c.quizAnswers?.budgetRange !== budgetFilter) return false;
       if (!q) return true;
       return [c.name, c.phone, c.email, c.profession, c.businessName]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
-  }, [customers, query, cityFilter]);
+  }, [customers, query, cityFilter, budgetFilter]);
 
   const exportCsv = () => {
     const csv = toCsv<CustomerSummary>(rows, [
@@ -112,6 +124,12 @@ function AdminCustomers() {
             onChange={setCityFilter}
             label="All cities"
             options={cities}
+          />
+          <FilterSelect
+            value={budgetFilter}
+            onChange={setBudgetFilter}
+            label="All budgets"
+            options={budgetRanges}
           />
           <p className="text-xs text-muted-foreground">
             {rows.length} of {customers?.length ?? 0} customers
