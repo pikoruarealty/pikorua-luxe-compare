@@ -136,27 +136,35 @@ export interface PropertyRecord {
 }
 
 export interface FieldMeta {
-  confidence: number;               // 0-1, from the model's own evidence row
+  confidence: number; // 0-1, from the model's own evidence row
   source: { file: string; page: number | null };
-  snippet: string | null;           // verbatim text that justified the value
-  agreement: number;                // how many chunks/files agreed
-  alternatives: Array<{ value: unknown; confidence: number; source: { file: string; page: number | null } }>;
+  snippet: string | null; // verbatim text that justified the value
+  agreement: number; // how many chunks/files agreed
+  alternatives: Array<{
+    value: unknown;
+    confidence: number;
+    source: { file: string; page: number | null };
+  }>;
 }
 
 export interface Conflict {
-  field: string;                    // dotted path e.g. 'project_structure.total_floors'
+  field: string; // dotted path e.g. 'project_structure.total_floors'
   chosen: unknown;
-  rejected: Array<{ value: unknown; confidence: number; source: { file: string; page: number | null } }>;
+  rejected: Array<{
+    value: unknown;
+    confidence: number;
+    source: { file: string; page: number | null };
+  }>;
 }
 
 export interface ExtractionResult {
   property: PropertyRecord;
-  form_payload: Record<string, unknown>;   // flat, keys match the form inputs 1:1
+  form_payload: Record<string, unknown>; // flat, keys match the form inputs 1:1
   field_meta: Record<string, FieldMeta>;
   conflicts: Conflict[];
-  needs_review: string[];           // fields under MIN_CONFIDENCE - highlight these
+  needs_review: string[]; // fields under MIN_CONFIDENCE - highlight these
   missing_required: string[];
-  image_pool: ExtractedImage[];     // everything not auto-assigned to a slot
+  image_pool: ExtractedImage[]; // everything not auto-assigned to a slot
   source_files: string[];
   completeness: {
     fields_filled: number;
@@ -166,7 +174,13 @@ export interface ExtractionResult {
     amenities_found: number;
   };
   meta: {
-    files: Array<{ file: string; pages: number; scanned_pages: number; document_kind: string; seconds: number }>;
+    files: Array<{
+      file: string;
+      pages: number;
+      scanned_pages: number;
+      document_kind: string;
+      seconds: number;
+    }>;
     model: string;
     chunks: number;
     seconds: number;

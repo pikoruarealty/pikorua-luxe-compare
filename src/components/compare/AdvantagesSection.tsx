@@ -17,19 +17,25 @@ export function AdvantagesSection({ properties }: { properties: Property[] }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6, delay: i * 0.08 }}
-            className="gold-border rounded-[32px] p-6"
+            className="rounded-card border border-[var(--rule)] bg-card p-6"
           >
-            <p className="text-[10px] font-bold uppercase tracking-luxury text-champagne">
+            <p
+              className="tracking-luxury font-bold text-champagne"
+              style={{ fontSize: "var(--step--2)" }}
+            >
               Defining strengths
             </p>
-            <h3 className="mt-3 font-display text-2xl font-bold tracking-[-0.02em] text-ivory sm:text-[28px]">
+            <h3
+              className="mt-3 font-display font-bold text-ivory"
+              style={{ fontSize: "var(--step-2)", letterSpacing: "var(--tracking-display)" }}
+            >
               {p.name}
             </h3>
             <ul className="mt-5 space-y-4">
               {p.advantages.map((adv, idx) => (
                 <li key={idx} className="flex gap-3">
-                  <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-champagne/30 to-transparent text-champagne ring-1 ring-champagne/40">
-                    <Diamond className="h-3.5 w-3.5" />
+                  <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted ring-1 ring-[var(--rule)]">
+                    <Diamond className="h-3.5 w-3.5 text-foreground" />
                   </span>
                   <p className="text-sm leading-relaxed text-ivory/85">{adv}</p>
                 </li>

@@ -21,18 +21,24 @@ export function Section({ id, eyebrow, title, description, children }: SectionPr
       >
         <div className="flex items-center gap-3">
           <span className="h-px w-8 bg-champagne/80 sm:w-12" />
-          <p className="font-label text-[10px] font-semibold uppercase tracking-[0.32em] text-champagne sm:text-[11px] sm:tracking-[0.42em]">
+          <p
+            className="font-label tracking-luxury font-semibold text-champagne"
+            style={{ fontSize: "var(--step--2)" }}
+          >
             {eyebrow}
           </p>
         </div>
         <h2
-          className="mt-5 font-display leading-none tracking-[-0.018em] text-ivory sm:mt-6"
-          style={{ fontSize: "var(--step-4)" }}
+          className="mt-5 font-display leading-none text-ivory sm:mt-6"
+          style={{ fontSize: "var(--step-4)", letterSpacing: "var(--tracking-display)" }}
         >
           {title}
         </h2>
         {description && (
-          <p className="mt-5 max-w-[var(--measure)] text-[15px] font-medium leading-relaxed text-muted-foreground sm:mt-6 sm:text-[18px]">
+          <p
+            className="mt-5 max-w-[var(--measure)] font-medium leading-relaxed text-muted-foreground sm:mt-6"
+            style={{ fontSize: "var(--step-0)" }}
+          >
             {description}
           </p>
         )}

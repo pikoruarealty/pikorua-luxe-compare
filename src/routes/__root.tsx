@@ -11,13 +11,13 @@ import { type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
-import { propertiesQueryOptions } from "../lib/properties.queries";
+import { propertiesQueryOptions } from "@/api/queries/properties.queries";
 import { PropertiesProvider } from "../context/PropertiesContext";
 import { OnboardingProvider } from "../context/OnboardingContext";
 import { OnboardingOverlay } from "../components/onboarding/OnboardingOverlay";
-import { ScrollProgress } from "../components/ScrollProgress";
-import { AdvisorPill } from "../components/AdvisorPill";
-import { PageFade } from "../components/PageFade";
+import { ScrollProgress } from "@/components/layout/ScrollProgress";
+import { AdvisorPill } from "@/components/layout/AdvisorPill";
+import { PageFade } from "@/components/layout/PageFade";
 import { ThemeProvider } from "../context/ThemeContext";
 
 function NotFoundComponent() {
@@ -146,7 +146,10 @@ function RootComponent() {
             <OnboardingOverlay />
             <Toaster
               position="top-center"
+              visibleToasts={1}
+              duration={2000}
               toastOptions={{
+                duration: 2000,
                 style: {
                   background: "var(--popover)",
                   border: "1px solid var(--glass-border)",

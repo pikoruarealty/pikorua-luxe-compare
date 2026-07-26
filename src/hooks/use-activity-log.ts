@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { logActivity, type ActivityEvent } from "@/lib/activity.functions";
+import { logActivity, type ActivityEvent } from "@/api/functions/activity.functions";
 
 const SESSION_KEY_STORAGE = "pikorua:session-key";
 

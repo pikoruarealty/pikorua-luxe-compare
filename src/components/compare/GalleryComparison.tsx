@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Expand } from "lucide-react";
 import type { Property } from "@/types/property";
 import { Section } from "./Section";
-import { Lightbox } from "@/components/Lightbox";
+import { Lightbox } from "@/components/common/Lightbox";
 
 const CATEGORIES = [
   { key: "livingRoom", label: "Living Room" },
@@ -32,7 +32,10 @@ export function GalleryComparison({ properties }: { properties: Property[] }) {
         {CATEGORIES.map((cat, cIdx) => (
           <div key={cat.key}>
             <div className="mb-5 flex items-center gap-4">
-              <p className="font-display text-xl font-bold tracking-[-0.015em] text-ivory sm:text-2xl">
+              <p
+                className="font-display font-bold text-ivory"
+                style={{ fontSize: "var(--step-1)", letterSpacing: "var(--tracking-display)" }}
+              >
                 {cat.label}
               </p>
               <div className="h-px flex-1 bg-gradient-to-r from-champagne/40 to-transparent" />
@@ -48,8 +51,7 @@ export function GalleryComparison({ properties }: { properties: Property[] }) {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true, margin: "-80px" }}
                   transition={{ duration: 0.7, delay: cIdx * 0.05 + i * 0.08 }}
-                  className="group overflow-hidden rounded-[32px]"
-                  style={{ border: "1px solid var(--glass-border)" }}
+                  className="group overflow-hidden rounded-card border border-[var(--rule)]"
                 >
                   <button
                     type="button"
@@ -67,7 +69,10 @@ export function GalleryComparison({ properties }: { properties: Property[] }) {
                     <span className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur transition-opacity duration-300 group-hover:opacity-100">
                       <Expand className="h-4 w-4" />
                     </span>
-                    <figcaption className="absolute bottom-4 left-5 right-5 text-left text-xs tracking-luxury text-white">
+                    <figcaption
+                      className="tracking-luxury absolute bottom-4 left-5 right-5 text-left text-white"
+                      style={{ fontSize: "var(--step--2)" }}
+                    >
                       {p.name}
                     </figcaption>
                   </button>

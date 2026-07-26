@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { PropertyListRow } from "@/components/property/PropertyListRow";
 import { useProperties } from "@/context/PropertiesContext";
 import { useFavoritesStore } from "@/stores/favorites-store";
@@ -80,18 +80,18 @@ function FavoritesPage() {
       <section className="mx-auto max-w-7xl px-6">
         {tab === "comparisons" ? (
           !hydrated ? (
-            <div className="rounded-[28px] border border-champagne/15 bg-card p-16" aria-hidden>
+            <div className="rounded-4xl border border-champagne/15 bg-card p-16" aria-hidden>
               <div className="mx-auto h-4 w-40 animate-pulse rounded-full bg-muted" />
             </div>
           ) : (
             <SavedComparesList />
           )
         ) : !hydrated ? (
-          <div className="rounded-[28px] border border-champagne/15 bg-card p-16" aria-hidden>
+          <div className="rounded-4xl border border-champagne/15 bg-card p-16" aria-hidden>
             <div className="mx-auto h-4 w-40 animate-pulse rounded-full bg-muted" />
           </div>
         ) : saved.length === 0 ? (
-          <div className="rounded-[28px] border border-champagne/15 bg-card p-16 text-center">
+          <div className="rounded-4xl border border-champagne/15 bg-card p-16 text-center">
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full gold-border text-champagne">
               <Heart className="h-5 w-5" />
             </div>

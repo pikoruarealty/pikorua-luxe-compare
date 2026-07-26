@@ -17,9 +17,9 @@ export function AreaUnitToggle({ className = "" }: { className?: string }) {
             type="button"
             onClick={() => setUnit(opt.value)}
             aria-pressed={unit === opt.value}
-            className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+            className={`rounded-full px-3.5 py-1.5 min-h-[32px] text-xs font-medium touch-manipulation transition-all active:scale-95 ${
               unit === opt.value
-                ? "bg-foreground text-background"
+                ? "bg-foreground text-background shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >

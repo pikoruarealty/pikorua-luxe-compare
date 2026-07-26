@@ -25,18 +25,18 @@ Built with TanStack Start (React 19) and Supabase.
 
 ## Tech stack
 
-| Area | Choice |
-| --- | --- |
-| Framework | [TanStack Start](https://tanstack.com/start) (React 19, SSR) |
-| Routing / data | TanStack Router · TanStack Query · TanStack Table |
-| Backend | [Supabase](https://supabase.com) (Postgres, Auth, Storage) |
-| Styling | Tailwind CSS v4 · Radix UI primitives · shadcn-style components |
-| State | Zustand (compare, favorites, saved comparisons, area unit, variant view) |
-| Forms | React Hook Form · Zod |
-| Animation | Framer Motion |
-| Build / deploy | Vite 8 · Nitro (Cloudflare Workers / Vercel) |
-| OTP delivery | [2Factor.in](https://2factor.in) |
-| Geocoding | OpenStreetMap Nominatim |
+| Area           | Choice                                                                   |
+| -------------- | ------------------------------------------------------------------------ |
+| Framework      | [TanStack Start](https://tanstack.com/start) (React 19, SSR)             |
+| Routing / data | TanStack Router · TanStack Query · TanStack Table                        |
+| Backend        | [Supabase](https://supabase.com) (Postgres, Auth, Storage)               |
+| Styling        | Tailwind CSS v4 · Radix UI primitives · shadcn-style components          |
+| State          | Zustand (compare, favorites, saved comparisons, area unit, variant view) |
+| Forms          | React Hook Form · Zod                                                    |
+| Animation      | Framer Motion                                                            |
+| Build / deploy | Vite 8 · Nitro (Cloudflare Workers / Vercel)                             |
+| OTP delivery   | [2Factor.in](https://2factor.in)                                         |
+| Geocoding      | OpenStreetMap Nominatim                                                  |
 
 ---
 
@@ -62,15 +62,15 @@ Copy the example file and fill in real values:
 cp .env.example .env
 ```
 
-| Variable | Scope | Purpose |
-| --- | --- | --- |
-| `SUPABASE_URL` | server | Supabase project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | server | Publishable / anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | server | Service-role key (admin writes) |
-| `VITE_SUPABASE_URL` | client | Same URL, exposed to the browser |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client | Same publishable key, exposed to the browser |
-| `SESSION_SECRET` | server | Signs session cookies and OTP verification tokens |
-| `TWO_FACTOR_API_KEY` | server | 2Factor.in key for sending OTP SMS |
+| Variable                        | Scope  | Purpose                                           |
+| ------------------------------- | ------ | ------------------------------------------------- |
+| `SUPABASE_URL`                  | server | Supabase project URL                              |
+| `SUPABASE_PUBLISHABLE_KEY`      | server | Publishable / anon key                            |
+| `SUPABASE_SERVICE_ROLE_KEY`     | server | Service-role key (admin writes)                   |
+| `VITE_SUPABASE_URL`             | client | Same URL, exposed to the browser                  |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | client | Same publishable key, exposed to the browser      |
+| `SESSION_SECRET`                | server | Signs session cookies and OTP verification tokens |
+| `TWO_FACTOR_API_KEY`            | server | 2Factor.in key for sending OTP SMS                |
 
 `.env` is gitignored. Only `VITE_`-prefixed variables reach the browser.
 
@@ -86,13 +86,13 @@ The app serves on **http://localhost:5173**.
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `bun run dev` | Start the dev server (http://localhost:5173) |
-| `bun run build` | Production build (Nitro output in `.output/`) |
-| `bun run preview` | Preview the production build locally |
-| `bun run lint` | ESLint + Prettier check |
-| `bun run format` | Format the codebase with Prettier |
+| Command           | Description                                   |
+| ----------------- | --------------------------------------------- |
+| `bun run dev`     | Start the dev server (http://localhost:5173)  |
+| `bun run build`   | Production build (Nitro output in `.output/`) |
+| `bun run preview` | Preview the production build locally          |
+| `bun run lint`    | ESLint + Prettier check                       |
+| `bun run format`  | Format the codebase with Prettier             |
 
 ---
 

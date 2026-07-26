@@ -7,7 +7,7 @@ import { PropertyForm } from "@/components/admin/PropertyForm";
 import {
   getMyPropertyForEdit,
   submitPropertyForReview,
-} from "@/lib/developer-properties.functions";
+} from "@/api/functions/developer-properties.functions";
 import type { PropertyFormValues } from "@/lib/property-schema";
 
 export const Route = createFileRoute("/developer/properties/$id")({

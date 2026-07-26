@@ -1,12 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Search, X } from "lucide-react";
+import { Download, Search, Users, X } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { EmptyState } from "@/components/portal/EmptyState";
+import { Skeleton } from "@/components/portal/Skeleton";
+import { TableWrap, Th, Td } from "@/components/portal/Table";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { getCustomers, getCustomerDetail, type CustomerSummary } from "@/lib/customers.functions";
-import type { ActivityEvent } from "@/lib/activity.functions";
-import type { QuizAnswersDTO } from "@/lib/profile.functions";
+import {
+  getCustomers,
+  getCustomerDetail,
+  type CustomerSummary,
+} from "@/api/functions/customers.functions";
+import type { ActivityEvent } from "@/api/functions/activity.functions";
+import type { QuizAnswersDTO } from "@/api/functions/profile.functions";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
 import { parseBudget } from "@/lib/preference-filter";
 
@@ -34,6 +41,9 @@ const fmtDate = (iso: string | null) =>
         minute: "2-digit",
       })
     : "—";
+
+const countPill =
+  "inline-flex items-center rounded-full bg-champagne/15 px-2.5 py-1 text-xs font-medium text-champagne tabular-nums";
 
 function quizSummary(q: QuizAnswersDTO | null): string {
   if (!q) return "Not completed";
@@ -63,7 +73,9 @@ function AdminCustomers() {
 
   const cities = useMemo(
     () =>
-      [...new Set((customers ?? []).map((c) => c.quizAnswers?.city).filter(Boolean))].sort() as string[],
+      [
+        ...new Set((customers ?? []).map((c) => c.quizAnswers?.city).filter(Boolean)),
+      ].sort() as string[],
     [customers],
   );
 
@@ -145,22 +157,64 @@ function AdminCustomers() {
         </button>
       </div>
 
-      {isPending && <p className="text-sm text-muted-foreground">Loading customers…</p>}
-      {error && <p className="text-sm text-red-500">{(error as Error).message}</p>}
+      {isPending && (
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">{(error as Error).message}</p>
+      )}
 
       {!isPending && !error && rows.length === 0 && (
-        <div className="rounded-xl border border-border p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            No customers yet. They appear here as soon as someone signs up on the website.
-          </p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={query ? "No matches" : "No customers yet"}
+          message={
+            query
+              ? `No customer matches “${query}”.`
+              : "They appear here as soon as someone signs up on the website."
+          }
+        />
       )}
 
       {!isPending && !error && rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[980px] text-sm">
-            <thead className="bg-card text-left">
-              <tr className="border-b border-border">
+        <>
+          {/* Mobile: card list */}
+          <div className="space-y-3 lg:hidden">
+            {rows.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setOpenId(c.id)}
+                className="w-full rounded-2xl border border-(--rule) bg-card p-4 text-left shadow-(--shadow-lift) transition-colors hover:bg-foreground/2 focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">{c.name || "—"}</p>
+                    {c.businessName && (
+                      <p className="truncate text-xs text-muted-foreground">{c.businessName}</p>
+                    )}
+                  </div>
+                  <span className={countPill}>{c.activityCount}</span>
+                </div>
+                <div className="mt-3 space-y-1 border-t border-(--rule) pt-3 text-xs text-muted-foreground">
+                  <p className="truncate">
+                    {c.phone}
+                    {c.email ? ` · ${c.email}` : ""}
+                  </p>
+                  <p className={c.quizAnswers ? "" : "italic"}>{quizSummary(c.quizAnswers)}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <TableWrap className="hidden lg:block" minWidth="min-w-245">
+            <thead className="bg-muted/40">
+              <tr className="border-b border-(--rule)">
                 <Th>Customer</Th>
                 <Th>Contact</Th>
                 <Th>Profession</Th>
@@ -174,39 +228,35 @@ function AdminCustomers() {
                 <tr
                   key={c.id}
                   onClick={() => setOpenId(c.id)}
-                  className="cursor-pointer border-b border-border last:border-0 hover:bg-foreground/5"
+                  className="cursor-pointer border-b border-(--rule) transition-colors last:border-0 hover:bg-foreground/2"
                 >
-                  <td className="px-4 py-3">
+                  <Td>
                     <p className="font-medium text-foreground">{c.name || "—"}</p>
                     {c.businessName && (
                       <p className="text-xs text-muted-foreground">{c.businessName}</p>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
+                  </Td>
+                  <Td>
                     <p className="text-foreground">{c.phone}</p>
                     <p className="text-xs text-muted-foreground">{c.email || "—"}</p>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.profession || "—"}</td>
-                  <td className="max-w-xs px-4 py-3">
+                  </Td>
+                  <Td className="text-muted-foreground">{c.profession || "—"}</Td>
+                  <Td className="max-w-xs">
                     <span
                       className={c.quizAnswers ? "text-foreground" : "text-muted-foreground italic"}
                     >
                       {quizSummary(c.quizAnswers)}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-champagne/15 px-2.5 py-1 text-xs font-medium text-champagne">
-                      {c.activityCount}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {fmtDate(c.createdAt)}
-                  </td>
+                  </Td>
+                  <Td>
+                    <span className={countPill}>{c.activityCount}</span>
+                  </Td>
+                  <Td className="text-xs text-muted-foreground">{fmtDate(c.createdAt)}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+          </TableWrap>
+        </>
       )}
 
       {openId && <CustomerDrawer id={openId} onClose={() => setOpenId(null)} />}
@@ -224,26 +274,35 @@ function CustomerDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
       <aside
-        className="h-full w-full max-w-lg overflow-y-auto bg-background p-6 shadow-xl"
+        className="glass-strong h-full w-full max-w-lg overflow-y-auto p-6 shadow-(--shadow-lift)"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h2 className="font-display text-xl text-foreground">{data?.name || "Customer"}</h2>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-label text-[10px] tracking-luxury text-champagne uppercase">
+              Customer
+            </p>
+            <h2 className="mt-1 truncate font-display text-xl text-foreground">
+              {data?.name || "Customer"}
+            </h2>
             <p className="text-xs text-muted-foreground">
               Joined {fmtDate(data?.createdAt ?? null)}
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+            aria-label="Close"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {error && <p className="text-sm text-red-500">{(error as Error).message}</p>}
+        {error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{(error as Error).message}</p>
+        )}
 
         {data && (
           <div className="space-y-8">
@@ -288,7 +347,7 @@ function CustomerDrawer({ id, onClose }: { id: string; onClose: () => void }) {
                           <span className="text-champagne"> {a.propertyName}</span>
                         )}
                       </span>
-                      <span className="flex-shrink-0 text-xs text-muted-foreground">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         {fmtDate(a.createdAt)}
                       </span>
                     </li>
@@ -306,7 +365,7 @@ function CustomerDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 function DrawerSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-3 text-[10px] font-semibold tracking-[0.16em] text-champagne uppercase">
+      <h3 className="mb-3 font-label text-[10px] font-semibold tracking-luxury text-champagne uppercase">
         {title}
       </h3>
       <div className="space-y-2">{children}</div>
@@ -316,17 +375,9 @@ function DrawerSection({ title, children }: { title: string; children: React.Rea
 
 function Detail({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-border pb-2 last:border-0">
+    <div className="flex justify-between gap-4 border-b border-(--rule) pb-2 last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-right text-sm text-foreground">{value || "—"}</span>
     </div>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-4 py-3 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-      {children}
-    </th>
   );
 }

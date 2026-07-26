@@ -24,14 +24,14 @@ Interactive docs: `http://localhost:8000/docs`
 
 ## 2. Endpoints
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| POST | `/v1/extract` | multipart `files` (repeatable). Blocks 25–60 s, returns the full result |
-| POST | `/v1/extract/async` | same input, returns `{job_id}` immediately |
-| GET | `/v1/jobs/{job_id}` | `queued` → `running` → `done` (with `result`) / `error` |
-| GET | `/v1/schema` | field list + descriptions — render your form from this |
-| GET | `/health` | liveness + whether the OpenAI key loaded |
-| GET | `/images/{file}` | photos pulled out of the PDFs |
+| Method | Path                | Notes                                                                   |
+| ------ | ------------------- | ----------------------------------------------------------------------- |
+| POST   | `/v1/extract`       | multipart `files` (repeatable). Blocks 25–60 s, returns the full result |
+| POST   | `/v1/extract/async` | same input, returns `{job_id}` immediately                              |
+| GET    | `/v1/jobs/{job_id}` | `queued` → `running` → `done` (with `result`) / `error`                 |
+| GET    | `/v1/schema`        | field list + descriptions — render your form from this                  |
+| GET    | `/health`           | liveness + whether the OpenAI key loaded                                |
+| GET    | `/images/{file}`    | photos pulled out of the PDFs                                           |
 
 All except `/health` and `/v1/schema` need the header `X-API-Key: <SERVICE_API_KEY>`.
 Query param `?with_images=false` skips photo extraction (faster, cheaper).
@@ -139,13 +139,13 @@ import type { ExtractionResult } from "./types/property";
 
 async function autofill(files: File[]) {
   const body = new FormData();
-  files.forEach(f => body.append("files", f));
+  files.forEach((f) => body.append("files", f));
 
   const res = await fetch("/api/brochure/extract", { method: "POST", body });
   if (!res.ok) throw new Error((await res.json()).error ?? "Extraction failed");
 
   const data: ExtractionResult = await res.json();
-  setForm(prev => ({ ...prev, ...data.form_payload }));   // prefill
+  setForm((prev) => ({ ...prev, ...data.form_payload })); // prefill
   setMeta(data.field_meta);
   setConflicts(data.conflicts);
   setReview(new Set(data.needs_review));
@@ -161,8 +161,14 @@ Async version:
 const { job_id } = await post("/v1/extract/async", body);
 const poll = setInterval(async () => {
   const job = await get(`/v1/jobs/${job_id}`);
-  if (job.status === "done")  { clearInterval(poll); apply(job.result); }
-  if (job.status === "error") { clearInterval(poll); toast(job.error); }
+  if (job.status === "done") {
+    clearInterval(poll);
+    apply(job.result);
+  }
+  if (job.status === "error") {
+    clearInterval(poll);
+    toast(job.error);
+  }
 }, 3000);
 ```
 
@@ -183,13 +189,13 @@ upload and set `PUBLIC_IMAGE_BASE` to the CDN URL. That's a ~10-line change.
 
 ## 7. Errors
 
-| Status | Meaning | Fix |
-| --- | --- | --- |
-| 400 | non-PDF uploaded / no file | validate on the client too |
-| 401 | bad `X-API-Key` | check env on both sides |
-| 500 `OPENAI_API_KEY is not set` | env not loaded | `.env` / container env |
-| 500 `... is 52.3 MB, limit is 40 MB` | oversized PDF | raise `MAX_FILE_MB` or compress |
-| 500 after retries | OpenAI rate limit / outage | retry; raise `MAX_RETRIES` |
+| Status                               | Meaning                    | Fix                             |
+| ------------------------------------ | -------------------------- | ------------------------------- |
+| 400                                  | non-PDF uploaded / no file | validate on the client too      |
+| 401                                  | bad `X-API-Key`            | check env on both sides         |
+| 500 `OPENAI_API_KEY is not set`      | env not loaded             | `.env` / container env          |
+| 500 `... is 52.3 MB, limit is 40 MB` | oversized PDF              | raise `MAX_FILE_MB` or compress |
+| 500 after retries                    | OpenAI rate limit / outage | retry; raise `MAX_RETRIES`      |
 
 Failures are per-request; nothing is written anywhere, so a retry is always safe.
 

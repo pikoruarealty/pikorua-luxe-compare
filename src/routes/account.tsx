@@ -19,12 +19,12 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useOnboarding, type UserProfile } from "@/context/OnboardingContext";
 import { useFavoritesStore } from "@/stores/favorites-store";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { updateProfile as updateProfileFn } from "@/lib/profile.functions";
+import { updateProfile as updateProfileFn } from "@/api/functions/profile.functions";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -259,7 +259,7 @@ function AccountContent({ profile }: { profile: UserProfile }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-glass)] sm:p-8"
+          className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-(--shadow-glass) sm:p-8"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-5">
@@ -374,7 +374,7 @@ function AccountContent({ profile }: { profile: UserProfile }) {
 
               <Field label="What are you looking for? (optional)">
                 <textarea
-                  className={`${inputCls} min-h-[96px] resize-y`}
+                  className={`${inputCls} min-h-24 resize-y`}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   placeholder="e.g. A 4 BHK near Sindhu Bhavan Road, ready to move, with a park-facing view…"
@@ -407,7 +407,7 @@ function AccountContent({ profile }: { profile: UserProfile }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-glass)] sm:p-8"
+          className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-(--shadow-glass) sm:p-8"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

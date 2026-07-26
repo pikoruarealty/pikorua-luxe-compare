@@ -19,7 +19,7 @@ export function ExpertVerdict({ properties }: { properties: Property[] }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.7, delay: i * 0.1 }}
-            className="glass-strong relative overflow-hidden rounded-[32px] p-8 sm:p-10"
+            className="relative overflow-hidden rounded-card border border-[var(--rule)] bg-card p-8 sm:p-10"
           >
             <div
               aria-hidden
@@ -27,18 +27,26 @@ export function ExpertVerdict({ properties }: { properties: Property[] }) {
               style={{ background: "var(--gradient-radial-gold)" }}
             />
             <Quote className="h-8 w-8 text-champagne/60" />
-            <p className="mt-6 font-display text-2xl leading-snug text-ivory sm:text-3xl">
+            <p
+              className="mt-6 font-display leading-snug text-ivory"
+              style={{ fontSize: "var(--step-1)" }}
+            >
               {p.expertNote}
             </p>
-            <div className="mt-8 flex items-center gap-4 border-t border-[var(--glass-border)] pt-6">
+            <div className="mt-8 flex items-center gap-4 border-t border-[var(--rule)] pt-6">
               <img
                 src={p.image}
                 alt={p.name}
-                className="h-12 w-12 rounded-xl object-cover ring-1 ring-champagne/40"
+                className="h-12 w-12 rounded-card object-cover ring-1 ring-[var(--rule)]"
               />
               <div>
-                <p className="font-display text-lg text-ivory">{p.name}</p>
-                <p className="text-[10px] tracking-luxury text-champagne">
+                <p className="font-display text-ivory" style={{ fontSize: "var(--step-0)" }}>
+                  {p.name}
+                </p>
+                <p
+                  className="tracking-luxury text-champagne"
+                  style={{ fontSize: "var(--step--2)" }}
+                >
                   Pikorua · Private Advisory
                 </p>
               </div>

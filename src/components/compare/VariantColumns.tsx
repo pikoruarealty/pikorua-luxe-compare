@@ -130,10 +130,10 @@ export function VariantSwitcher({
               onClick={() => onSelect(i)}
               aria-pressed={i === activeIdx}
               aria-label={`Show ${label} for ${property.name}`}
-              className={`h-6 min-w-6 rounded-md px-1.5 text-[10px] font-bold transition-colors ${
+              className={`h-8 min-w-8 rounded-md px-2.5 text-xs font-semibold touch-manipulation transition-all active:scale-95 ${
                 i === activeIdx
-                  ? "bg-foreground text-background"
-                  : "border border-border-strong text-muted-foreground"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "border border-border-strong text-muted-foreground hover:text-foreground"
               }`}
             >
               {shortLabel(label)}
@@ -151,7 +151,7 @@ export function VariantSwitcher({
             return (
               <div
                 key={i}
-                className="min-w-0 flex-1 truncate rounded-md bg-foreground/90 px-2 py-1 text-center text-[9px] font-semibold uppercase tracking-[0.1em] text-background"
+                className="min-w-0 flex-1 truncate rounded-md bg-foreground/90 px-2 py-1 text-center text-[9px] font-semibold uppercase tracking-widest text-background"
                 title={`${property.name} — ${label}`}
               >
                 {label}
@@ -162,7 +162,7 @@ export function VariantSwitcher({
           return isActive ? (
             <span
               key={i}
-              className="min-w-0 flex-1 truncate rounded-md bg-foreground px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-background"
+              className="min-w-0 flex-1 truncate rounded-md bg-foreground px-2 py-1 text-[9px] font-semibold uppercase tracking-widest text-background"
             >
               {label}
             </span>
