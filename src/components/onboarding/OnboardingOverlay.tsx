@@ -73,8 +73,7 @@ export function OnboardingOverlay() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-card border border-[var(--rule)] bg-card p-5 shadow-2xl sm:my-8 sm:p-8"
-            style={{ minHeight: "min(100dvh, 580px)" }}
+            className="relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-2xl border border-[var(--rule)] bg-card p-6 shadow-2xl sm:my-8 sm:p-8"
           >
             <div
               aria-hidden

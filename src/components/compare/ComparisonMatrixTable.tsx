@@ -14,7 +14,7 @@ import { useVariantViewStore, variantKey } from "@/stores/variant-view-store";
 import { RoomFieldValue } from "@/components/compare/RoomFieldValue";
 import { formatAreaNumber, parseBareSqFt, unitLabel } from "@/lib/area-units";
 import { livePossessionLabel } from "@/lib/possession-format";
-import { priceLabel } from "@/lib/price-format";
+import { isCityPriceHidden, priceLabel } from "@/lib/price-format";
 import { safeHttpUrl } from "@/lib/utils";
 import { calculatePropertyDistances } from "@/api/functions/distance.functions";
 import { useAreaUnitStore } from "@/stores/area-unit-store";
@@ -118,6 +118,11 @@ export function ComparisonMatrixTable({
 
   const bestCarpetIdx = useMemo(
     () => bestIndex(items.map((p) => parseMaxNum(p.carpetArea))),
+    [items],
+  );
+
+  const showPriceRow = useMemo(
+    () => items.some((p) => !isCityPriceHidden(p.city)),
     [items],
   );
 
@@ -241,6 +246,25 @@ export function ComparisonMatrixTable({
 
           {/* ─── 3. CONFIGURATIONS ────────────────────────────────── */}
           <SectionLabel title="CONFIGURATIONS" />
+          {showPriceRow && (
+            <Row
+              label="Starting Price"
+              items={items}
+              gridTpl={gridTpl}
+              render={(p) =>
+                isCityPriceHidden(p.city) ? (
+                  <Plain value={null} />
+                ) : (
+                  <p
+                    className="font-display font-semibold text-champagne text-center"
+                    style={{ fontSize: "var(--step-0)" }}
+                  >
+                    {priceLabel(p)}
+                  </p>
+                )
+              }
+            />
+          )}
           {visibleConfigKeys.map((k) => (
             <Row
               key={`config-area-${k}`}

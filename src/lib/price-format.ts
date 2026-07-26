@@ -19,7 +19,14 @@ const NO_PRICE = /price on request/i;
  * the stored "Price on Request" sentinel would read as "Pricing / Price on
  * Request".
  */
-export function priceLabel(property: Pick<Property, "pricePerSqft">): string {
+/** Cities where pricing is intentionally hidden per business rules (e.g. Ahmedabad) */
+export function isCityPriceHidden(city?: string | null): boolean {
+  if (!city) return true;
+  return city.trim().toLowerCase() === "ahmedabad";
+}
+
+export function priceLabel(property: Pick<Property, "pricePerSqft"> & { city?: string | null }): string {
+  if (isCityPriceHidden(property.city)) return "On Request";
   const summary = property.pricePerSqft?.trim();
   if (!summary || NO_PRICE.test(summary)) return "On Request";
   return summary;
@@ -27,6 +34,7 @@ export function priceLabel(property: Pick<Property, "pricePerSqft">): string {
 
 /** True when a real figure is available — for callers that want to vary
  *  surrounding copy rather than just print the value. */
-export function hasPrice(property: Pick<Property, "pricePerSqft">): boolean {
+export function hasPrice(property: Pick<Property, "pricePerSqft"> & { city?: string | null }): boolean {
+  if (isCityPriceHidden(property.city)) return false;
   return priceLabel(property) !== "On Request";
 }

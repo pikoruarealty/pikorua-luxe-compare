@@ -3,8 +3,13 @@ import { Sparkles } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
 
 export function WelcomeCard() {
-  const { userProfile, setPhase } = useOnboarding();
+  const { userProfile, setPhase, completeOnboarding } = useOnboarding();
   const firstName = userProfile?.name?.trim().split(/\s+/)[0] ?? "there";
+
+  const handleStart = () => {
+    completeOnboarding(null);
+    setPhase("idle");
+  };
 
   return (
     <motion.div
@@ -24,12 +29,14 @@ export function WelcomeCard() {
       <h2 className="mt-6 font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
         Welcome, {firstName}.
       </h2>
-      <p
-        className="mt-3 font-display text-champagne"
-        style={{ fontStyle: "normal", fontSize: "var(--step-1)" }}
-      >
-        Compare confidently. Decide clearly.
-      </p>
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <span className="font-display text-lg font-medium text-foreground/90 sm:text-xl">
+          Compare confidently.
+        </span>
+        <span className="gold-text font-display text-lg font-semibold sm:text-xl">
+          Decide clearly.
+        </span>
+      </div>
 
       <motion.div
         initial={{ width: 0 }}
@@ -44,11 +51,11 @@ export function WelcomeCard() {
 
       <div className="mt-10 w-full max-w-80">
         <button
-          onClick={() => setPhase("site-preview")}
-          className="flex h-12 w-full items-center justify-center rounded-full bg-champagne font-medium tracking-wide text-lux-black transition-opacity hover:opacity-95"
-          style={{ fontSize: "var(--step--1)" }}
+          type="button"
+          onClick={handleStart}
+          className="foil flex h-12 w-full items-center justify-center rounded-full text-xs font-semibold tracking-luxury uppercase transition-transform active:scale-95 cursor-pointer"
         >
-          Start comparing →
+          Start comparing &rarr;
         </button>
       </div>
     </motion.div>

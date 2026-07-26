@@ -840,19 +840,19 @@ body.suggested-popup-open .suggested-marquee-track {
   animation-play-state: paused !important;
 }
 .suggested-card {
-  width: 240px;
+  width: 260px;
   transition:
     border-color 0.4s ease,
     transform 0.4s ease;
 }
 @media (min-width: 640px) {
   .suggested-card {
-    width: 260px;
+    width: 290px;
   }
 }
 @media (min-width: 1024px) {
   .suggested-card {
-    width: 280px;
+    width: 320px;
   }
 }
 .suggested-card:hover {
