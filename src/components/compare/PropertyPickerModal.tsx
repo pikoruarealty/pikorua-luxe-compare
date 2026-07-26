@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Search, SearchX, X } from "lucide-react";
+import { Ruler, Search, SearchX, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -255,6 +255,14 @@ function PickerCard({ property, onPick }: { property: Property; onPick: (id: str
         >
           {property.configuration} · {property.category}
         </p>
+        {property.size && property.size !== "-" && (
+          <span
+            className="mt-1.5 inline-flex items-center gap-1.5 text-foreground/85"
+            style={{ fontSize: "var(--step--1)" }}
+          >
+            <Ruler className="h-3.5 w-3.5 text-foreground" /> {property.size}
+          </span>
+        )}
       </div>
       <button
         type="button"
