@@ -42,7 +42,7 @@ export function ComparisonHero({ properties }: ComparisonHeroProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className={`mx-auto mt-6 flex max-w-6xl flex-wrap items-baseline justify-center gap-x-3 gap-y-2 pb-2 font-display font-extrabold leading-[1.06] tracking-[-0.04em] text-ivory sm:mt-8 sm:gap-x-6 ${headingSize}`}
+          className={`mx-auto mt-6 flex max-w-6xl flex-wrap items-baseline justify-center gap-x-3 gap-y-2 pb-2 font-display font-extrabold leading-[1.06] tracking-[-0.04em] text-foreground sm:mt-8 sm:gap-x-6 ${headingSize}`}
         >
           {properties.map((p, i) => (
             <span key={p.id} className="inline-flex items-baseline gap-x-3 sm:gap-x-6">

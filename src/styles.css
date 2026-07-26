@@ -100,7 +100,7 @@
   --space-12: 3rem;
   --space-16: 4rem;
   --space-24: 6rem;
-  --space-section: clamp(4rem, 3rem + 6vw, 9rem);
+  --space-section: clamp(2.5rem, 2rem + 2vw, 4.5rem);
   --measure: 66ch;
 
   /* Single elevation for editorial print — structure comes from --rule
@@ -109,7 +109,8 @@
      replacement for --shadow-lift / --shadow-deep / --shadow-gold /
      --shadow-glass, which currently disagree with each other across ~15
      components; those stay defined below until each caller migrates. */
-  --shadow-pop: 0 12px 32px -12px color-mix(in oklab, var(--foreground) 22%, transparent);
+  --shadow-pop: none;
+  --shadow-lift: none;
 
   /* Metallic "foil" accent — for primary CTAs and the wordmark, so gold reads
      as a material with a sheen rather than a flat fill. Resolves against the
@@ -133,57 +134,55 @@
     0 2px 6px -3px color-mix(in oklab, var(--foreground) 14%, transparent),
     0 20px 48px -24px color-mix(in oklab, var(--foreground) 26%, transparent);
 
-  /* Ink palette (dark theme defaults) */
-  --lux-black: #090909;
-  --soft-black: #151515;
-  --graphite: #222222;
-  --ivory: #ffffff;
-  /* Accent maps to paper-white in ink mode — keeps existing
-     "champagne" / gold-text classes readable without retro warmth. */
-  --champagne-gold: #ffffff;
-  --antique-gold: #e6e6e6;
-  --muted-gold: #b8b8b8;
+  /* Swatch matte charcoal luxury dark theme palette */
+  --lux-black: #141619;
+  --soft-black: #1a1d22;
+  --graphite: #22262c;
+  --ivory: #f4f5f7;
 
-  --background: #090909;
-  --foreground: #ffffff;
-  --card: #151515;
-  --card-foreground: #ffffff;
-  --popover: #151515;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #090909;
-  --secondary: #222222;
-  --secondary-foreground: #ffffff;
-  --muted: #1d1d1d;
-  --muted-foreground: #d4d4d4;
-  --accent: #ffffff;
-  --accent-foreground: #090909;
+  --champagne-gold: #c8a45d;
+  --antique-gold: #ab853c;
+  --muted-gold: #85662b;
+
+  --brand: #c8a45d;
+  --brand-soft: #f7ebd0;
+  --brand-strong: #ab853c;
+  --brand-ink: #141619;
+
+  --background: #141619;
+  --foreground: #f4f5f7;
+  --card: #1a1d22;
+  --card-foreground: #f4f5f7;
+  --popover: #1a1d22;
+  --popover-foreground: #f4f5f7;
+  --primary: #c8a45d;
+  --primary-foreground: #141619;
+  --secondary: #22262c;
+  --secondary-foreground: #f4f5f7;
+  --muted: #272c34;
+  --muted-foreground: #9ea4b0;
+  --accent: #c8a45d;
+  --accent-foreground: #141619;
   --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: #f5f3ee;
-  --border: rgba(255, 255, 255, 0.16);
-  /* Structural divider for comparison tables — section bands, column splits and
-     the outer frame. Derived from --foreground so every palette (light, dark,
-     bright, and the gold variants) gets a correctly-contrasting line without
-     each one having to declare its own value. */
-  --border-strong: color-mix(in oklab, var(--foreground) 30%, transparent);
-  --input: rgba(255, 255, 255, 0.2);
-  --ring: #ffffff;
+  --destructive-foreground: #f4f5f7;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(200, 164, 93, 0.24);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #c8a45d;
 
-  --gradient-gold: linear-gradient(135deg, #ffffff 0%, #d7d7d7 100%);
-  --gradient-dark: linear-gradient(180deg, #090909 0%, #151515 100%);
+  --gradient-gold: linear-gradient(135deg, #f7ebd0 0%, #c8a45d 60%, #ab853c 100%);
+  --gradient-dark: linear-gradient(180deg, #141619 0%, #1a1d22 100%);
   --gradient-radial-gold: none;
 
-  --shadow-gold: 0 18px 50px -22px rgba(0, 0, 0, 0.6);
-  --shadow-deep: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --shadow-gold: none;
+  --shadow-deep: none;
+  --shadow-glass: none;
 
-  --glass-bg: rgba(21, 21, 21, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-bg: rgba(26, 29, 34, 0.88);
+  --glass-border: rgba(200, 164, 93, 0.2);
 
-  /* Sticky label column in the comparison matrix — a subtly lighter graphite
-     surface that visually anchors the pinned column against the scrolling data.
-     Needs to be opaque so content never bleeds through during h-scroll. */
-  --sticky-col-bg: #1b1b1b;
+  /* Sticky label column in the comparison matrix */
+  --sticky-col-bg: #1d2026;
 }
 
 .light {
@@ -218,9 +217,9 @@
   --gradient-dark: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
   --gradient-radial-gold: none;
 
-  --shadow-gold: 0 18px 44px -30px rgba(0, 0, 0, 0.08);
-  --shadow-deep: 0 24px 60px -38px rgba(0, 0, 0, 0.1);
-  --shadow-glass: 0 8px 24px -14px rgba(0, 0, 0, 0.06);
+  --shadow-gold: none;
+  --shadow-deep: none;
+  --shadow-glass: none;
 
   --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-border: rgba(0, 0, 0, 0.09);
@@ -327,9 +326,44 @@
 html.theme-anim,
 html.theme-anim * {
   transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    color 0.2s ease !important;
+    background-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    fill 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* View Transitions API — controls the crossfade between theme snapshots */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  animation-name: theme-fade-out;
+}
+::view-transition-new(root) {
+  animation-name: theme-fade-in;
+}
+
+@keyframes theme-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms !important;
+  }
 }
 
 @layer base {
@@ -419,7 +453,6 @@ html.theme-anim * {
 }
 .hover-lift:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-deep);
 }
 
 /* This is the eyebrow/label treatment — kept under its existing name (105
@@ -839,9 +872,6 @@ body.suggested-popup-open .suggested-marquee-track {
 }
 .suggested-card:hover {
   border-color: color-mix(in oklab, var(--foreground) 45%, transparent);
-  box-shadow:
-    0 24px 50px -22px color-mix(in oklab, var(--foreground) 35%, transparent),
-    0 0 0 1px color-mix(in oklab, var(--foreground) 18%, transparent);
 }
 .suggested-fade-left,
 .suggested-fade-right {
@@ -955,71 +985,54 @@ body.suggested-popup-open .suggested-marquee-track {
   --ring: #f2a900;
   --gradient-gold: linear-gradient(135deg, #f2a900 0%, #ffd15e 100%);
   --gradient-dark: linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
-  --shadow-gold: 0 18px 44px -26px rgba(242, 169, 0, 0.45);
-  --shadow-deep: 0 24px 60px -38px rgba(34, 22, 3, 0.3);
-  --shadow-glass: 0 8px 24px -14px rgba(34, 22, 3, 0.14);
+  --shadow-gold: none;
+  --shadow-deep: none;
+  --shadow-glass: none;
   --glass-bg: rgba(255, 255, 255, 0.94);
   --glass-border: rgba(34, 22, 3, 0.12);
 }
 .dark[data-palette="bright"] {
-  --brand: #ffbe2e;
-  --brand-soft: #ffd977;
-  --brand-strong: #ffd06a;
-  --brand-ink: #221603;
-  --champagne-gold: #ffbe2e;
-  --antique-gold: #ffd06a;
-  --muted-gold: #d9a53a;
-  --background: #0d0a03;
-  --foreground: #fff8ea;
-  --card: #171105;
-  --card-foreground: #fff8ea;
-  --popover: #171105;
-  --popover-foreground: #fff8ea;
-  --primary: #ffbe2e;
-  --primary-foreground: #221603;
-  --secondary: #241b09;
-  --secondary-foreground: #fff8ea;
-  --muted: #1a1407;
-  --muted-foreground: #cdbf9d;
-  --accent: #ffbe2e;
-  --accent-foreground: #221603;
-  --border: rgba(255, 201, 77, 0.2);
-  --input: rgba(255, 201, 77, 0.26);
-  --ring: #ffbe2e;
-  --gradient-gold: linear-gradient(135deg, #ffbe2e 0%, #ffd977 100%);
-  --gradient-dark: linear-gradient(180deg, #0d0a03 0%, #171105 100%);
-  --shadow-gold: 0 18px 50px -22px rgba(0, 0, 0, 0.6);
-  --shadow-deep: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-  --glass-bg: rgba(23, 17, 5, 0.86);
-  --glass-border: rgba(255, 201, 77, 0.2);
+  --brand: #c8a45d;
+  --brand-soft: #f7ebd0;
+  --brand-strong: #ab853c;
+  --brand-ink: #141619;
+  --champagne-gold: #c8a45d;
+  --antique-gold: #ab853c;
+  --muted-gold: #85662b;
+  --background: #141619;
+  --foreground: #f4f5f7;
+  --card: #1a1d22;
+  --card-foreground: #f4f5f7;
+  --popover: #1a1d22;
+  --popover-foreground: #f4f5f7;
+  --primary: #c8a45d;
+  --primary-foreground: #141619;
+  --secondary: #22262c;
+  --secondary-foreground: #f4f5f7;
+  --muted: #272c34;
+  --muted-foreground: #9ea4b0;
+  --accent: #c8a45d;
+  --accent-foreground: #141619;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(200, 164, 93, 0.24);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #c8a45d;
+  --gradient-gold: linear-gradient(135deg, #f7ebd0 0%, #c8a45d 60%, #ab853c 100%);
+  --gradient-dark: linear-gradient(180deg, #141619 0%, #1a1d22 100%);
+  --shadow-gold: none;
+  --shadow-deep: none;
+  --shadow-glass: none;
+  --glass-bg: rgba(26, 29, 34, 0.88);
+  --glass-border: rgba(200, 164, 93, 0.2);
 }
 
 /* ---------- Body background ---------- */
-.dark body {
-  background:
-    radial-gradient(
-      1000px 600px at 10% -10%,
-      color-mix(in oklab, var(--brand) 12%, transparent),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 600px at 100% 0%,
-      color-mix(in oklab, var(--brand-soft) 8%, transparent),
-      transparent 55%
-    ),
-    var(--background);
-}
-
-/* Bright Gold: white canvas with soft golden washes. */
-.light[data-palette="bright"] body {
-  background:
-    radial-gradient(1100px 620px at 12% -10%, rgba(242, 169, 0, 0.1), transparent 60%),
-    radial-gradient(900px 560px at 100% 0%, rgba(255, 209, 94, 0.12), transparent 55%), #ffffff;
-}
+.dark body,
 .dark[data-palette="bright"] body {
-  background:
-    radial-gradient(1000px 600px at 12% -10%, rgba(255, 190, 46, 0.1), transparent 60%), #0d0a03;
+  background-color: #141619;
+  background-image:
+    radial-gradient(1200px 650px at 15% -10%, rgba(200, 164, 93, 0.07), transparent 65%),
+    radial-gradient(900px 500px at 85% 0%, rgba(255, 255, 255, 0.02), transparent 50%);
 }
 
 /* ---------- Re-route legacy accent utilities to --brand ---------- */

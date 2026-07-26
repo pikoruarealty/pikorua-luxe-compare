@@ -46,35 +46,32 @@ export function FavoriteButton({ propertyId, propertyName, propertyImage, classN
     const nowFav = toggle(propertyId);
     if (!wasFav && nowFav) logActivity("favorite_add", propertyId);
 
-    let flying = false;
-    if (!wasFav && nowFav) {
-      const btn = btnRef.current;
-      const target = findSavedTarget();
-      if (btn && target) {
-        flying = true;
-        const a = btn.getBoundingClientRect();
-        const b = target.getBoundingClientRect();
-        setFly({
-          from: { x: a.left + a.width / 2, y: a.top + a.height / 2 },
-          to: { x: b.left + b.width / 2, y: b.top + b.height / 2 },
-          image: propertyImage,
-          key: Date.now(),
-        });
-        setPulse((p) => p + 1);
-      }
+    // Clear any previous queued toasts immediately and show single confirmation toast
+    toast.dismiss();
+    toast.success(
+      nowFav ? `${propertyName} saved to favorites` : `${propertyName} removed from favorites`,
+      { duration: 2000 },
+    );
+
+    // If unfavoriting, clear any pending flight animation state immediately
+    if (!nowFav) {
+      setFly(null);
+      return;
     }
 
-    // When the card is flying, the flight itself is the feedback — the
-    // toast fires on landing so nothing competes with the takeoff frames.
-    if (!flying) {
-      toast.success(
-        nowFav ? `${propertyName} saved to favorites` : `${propertyName} removed from favorites`,
-      );
-    }
-
-    // High-intent moment — invite sign-up after the save animation lands.
-    if (!wasFav && nowFav) {
-      window.setTimeout(() => requestAuth(), 1800);
+    // Favoriting: trigger flight animation if target icon is present
+    const btn = btnRef.current;
+    const target = findSavedTarget();
+    if (btn && target) {
+      const a = btn.getBoundingClientRect();
+      const b = target.getBoundingClientRect();
+      setFly({
+        from: { x: a.left + a.width / 2, y: a.top + a.height / 2 },
+        to: { x: b.left + b.width / 2, y: b.top + b.height / 2 },
+        image: propertyImage,
+        key: Date.now(),
+      });
+      setPulse((p) => p + 1);
     }
   };
 
@@ -136,7 +133,7 @@ export function FavoriteButton({ propertyId, propertyName, propertyImage, classN
                   ease: ["easeOut", "easeIn"],
                 }}
                 onAnimationComplete={() => {
-                  // Landing pulse on the saved heart, then the confirmation.
+                  // Landing pulse on the saved heart
                   const target = findSavedTarget();
                   target?.animate?.(
                     [
@@ -146,7 +143,6 @@ export function FavoriteButton({ propertyId, propertyName, propertyImage, classN
                     ],
                     { duration: 380, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
                   );
-                  toast.success(`${propertyName} saved to favorites`);
                   setFly(null);
                 }}
                 style={{

@@ -43,7 +43,7 @@ const PARTNERS: Partner[] = [
     logo: "/partners/gala.png",
     width: 100,
     height: 133,
-    overrideClass: "h-11 sm:h-12 max-w-[155px] scale-110",
+    overrideClass: "h-10 sm:h-12 max-w-[155px] scale-105",
   },
   { name: "Godrej Properties", logo: "/partners/godrej.png", width: 1783, height: 854 },
   { name: "Goyal & Co.", logo: "/partners/goyal.png", width: 139, height: 68 },
@@ -60,7 +60,7 @@ const PARTNERS: Partner[] = [
     logo: "/partners/ravidesai.png",
     width: 2640,
     height: 733,
-    overrideClass: "h-11 sm:h-12 max-w-[180px] scale-115",
+    overrideClass: "h-10 sm:h-12 max-w-[170px]",
   },
   { name: "Satyamev Group", logo: "/partners/satyamev.png", width: 500, height: 129 },
   {
@@ -117,9 +117,9 @@ export function PartnerMarquee() {
       className="partner-strip relative overflow-hidden border-y border-[var(--border)] bg-[var(--background)] py-6"
       aria-label="Developer Alliances"
     >
-      {/* Edge gradient masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[var(--background)] to-transparent sm:w-40" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[var(--background)] to-transparent sm:w-40" />
+      {/* Edge gradient masks for seamless fade */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[var(--background)] to-transparent sm:w-48" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[var(--background)] to-transparent sm:w-48" />
 
       {/* Marquee Track */}
       <div
@@ -134,8 +134,9 @@ export function PartnerMarquee() {
           return (
             <div
               key={`${partner.name}-${idx}`}
-              className="bg-card mx-5 flex h-16 items-center justify-center rounded-card border border-[var(--border)] px-7 py-4 shadow-sm transition-all hover:border-[var(--border-strong)] sm:mx-6 shrink-0"
+              className="group/logo relative mx-3 flex h-18 w-44 items-center justify-center rounded-xl border border-[var(--border)] bg-card px-5 py-3 transition-all duration-300 hover:border-champagne/50 sm:mx-4 sm:h-20 sm:w-52 shrink-0"
               aria-hidden={isDup ? true : undefined}
+              title={partner.name}
             >
               <img
                 src={partner.logo}
@@ -150,7 +151,7 @@ export function PartnerMarquee() {
                     e.currentTarget.src = fallback;
                   }
                 }}
-                className={`object-contain contrast-[1.1] brightness-[0.96] ${
+                className={`object-contain opacity-100 brightness-[1.02] contrast-[1.05] transition-transform duration-300 group-hover/logo:scale-105 ${
                   partner.overrideClass || "h-9 sm:h-10 max-w-[155px]"
                 }`}
               />

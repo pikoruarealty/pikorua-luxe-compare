@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowUpRight, ChevronDown, Eye, Minus } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, Info, Minus } from "lucide-react";
 import type { ConfigKey, Property } from "@/types/property";
 import { PhotoSlideshow } from "@/components/compare/PhotoSlideshow";
 import { VariantSwitcher, VariantValueCell, variantsOf } from "@/components/compare/VariantColumns";
@@ -97,8 +97,8 @@ export function ComparisonMatrixTable({
   const cols = items.length;
   // Desktop grid layout — only applied at md+ breakpoint
   const gridTpl = cols === 2 ? "md:grid-cols-[200px_1fr_1fr]" : "md:grid-cols-[200px_1fr_1fr_1fr]";
-  // Mobile inner container minimum width: 110px label + 160px × n props
-  const mobileMinW = cols === 2 ? "min-w-[434px]" : "min-w-[594px]";
+  // Mobile stacked — no min-width needed
+  const mobileMinW = "";
 
   const {
     active: activeVariant,
@@ -122,40 +122,25 @@ export function ComparisonMatrixTable({
 
   return (
     <div className="overflow-hidden rounded-card border border-border-strong bg-card">
-      {/* ─── Horizontal scroll container — activates only below md ─── */}
-      <div className="overflow-x-auto">
-        {/* Inner wrapper enforces min-width so content never squishes on phone */}
-        <div className={`${mobileMinW} md:min-w-0`}>
-          {/* ─── Sticky property-name header — mobile only ─────────── */}
-          <div className="sticky top-0 z-20 flex border-b-2 border-border-strong bg-card/95 backdrop-blur-sm md:hidden">
-            {/* Corner cell — aligns with sticky label column */}
-            <div className="w-[110px] shrink-0 border-r border-border-strong bg-[var(--sticky-col-bg)] px-2.5 py-2.5">
-              <span
-                className="tracking-luxury text-muted-foreground"
-                style={{ fontSize: "var(--step--2)" }}
-              >
-                Attribute
-              </span>
-            </div>
+      {/* ─── Desktop: horizontal scroll if needed; Mobile: no scroll ─── */}
+      <div className="md:overflow-x-auto">
+        <div className="md:min-w-0">
+          {/* ─── Mobile-only property name header (stacked, no scroll) ── */}
+          <div className="flex gap-2 border-b-2 border-border-strong bg-muted/20 px-3 py-2.5 md:hidden">
             {items.map((p, i) => (
-              <div
-                key={p.id}
-                className={`min-w-[160px] flex-1 px-3 py-2.5 ${i > 0 ? "border-l border-border-strong" : ""}`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground font-semibold text-background"
-                    style={{ fontSize: "var(--step--2)" }}
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  <p
-                    className="descender-safe min-w-0 font-display leading-tight text-foreground line-clamp-1"
-                    style={{ fontSize: "var(--step--2)" }}
-                  >
-                    {p.name}
-                  </p>
-                </div>
+              <div key={p.id} className="flex min-w-0 flex-1 items-center gap-1.5">
+                <span
+                  className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground font-semibold text-background"
+                  style={{ fontSize: "9px", lineHeight: 0 }}
+                >
+                  {String.fromCharCode(65 + i)}
+                </span>
+                <p
+                  className="min-w-0 font-display leading-tight text-foreground line-clamp-1"
+                  style={{ fontSize: "var(--step--2)" }}
+                >
+                  {p.name}
+                </p>
               </div>
             ))}
           </div>
@@ -296,15 +281,16 @@ export function ComparisonMatrixTable({
             gridTpl={gridTpl}
             render={(p) =>
               p.advantages?.length ? (
-                <div className="flex flex-wrap gap-1.5 md:justify-center">
+                <div className="flex flex-col items-start gap-2 py-1 text-left">
                   {p.advantages.map((adv) => (
-                    <span
+                    <div
                       key={adv}
-                      className="rounded-full bg-champagne/10 px-2.5 py-0.5 font-medium text-champagne"
+                      className="inline-flex max-w-full items-start gap-2 rounded-xl border border-champagne/30 bg-champagne/10 px-3 py-1.5 font-medium text-champagne"
                       style={{ fontSize: "var(--step--2)" }}
                     >
-                      {adv}
-                    </span>
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" />
+                      <span className="leading-snug">{adv}</span>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -560,14 +546,14 @@ function Row({
 
   return (
     <div
-      className={`compare-row flex md:grid ${gridTpl} border-b border-border last:border-b-0`}
+      className={`compare-row border-b border-border last:border-b-0 md:grid ${gridTpl}`}
       style={colTpl ? ({ "--row-cols": colTpl } as React.CSSProperties) : undefined}
     >
-      {/* ── Label cell — sticky on mobile, static in desktop grid ── */}
-      <div className="sticky left-0 z-10 flex w-[110px] shrink-0 items-center gap-1.5 border-r border-border-strong bg-[var(--sticky-col-bg)] px-2.5 py-3 md:static md:w-auto md:bg-muted/10">
+      {/* ── Label cell — full-width on mobile, grid col on desktop ── */}
+      <div className="flex w-full items-center gap-1.5 border-b border-border-strong bg-muted/10 px-3 py-2 md:w-auto md:border-b-0 md:border-r md:bg-muted/10 md:px-4 md:py-3">
         <span
-          className="font-display font-medium tracking-tight text-foreground"
-          style={{ fontSize: "var(--step--1)" }}
+          className="font-display font-medium tracking-tight text-champagne/70"
+          style={{ fontSize: "var(--step--2)" }}
         >
           {label}
         </span>
@@ -576,11 +562,11 @@ function Row({
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity hover:opacity-80"
+              className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-champagne/40 text-champagne/70 transition-colors hover:border-champagne hover:text-champagne"
               aria-label={`More about ${label}`}
               title={`More about ${label}`}
             >
-              <Eye className="h-3 w-3" />
+              <Info className="h-2.5 w-2.5" />
             </button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogContent className="sm:max-w-md">
@@ -602,14 +588,16 @@ function Row({
       </div>
 
       {/* ── Property value cells ──────────────────────────────────── */}
-      {items.map((p, i) => (
-        <div
-          key={p.id}
-          className={`min-w-[160px] flex-1 px-2.5 py-3 md:min-w-0 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
-        >
-          {render(p, i)}
-        </div>
-      ))}
+      <div className="flex md:contents">
+        {items.map((p, i) => (
+          <div
+            key={p.id}
+            className={`flex-1 px-3 py-3 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
+          >
+            {render(p, i)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -658,8 +646,8 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
     <>
       <div className="border-b border-border bg-muted/10 px-4 py-3">
         <p className="mb-2 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
-          Add your home or office address and we&apos;ll estimate how far each residence is.
-          Approximate distance only — no map or exact location shown.
+          Enter a landmark or neighbourhood — we'll show you how far each residence is. No exact
+          location or map is used.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <input

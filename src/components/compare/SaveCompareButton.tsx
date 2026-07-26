@@ -55,14 +55,13 @@ export function SaveCompareButton({ properties, className = "", onSaved, saveLab
     const didSave = save(ids);
     if (!didSave) return;
 
+    toast.dismiss();
+    toast.success(`Comparison saved — ${label}`, { duration: 2000 });
+    onSaved?.();
+
     const btn = btnRef.current;
     const target = findSavedTarget();
-    if (!btn || !target) {
-      // No visible target to fly to — fall back to a plain confirmation.
-      toast.success(`Comparison saved — ${label}`);
-      onSaved?.();
-      return;
-    }
+    if (!btn || !target) return;
 
     const a = btn.getBoundingClientRect();
     const b = target.getBoundingClientRect();
@@ -132,11 +131,7 @@ export function SaveCompareButton({ properties, className = "", onSaved, saveLab
                     ],
                     { duration: 380, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
                   );
-                  toast.success(`Comparison saved — ${label}`);
                   setFly(null);
-                  onSaved?.();
-                  // High-intent moment — same sign-up invitation the heart uses.
-                  window.setTimeout(() => requestAuth(), 1400);
                 }}
               >
                 {/* Fanned stack — reads as the whole set in flight, not one card. */}

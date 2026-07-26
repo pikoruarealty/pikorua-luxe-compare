@@ -54,7 +54,7 @@ export function RecentlyViewed() {
               </div>
               <div className="min-w-0">
                 <p
-                  className="descender-safe truncate font-display leading-tight text-ivory"
+                  className="descender-safe truncate font-display leading-tight text-foreground"
                   style={{ fontSize: "var(--step--1)" }}
                 >
                   {p.name}

@@ -348,8 +348,6 @@ export function PropertyHoverCard({
                 background: "var(--card)",
                 backdropFilter: "blur(28px) saturate(140%)",
                 border: "1px solid var(--glass-border)",
-                boxShadow:
-                  "0 40px 100px -20px color-mix(in oklab, var(--foreground) 35%, transparent)",
                 overflow: "hidden",
                 gridTemplateColumns: "55% 45%",
                 backfaceVisibility: "hidden",

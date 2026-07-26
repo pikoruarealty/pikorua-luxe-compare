@@ -146,7 +146,10 @@ function RootComponent() {
             <OnboardingOverlay />
             <Toaster
               position="top-center"
+              visibleToasts={1}
+              duration={2000}
               toastOptions={{
+                duration: 2000,
                 style: {
                   background: "var(--popover)",
                   border: "1px solid var(--glass-border)",

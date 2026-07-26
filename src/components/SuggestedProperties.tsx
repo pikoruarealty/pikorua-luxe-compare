@@ -166,7 +166,7 @@ export function SuggestedProperties() {
   return (
     <section
       id="suggested"
-      className="relative scroll-mt-28 border-y border-[var(--rule)] py-12 sm:py-16"
+      className="relative scroll-mt-28 border-y border-[var(--rule)] py-8 sm:py-12"
     >
       <Marquee
         anchorId="suggested-in-budget"
@@ -205,7 +205,7 @@ function Marquee({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2
-              className="font-display leading-tight text-ivory"
+              className="font-display leading-tight text-foreground"
               style={{ fontSize: "var(--step-2)", letterSpacing: "var(--tracking-display)" }}
             >
               {title}
@@ -319,8 +319,6 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
         style={{
           background: "var(--card)",
           border: "1px solid var(--rule)",
-          boxShadow:
-            "0 1px 0 0 color-mix(in oklab, var(--foreground) 6%, transparent) inset, 0 18px 40px -24px color-mix(in oklab, var(--foreground) 28%, transparent), 0 4px 12px -6px color-mix(in oklab, var(--foreground) 14%, transparent)",
         }}
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden">

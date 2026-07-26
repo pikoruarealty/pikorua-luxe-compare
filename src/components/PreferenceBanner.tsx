@@ -26,7 +26,7 @@ export function PreferenceBanner() {
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--rule)] bg-card/90 px-5 py-3 shadow-xs">
+    <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--rule)] bg-card/90 px-5 py-3">
       <div className="flex flex-wrap items-center gap-2.5">
         <span className="text-xs font-semibold uppercase tracking-luxury text-muted-foreground">
           Your preferences

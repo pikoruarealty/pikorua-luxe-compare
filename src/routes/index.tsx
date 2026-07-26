@@ -449,7 +449,7 @@ function Index() {
       <TickerStrip />
 
       {/* ============ COMPARISON SUITE ============ */}
-      <section id="suite" className="relative scroll-mt-28 overflow-hidden py-12 sm:py-16">
+      <section id="suite" className="relative scroll-mt-28 overflow-hidden py-8 sm:py-12">
         <div className="container-lux relative z-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -460,7 +460,7 @@ function Index() {
                 </p>
               </div>
               <h2
-                className="mt-4 font-display leading-[1.02] tracking-[-0.01em] text-ivory"
+                className="mt-4 font-display leading-[1.02] tracking-[-0.01em] text-foreground"
                 style={{ fontSize: "var(--step-3)" }}
               >
                 Compare, <span className="gold-text">side by side</span>
@@ -497,11 +497,10 @@ function Index() {
       <section
         id="collection"
         ref={collectionRef}
-        className="relative scroll-mt-28"
-        style={{ paddingBlock: "var(--space-section)" }}
+        className="relative scroll-mt-28 py-8 sm:py-12"
       >
         <div className="container-lux relative z-10">
-          <div className="mt-8 flex flex-col justify-between gap-6 border-b border-[var(--rule)] pb-6 sm:flex-row sm:items-end">
+          <div className="flex flex-col justify-between gap-6 border-b border-[var(--rule)] pb-6 sm:flex-row sm:items-end">
             <div>
               <div className="flex items-center gap-3">
                 <span className="h-px w-8 bg-[var(--rule-strong)] sm:w-12" />
@@ -520,7 +519,7 @@ function Index() {
               </p>
             </div>
             <div className="flex items-center gap-3 self-start sm:self-auto">
-              <div className="flex items-center gap-2.5 rounded-full border border-champagne/30 bg-champagne/5 px-4 py-2 shadow-xs">
+              <div className="flex items-center gap-2.5 rounded-full border border-champagne/30 bg-champagne/5 px-4 py-2">
                 <span className="font-display text-lg font-bold leading-none text-champagne tabular-nums sm:text-xl">
                   {searching || filtersActive ? visibleCount : properties.length}
                 </span>
@@ -557,7 +556,7 @@ function Index() {
 
           <div className="mt-10 flex flex-col gap-6">
             {/* Desktop & Mobile Refine Collection Trigger Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-2xl border border-[var(--rule)] bg-card p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-2xl border border-[var(--rule)] bg-card p-4 sm:p-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-xl border border-champagne/30 bg-champagne/10 text-champagne">
                   <SlidersHorizontal className="h-4 w-4 stroke-[2.2]" />

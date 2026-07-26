@@ -11,13 +11,10 @@ type Ctx = {
 const ThemeCtx = createContext<Ctx | null>(null);
 const STORAGE_KEY = "pikorua-theme";
 
-// The app ships one palette — Bright Gold — set unconditionally in the SSR
-// shell (see __root.tsx's `data-palette="bright"`) and never changed at
-// runtime. This provider used to also carry a `palette` / `setPalette` pair
-// for switching between seven palettes, but there was never a picker UI, so
-// it was six dead options and a client-side effect re-asserting a value the
-// server had already set. See styles.css's PALETTE SYSTEM comment for the
-// CSS side of this cut.
+function applyTheme(root: HTMLElement, theme: Theme) {
+  root.classList.toggle("light", theme === "light");
+  root.classList.toggle("dark", theme === "dark");
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
@@ -29,9 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("light", theme === "light");
-    root.classList.toggle("dark", theme === "dark");
+    applyTheme(document.documentElement, theme);
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {
@@ -39,22 +34,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme]);
 
-  // Enable colour transitions only for the moment of switching — a
-  // permanent universal transition makes the whole app feel laggy.
-  const animateSwitch = () => {
+  const switchTheme = (next: Theme) => {
     const root = document.documentElement;
-    root.classList.add("theme-anim");
-    window.setTimeout(() => root.classList.remove("theme-anim"), 400);
+
+    // Use the View Transitions API when available for a cinematic crossfade
+    if (typeof document !== "undefined" && "startViewTransition" in document) {
+      // @ts-ignore — startViewTransition may not be in all TS lib targets
+      document.startViewTransition(() => {
+        applyTheme(root, next);
+        setThemeState(next);
+        try { localStorage.setItem(STORAGE_KEY, next); } catch { /* noop */ }
+      });
+    } else {
+      // Fallback: quick CSS transition for browsers without View Transitions
+      root.classList.add("theme-anim");
+      setThemeState(next);
+      window.setTimeout(() => root.classList.remove("theme-anim"), 550);
+    }
   };
 
-  const setTheme = (t: Theme) => {
-    animateSwitch();
-    setThemeState(t);
-  };
-  const toggle = () => {
-    animateSwitch();
-    setThemeState((t) => (t === "dark" ? "light" : "dark"));
-  };
+  const setTheme = (t: Theme) => switchTheme(t);
+  const toggle = () => switchTheme(theme === "dark" ? "light" : "dark");
 
   return <ThemeCtx.Provider value={{ theme, toggle, setTheme }}>{children}</ThemeCtx.Provider>;
 }

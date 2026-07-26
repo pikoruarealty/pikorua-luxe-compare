@@ -296,8 +296,17 @@ export function SiteHeader() {
                 </span>
                 {hydrated && favCount > 0 && (
                   <span
-                    className="grid h-5 min-w-5 place-items-center rounded-full bg-champagne px-1.5 font-medium text-lux-black"
-                    style={{ fontSize: "var(--step--2)" }}
+                    className="rounded-full bg-champagne font-bold text-lux-black tabular-nums"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "16px",
+                      height: "16px",
+                      fontSize: "9px",
+                      lineHeight: 0,
+                      letterSpacing: 0,
+                    }}
                   >
                     {favCount}
                   </span>

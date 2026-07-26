@@ -187,12 +187,12 @@ export function SuggestedComparisons() {
   if (pairs.length === 0) return null;
 
   return (
-    <section className="relative scroll-mt-28 border-t border-[var(--rule)] py-14 sm:py-20">
+    <section className="relative scroll-mt-28 border-t border-[var(--rule)] py-8 sm:py-12">
       <div className="container-lux">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2
-              className="font-display leading-tight text-ivory"
+              className="font-display leading-tight text-foreground"
               style={{ fontSize: "var(--step-2)", letterSpacing: "var(--tracking-display)" }}
             >
               {heading.split(" ").slice(0, -1).join(" ")}{" "}
@@ -295,8 +295,6 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
       style={{
         background: "var(--card)",
         border: "1px solid var(--rule)",
-        boxShadow:
-          "0 1px 0 0 color-mix(in oklab, var(--foreground) 6%, transparent) inset, 0 22px 46px -28px color-mix(in oklab, var(--foreground) 32%, transparent), 0 6px 14px -8px color-mix(in oklab, var(--foreground) 18%, transparent)",
       }}
     >
       <div className="relative grid grid-cols-2">
@@ -340,7 +338,6 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
             width: "2px",
             background:
               "linear-gradient(to bottom, transparent 0%, var(--champagne, #c8a45d) 15%, var(--champagne, #c8a45d) 85%, transparent 100%)",
-            boxShadow: "0 0 12px color-mix(in oklab, var(--champagne, #c8a45d) 55%, transparent)",
             opacity: 0.9,
           }}
         />
@@ -366,7 +363,6 @@ function ComparisonCard({ pair, index }: { pair: Pair; index: number }) {
               background: "var(--foreground)",
               color: "var(--background)",
               border: "2px solid var(--card)",
-              boxShadow: "0 8px 22px -6px color-mix(in oklab, var(--foreground) 45%, transparent)",
             }}
           >
             VS
