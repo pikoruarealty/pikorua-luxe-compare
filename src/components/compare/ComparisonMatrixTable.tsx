@@ -126,10 +126,10 @@ export function ComparisonMatrixTable({
       {/* ─── Desktop: horizontal scroll if needed; Mobile: no scroll ─── */}
       <div className="md:overflow-x-auto">
         <div className="md:min-w-0">
-          {/* ─── Mobile-only property name header (stacked, no scroll) ── */}
-          <div className="flex gap-2 border-b-2 border-border-strong bg-muted/20 px-3 py-2.5 md:hidden">
+          {/* ─── Mobile-only property name header (sticky so column identity is preserved on scroll) ── */}
+          <div className="sticky top-0 z-20 flex gap-2 border-b-2 border-border-strong bg-card/95 px-3 py-2.5 backdrop-blur-md shadow-sm md:hidden">
             {items.map((p, i) => (
-              <div key={p.id} className="flex min-w-0 flex-1 items-center gap-1.5">
+              <div key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-center">
                 <span
                   className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground font-semibold text-background"
                   style={{ fontSize: "9px", lineHeight: 0 }}
@@ -185,8 +185,8 @@ export function ComparisonMatrixTable({
             ))}
           </div>
 
-          {/* ─── Table sections ──────────────────────────────────────── */}
-          <SectionLabel title="Overview" />
+          {/* ─── 1. IDENTITY ──────────────────────────────────────── */}
+          <SectionLabel title="IDENTITY" />
           <Row
             label="Developer"
             items={items}
@@ -194,11 +194,53 @@ export function ComparisonMatrixTable({
             render={(p) => <Plain value={p.developer} />}
           />
           <Row
-            label="Location"
+            label="RERA ID"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.location} />}
+            render={(p) => <RegistrationLink id={p.reraId} url={p.reraUrl} />}
           />
+
+          {/* ─── 2. PROJECT STRUCTURE ─────────────────────────────── */}
+          <SectionLabel title="PROJECT STRUCTURE" />
+          <Row
+            label="Plot Size"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.plotSize ?? null} />}
+          />
+          <Row
+            label="Total Towers"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.totalTowers != null ? String(p.totalTowers) : null} />}
+          />
+          <Row
+            label="Total Floors"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.totalFloors != null ? String(p.totalFloors) : null} />}
+          />
+          <Row
+            label="Units per Floor"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.unitsPerFloor != null ? String(p.unitsPerFloor) : null} />}
+          />
+          <Row
+            label="Total Units"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.totalUnits != null ? String(p.totalUnits) : null} />}
+          />
+          <Row
+            label="Available BHK Types"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.availableBhkTypes ?? null} />}
+          />
+
+          {/* ─── 3. CONFIGURATIONS ────────────────────────────────── */}
+          <SectionLabel title="CONFIGURATIONS" />
           <Row
             label="Starting Price"
             items={items}
@@ -212,40 +254,27 @@ export function ComparisonMatrixTable({
               </p>
             )}
           />
-          <Row
-            label="Carpet Area"
-            items={items}
-            gridTpl={gridTpl}
-            render={(p, i) => {
-              const sqft = parseBareSqFt(p.carpetArea);
-              if (sqft === null) return <Plain value={p.carpetArea} />;
-              return (
-                <Numeric
-                  primary={formatAreaNumber(sqft, areaUnit)}
-                  unit={unitLabel(areaUnit)}
-                  secondary={p.size ?? undefined}
-                  isBest={bestCarpetIdx === i}
-                />
-              );
-            }}
-          />
-          <Row
-            label="Possession"
-            items={items}
-            gridTpl={gridTpl}
-            render={(p) => <Plain value={livePossessionLabel(p.possession, p.possessionAsOf)} />}
-          />
-          <Row
-            label="Status"
-            items={items}
-            gridTpl={gridTpl}
-            render={(p) => <Plain value={p.status} />}
-          />
+          {visibleConfigKeys.map((k) => (
+            <Row
+              key={`config-area-${k}`}
+              label={k}
+              items={items}
+              gridTpl={gridTpl}
+              render={(p) => {
+                const variants = p.configurations?.[k];
+                if (!variants || variants.length === 0) return <NotAvail />;
+                const v = variants[0];
+                const areaStr = v.carpet || v.area;
+                if (!areaStr) return <Plain value={null} />;
+                const sqft = parseBareSqFt(areaStr);
+                if (sqft === null) return <Plain value={areaStr} />;
+                return <Numeric primary={formatAreaNumber(sqft, areaUnit)} unit={unitLabel(areaUnit)} />;
+              }}
+            />
+          ))}
 
-          <SectionLabel title="Distance Calculator" />
-          <DistanceCalculator items={items} gridTpl={gridTpl} />
-
-          <SectionLabel title="Specifications & Floorplans" />
+          {/* ─── 4. ROOM DIMENSIONS ───────────────────────────────── */}
+          <SectionLabel title="ROOM DIMENSIONS" />
           {visibleConfigKeys.map((k) => (
             <RoomDimensionsGroup
               key={k}
@@ -261,39 +290,187 @@ export function ComparisonMatrixTable({
             />
           ))}
 
-          <SectionLabel title="RERA Details" />
+          {/* ─── 5. CONSTRUCTION & AMENITIES ──────────────────────── */}
+          <SectionLabel title="CONSTRUCTION & AMENITIES" />
           <Row
-            label="RERA ID"
+            label="Parking Levels"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <RegistrationLink id={p.reraId} url={p.reraUrl} />}
+            render={(p) => <Plain value={p.parkingLevels != null ? String(p.parkingLevels) : null} />}
           />
-
-          <SectionLabel title="Amenities & Verdict" />
+          <Row
+            label="Podium Structure"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.podiumStructure ?? null} />}
+          />
+          <Row
+            label="Lifts per Tower"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.liftsPerTower != null ? String(p.liftsPerTower) : null} />}
+          />
+          <Row
+            label="Open Space"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.openSpace ?? null} />}
+          />
+          <Row
+            label="Geyser / Heat Pump Provided"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.geyserHeatPumpProvided ?? null} />}
+          />
+          <Row
+            label="VRV / AC Provided"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.vrvAcProvided ?? null} />}
+          />
+          <Row
+            label="Window Glazing"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.windowGlazing ?? null} />}
+          />
+          <Row
+            label="Bath & Sanitary Fittings"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.bathSanitaryFittings ?? null} />}
+          />
+          <Row
+            label="Flooring"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.flooringType ?? null} />}
+          />
+          <Row
+            label="Density (Units per acre)"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.unitsPerAcre ?? null} />}
+          />
+          <Row
+            label="Construction Quality"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.constructionQuality ?? null} />}
+          />
+          <Row
+            label="Internal Ceiling Height"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.internalCeilingHeight ?? null} />}
+          />
+          <Row
+            label="Clubhouse Size"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.clubhouseSize ?? null} />}
+          />
           <Row
             label="Amenities"
             items={items}
             gridTpl={gridTpl}
             render={(p) => <AmenitiesCell amenities={p.amenities} />}
           />
+
+          {/* ─── 6. LOCATION & TIMELINE ───────────────────────────── */}
+          <SectionLabel title="LOCATION & TIMELINE" />
           <Row
-            label="Key Advantages"
+            label="Address"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.location} />}
+          />
+          <DistanceCalculator items={items} gridTpl={gridTpl} />
+          <Row
+            label="Proposed Start Date (RERA)"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.proposedStartDateRera ?? null} />}
+          />
+          <Row
+            label="Possession"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={livePossessionLabel(p.possession, p.possessionAsOf)} />}
+          />
+          <Row
+            label="Status"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.status} />}
+          />
+
+          {/* ─── 7. DEVELOPER ─────────────────────────────────────── */}
+          <SectionLabel title="DEVELOPER" />
+          <Row
+            label="Background"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.developerBackground ?? null} />}
+          />
+          <Row
+            label="Experience (Years)"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.developerExperienceYears != null ? String(p.developerExperienceYears) : null} />}
+          />
+          <Row
+            label="Total Delivered Projects"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.totalDeliveredProjects != null ? String(p.totalDeliveredProjects) : null} />}
+          />
+          <Row
+            label="Ongoing Projects"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) => <Plain value={p.ongoingProjects != null ? String(p.ongoingProjects) : null} />}
+          />
+          <Row
+            label="Notable Delivered Projects"
+            items={items}
+            gridTpl={gridTpl}
+            render={(p) =>
+              p.notableDeliveredProjects?.length ? (
+                <ol
+                  className="list-decimal pl-4 flex flex-col gap-0.5 text-left md:list-none md:pl-0 md:text-center"
+                  style={{ fontSize: "var(--step--1)" }}
+                >
+                  {p.notableDeliveredProjects.map((proj) => (
+                    <li key={proj} className="leading-relaxed text-foreground/85">
+                      {proj}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <Plain value={null} />
+              )
+            }
+          />
+
+          {/* ─── 8. DISTINCTIONS ──────────────────────────────────── */}
+          <SectionLabel title="DISTINCTIONS" />
+          <Row
+            label="Highlights"
             items={items}
             gridTpl={gridTpl}
             render={(p) =>
               p.advantages?.length ? (
-                <div className="flex flex-col items-start gap-2 py-1 text-left">
+                <ol
+                  className="list-decimal pl-4 flex flex-col gap-1 text-left"
+                  style={{ fontSize: "var(--step--1)" }}
+                >
                   {p.advantages.map((adv) => (
-                    <div
-                      key={adv}
-                      className="inline-flex max-w-full items-start gap-2 rounded-xl border border-champagne/30 bg-champagne/10 px-3 py-1.5 font-medium text-champagne"
-                      style={{ fontSize: "var(--step--2)" }}
-                    >
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" />
-                      <span className="leading-snug">{adv}</span>
-                    </div>
+                    <li key={adv} className="leading-snug text-foreground/85">
+                      {adv}
+                    </li>
                   ))}
-                </div>
+                </ol>
               ) : (
                 <Plain value={null} />
               )
@@ -316,15 +493,21 @@ export function ComparisonMatrixTable({
               )
             }
           />
+          {/* Footnote */}
+          <div className="border-t border-[var(--border)] px-4 py-2.5">
+            <p className="text-muted-foreground/60" style={{ fontSize: "var(--step--2)" }}>
+              All areas and dimensions are approximate, as shared by the developer.
+            </p>
+          </div>
 
-          {/* ─── Gallery ─────────────────────────────────────────────── */}
-          <SectionLabel title="Gallery" />
+          {/* ─── 9. GALLERY ───────────────────────────────────────── */}
+          <SectionLabel title="GALLERY" />
           <div
             className="flex md:grid md:grid-cols-[200px_1fr_1fr] md:[&[data-cols='3']]:grid-cols-[200px_1fr_1fr_1fr]"
             data-cols={cols}
           >
             <div
-              className="tracking-luxury hidden w-[200px] shrink-0 items-center border-r border-border px-4 py-3 text-muted-foreground md:flex"
+              className="tracking-luxury hidden w-[200px] shrink-0 items-center border-r border-[var(--border)] px-4 py-3 text-muted-foreground md:flex"
               style={{ fontSize: "var(--step--2)" }}
             >
               Photo
@@ -333,9 +516,9 @@ export function ComparisonMatrixTable({
               <div
                 key={p.id}
                 id={`gallery-${p.id}`}
-                className={`min-w-[160px] flex-1 p-2.5 md:min-w-0 ${i > 0 ? "border-l border-border" : ""}`}
+                className={`min-w-[160px] flex-1 p-2.5 md:min-w-0 ${i > 0 ? "border-l border-[var(--border)]" : ""}`}
               >
-                <div className="aspect-[16/10] overflow-hidden rounded-card ring-1 ring-border transition-shadow [&.flash]:ring-2 [&.flash]:ring-foreground">
+                <div className="aspect-[16/10] overflow-hidden rounded-card ring-1 ring-[var(--border)] transition-shadow [&.flash]:ring-2 [&.flash]:ring-foreground">
                   <PhotoSlideshow property={p} />
                 </div>
               </div>
@@ -376,11 +559,11 @@ function RoomDimensionsGroup({
 
   const headerTone =
     status === "in"
-      ? "border-y border-emerald-600/25 bg-emerald-600/10"
+      ? "border-y border-emerald-600/20 bg-emerald-600/8"
       : status === "near"
-        ? "border-y border-amber-500/25 bg-amber-500/10"
+        ? "border-y border-amber-500/20 bg-amber-500/8"
         : status === "far"
-          ? "border-y border-red-600/25 bg-red-600/10"
+          ? "border-y border-red-600/20 bg-red-600/8"
           : "border-y border-border-strong bg-muted/50";
 
   return (
@@ -399,7 +582,7 @@ function RoomDimensionsGroup({
               className="tracking-luxury rounded-full bg-emerald-600/15 px-2 py-0.5 font-semibold text-emerald-700 dark:text-emerald-400"
               style={{ fontSize: "var(--step--2)" }}
             >
-              In selected range
+              IN SELECTED RANGE
             </span>
           )}
           {status === "near" && budgetLabel && (
@@ -407,7 +590,7 @@ function RoomDimensionsGroup({
               className="tracking-luxury rounded-full bg-amber-500/15 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-400"
               style={{ fontSize: "var(--step--2)" }}
             >
-              Slightly above range
+              SLIGHTLY ABOVE RANGE
             </span>
           )}
           {status === "far" && budgetLabel && (
@@ -415,7 +598,7 @@ function RoomDimensionsGroup({
               className="tracking-luxury rounded-full bg-red-600/15 px-2 py-0.5 font-semibold text-red-700 dark:text-red-400"
               style={{ fontSize: "var(--step--2)" }}
             >
-              Well above range
+              WELL ABOVE SELECTED RANGE
             </span>
           )}
         </div>
@@ -426,7 +609,7 @@ function RoomDimensionsGroup({
             className="tracking-luxury inline-flex items-center gap-1 font-medium text-muted-foreground transition-colors hover:text-foreground"
             style={{ fontSize: "var(--step--2)" }}
           >
-            {expanded ? "Hide details" : "View details"}
+            {expanded ? "HIDE DETAILS" : "VIEW DETAILS"}
             <ChevronDown
               className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
             />
@@ -551,7 +734,7 @@ function Row({
       style={colTpl ? ({ "--row-cols": colTpl } as React.CSSProperties) : undefined}
     >
       {/* ── Label cell — full-width on mobile, grid col on desktop ── */}
-      <div className="flex w-full items-center gap-1.5 border-b border-border-strong bg-muted/10 px-3 py-2 md:w-auto md:border-b-0 md:border-r md:bg-muted/10 md:px-4 md:py-3">
+      <div className="flex w-full items-center gap-1.5 border-b border-border-strong bg-muted/10 px-3 py-1.5 sm:py-2 md:w-auto md:border-b-0 md:border-r md:bg-muted/10 md:px-4 md:py-3">
         <span
           className="font-display font-medium tracking-tight text-champagne/70"
           style={{ fontSize: "var(--step--2)" }}
@@ -593,7 +776,7 @@ function Row({
         {items.map((p, i) => (
           <div
             key={p.id}
-            className={`flex-1 px-3 py-3 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
+            className={`flex-1 min-w-0 px-2 py-2.5 sm:px-3 sm:py-3 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
           >
             {render(p, i)}
           </div>
@@ -606,7 +789,7 @@ function Row({
 function Plain({ value, italic }: { value: string | null | undefined; italic?: boolean }) {
   return (
     <p
-      className={`leading-snug text-foreground md:text-center ${italic ? "text-foreground/75" : ""}`}
+      className={`leading-snug text-foreground text-center ${italic ? "text-foreground/75" : ""}`}
       style={{ fontSize: "var(--step--1)" }}
     >
       {value ?? DASH}
@@ -645,12 +828,12 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
 
   return (
     <>
-      <div className="border-b border-border bg-muted/10 px-4 py-3">
-        <p className="mb-2 text-muted-foreground" style={{ fontSize: "var(--step--1)" }}>
+      <div className="border-b border-border bg-muted/10 px-3 py-2.5 sm:px-4 sm:py-3">
+        <p className="mb-2 text-muted-foreground text-xs sm:text-sm" style={{ fontSize: "var(--step--1)" }}>
           Enter a landmark or neighbourhood — we'll show you how far each residence is. No exact
           location or map is used.
         </p>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <input
             type="text"
             value={address}
@@ -663,7 +846,7 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
             type="button"
             onClick={handleCalculate}
             disabled={!address.trim() || status === "loading"}
-            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 font-medium tracking-wide text-background transition hover:opacity-85 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-foreground px-4 py-2 font-medium tracking-wide text-background transition hover:opacity-85 disabled:opacity-50"
             style={{ fontSize: "var(--step--2)" }}
           >
             {status === "loading" ? "Calculating…" : "Calculate distance"}
@@ -707,7 +890,7 @@ function RegistrationLink({
       href={safeUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 leading-snug text-foreground underline decoration-border-strong underline-offset-2 transition-colors hover:text-champagne md:justify-center"
+      className="inline-flex items-center justify-center gap-1 leading-snug text-foreground underline decoration-border-strong underline-offset-2 transition-colors hover:text-champagne w-full text-center"
       style={{ fontSize: "var(--step--1)" }}
     >
       {id}
@@ -720,7 +903,7 @@ function AmenitiesCell({ amenities }: { amenities: string[] }) {
   if (!amenities.length) return <Plain value={null} />;
   return (
     <p
-      className="leading-relaxed text-foreground/85 md:text-center"
+      className="leading-relaxed text-foreground/85 text-center"
       style={{ fontSize: "var(--step--1)" }}
     >
       {amenities.join(" · ")}
@@ -731,7 +914,7 @@ function AmenitiesCell({ amenities }: { amenities: string[] }) {
 function NotAvail() {
   return (
     <span
-      className="inline-flex items-center gap-1 text-muted-foreground md:flex md:justify-center"
+      className="inline-flex items-center justify-center gap-1 text-muted-foreground text-center w-full"
       style={{ fontSize: "var(--step--1)" }}
     >
       <Minus className="h-3 w-3" /> Not available
@@ -751,7 +934,7 @@ function Numeric({
   isBest?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-baseline gap-2 md:justify-center">
+    <div className="flex flex-wrap items-baseline justify-center gap-1.5 text-center">
       <p
         className={`font-display leading-tight ${isBest ? "font-semibold text-foreground" : "text-foreground/90"}`}
         style={{ fontSize: "var(--step-0)" }}
