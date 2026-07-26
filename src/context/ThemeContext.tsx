@@ -39,11 +39,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     // Use the View Transitions API when available for a cinematic crossfade
     if (typeof document !== "undefined" && "startViewTransition" in document) {
-      // @ts-ignore — startViewTransition may not be in all TS lib targets
       document.startViewTransition(() => {
         applyTheme(root, next);
         setThemeState(next);
-        try { localStorage.setItem(STORAGE_KEY, next); } catch { /* noop */ }
+        try {
+          localStorage.setItem(STORAGE_KEY, next);
+        } catch {
+          /* noop */
+        }
       });
     } else {
       // Fallback: quick CSS transition for browsers without View Transitions

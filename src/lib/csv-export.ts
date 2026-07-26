@@ -1,8 +1,15 @@
 type CsvValue = string | number | boolean | null | undefined;
 
 function escapeCsvValue(value: CsvValue): string {
-  const s = value === null || value === undefined ? "" : String(value);
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = value === null || value === undefined ? "" : String(value);
+  // Neutralize spreadsheet formula injection (OWASP "CSV Injection"): a cell
+  // beginning with = + - @ or a control char is evaluated as a formula by
+  // Excel/Sheets, so an attacker-controlled name/note could exfiltrate data or
+  // run commands when an admin opens the export. Prefix such values with an
+  // apostrophe so they render literally, and always quote them.
+  const risky = /^[=+\-@\t\r]/.test(s);
+  if (risky) s = "'" + s;
+  return risky || /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 export interface CsvColumn<T> {

@@ -494,11 +494,7 @@ function Index() {
           ancestor is what silently breaks position:sticky for the filter
           sidebar below: any ancestor with overflow other than visible stops
           a sticky descendant from sticking past that ancestor's box. */}
-      <section
-        id="collection"
-        ref={collectionRef}
-        className="relative scroll-mt-28 py-8 sm:py-12"
-      >
+      <section id="collection" ref={collectionRef} className="relative scroll-mt-28 py-8 sm:py-12">
         <div className="container-lux relative z-10">
           <div className="flex flex-col justify-between gap-6 border-b border-[var(--rule)] pb-6 sm:flex-row sm:items-end">
             <div>

@@ -15,6 +15,7 @@ import { RoomFieldValue } from "@/components/compare/RoomFieldValue";
 import { formatAreaNumber, parseBareSqFt, unitLabel } from "@/lib/area-units";
 import { livePossessionLabel } from "@/lib/possession-format";
 import { priceLabel } from "@/lib/price-format";
+import { safeHttpUrl } from "@/lib/utils";
 import { calculatePropertyDistances } from "@/lib/distance.functions";
 import { useAreaUnitStore } from "@/stores/area-unit-store";
 
@@ -697,10 +698,13 @@ function RegistrationLink({
   url: string | null | undefined;
 }) {
   if (!id) return <Plain value={null} />;
-  if (!url) return <Plain value={id} />;
+  // The URL is developer-submitted; only render it as a link when it's a safe
+  // http(s) address, otherwise show the RERA id as plain text (no href sink).
+  const safeUrl = safeHttpUrl(url);
+  if (!safeUrl) return <Plain value={id} />;
   return (
     <a
-      href={url}
+      href={safeUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1 leading-snug text-foreground underline decoration-border-strong underline-offset-2 transition-colors hover:text-champagne md:justify-center"
