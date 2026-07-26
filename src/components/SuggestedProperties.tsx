@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { useProperties } from "@/context/PropertiesContext";
 import { useOnboarding } from "@/context/OnboardingContext";
@@ -196,9 +196,34 @@ function Marquee({
   list: Property[];
   chipLabel: string | null;
 }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanLeft(el.scrollLeft > 4);
+      setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [list.length]);
+
+  const nudge = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.8, 560), behavior: "smooth" });
+  };
+
   if (list.length === 0) return null;
-  const loop = [...list, ...list];
-  const duration = Math.max(24, list.length * 6);
+
   return (
     <div id={anchorId} className="scroll-mt-28">
       <div className="container-lux">
@@ -209,20 +234,40 @@ function Marquee({
             </h2>
             <p className="mt-1.5 text-[13px] text-muted-foreground">{subtitle}</p>
           </div>
-          <span className="text-[10px] tracking-luxury text-muted-foreground">
-            {list.length} {list.length === 1 ? "match" : "matches"} · hover to pause
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] tracking-luxury text-muted-foreground">
+              {list.length} {list.length === 1 ? "match" : "matches"}
+            </span>
+            <div className="hidden gap-2 sm:flex">
+              <button
+                type="button"
+                onClick={() => nudge(-1)}
+                disabled={!canLeft}
+                aria-label="Previous"
+                className="grid h-9 w-9 place-items-center rounded-full gold-border text-champagne transition-opacity disabled:opacity-30 hover:bg-champagne/10"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => nudge(1)}
+                disabled={!canRight}
+                aria-label="Next"
+                className="grid h-9 w-9 place-items-center rounded-full gold-border text-champagne transition-opacity disabled:opacity-30 hover:bg-champagne/10"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div
-        className="suggested-marquee mt-7 group"
-        style={{ ["--marquee-duration" as string]: `${duration}s` }}
+        ref={scrollerRef}
+        className="mt-7 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-[max(1.25rem,calc((100vw-80rem)/2))] pb-2 sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div className="suggested-marquee-track">
-          {loop.map((p, i) => (
-            <SuggestionCard key={`${anchorId}-${p.id}-${i}`} property={p} chipLabel={chipLabel} />
-          ))}
-        </div>
+        {list.map((p) => (
+          <SuggestionCard key={`${anchorId}-${p.id}`} property={p} chipLabel={chipLabel} />
+        ))}
       </div>
     </div>
   );
@@ -307,7 +352,7 @@ function SuggestionCard({ property, chipLabel }: { property: Property; chipLabel
         onClick={() => setOpen((v) => !v)}
         whileHover={{ y: -6 }}
         transition={{ type: "spring", stiffness: 300, damping: 22 }}
-        className="suggested-card group/card relative shrink-0 overflow-hidden rounded-2xl text-left"
+        className="suggested-card group/card relative shrink-0 snap-start overflow-hidden rounded-2xl text-left"
         style={{
           background: "var(--card)",
           border: "1px solid var(--glass-border)",

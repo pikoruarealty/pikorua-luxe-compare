@@ -813,34 +813,7 @@ body,
   filter: invert(1);
 }
 
-/* ============ Suggested Properties marquee ============ */
-.suggested-marquee {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-}
-
-.suggested-marquee-track {
-  display: flex;
-  gap: 1rem;
-  width: max-content;
-  padding: 4px 1rem;
-  animation: suggested-scroll var(--marquee-duration, 40s) linear infinite;
-  will-change: transform;
-}
-@media (min-width: 640px) {
-  .suggested-marquee-track {
-    gap: 1.25rem;
-    padding: 4px 1.5rem;
-  }
-}
-.suggested-marquee:hover .suggested-marquee-track,
-.suggested-marquee:focus-within .suggested-marquee-track {
-  animation-play-state: paused;
-}
-body.suggested-popup-open .suggested-marquee-track {
-  animation-play-state: paused !important;
-}
+/* ============ Suggested Properties row ============ */
 .suggested-card {
   width: 240px;
   transition:
@@ -872,15 +845,6 @@ body.suggested-popup-open .suggested-marquee-track {
   width: 64px;
   pointer-events: none;
 }
-@keyframes suggested-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
 /* Flash + sustained focus ring when a row is opened from a suggestion */
 @keyframes row-flash-pulse {
   0% {
@@ -913,9 +877,6 @@ body.suggested-popup-open .suggested-marquee-track {
     outline-offset 0.6s ease;
 }
 @media (prefers-reduced-motion: reduce) {
-  .suggested-marquee-track {
-    animation: none;
-  }
   .row-flash {
     animation: none;
   }
