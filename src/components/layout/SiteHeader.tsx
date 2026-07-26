@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, Menu, MessageCircle, Moon, Sun, UserRound, X } from "lucide-react";
+import { Heart, LogOut, Menu, MessageCircle, Moon, Sun, UserRound, X } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useFavoritesStore } from "@/stores/favorites-store";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -17,7 +17,7 @@ const NAV_LINKS = [
 ];
 
 export function SiteHeader() {
-  const { userProfile } = useOnboarding();
+  const { userProfile, signOut } = useOnboarding();
   const { theme, toggle } = useTheme();
   const hydrated = useHydrated();
   const favCount = useFavoritesStore((s) => s.favorites.length);
@@ -190,16 +190,29 @@ export function SiteHeader() {
             )}
           </button>
           {userProfile ? (
-            <Link
-              to="/account"
-              className="tracking-luxury flex items-center gap-2 rounded-full border border-[var(--rule)] py-1 pr-3 pl-1 text-ivory transition hover:border-foreground/40"
-              style={{ fontSize: "var(--step--2)" }}
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-champagne to-muted-gold font-display text-xs text-lux-black">
-                {initials}
-              </span>
-              Account
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/account"
+                className="tracking-luxury flex items-center gap-2 rounded-full border border-[var(--rule)] py-1 pr-3 pl-1 text-ivory transition hover:border-foreground/40"
+                style={{ fontSize: "var(--step--2)" }}
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-champagne to-muted-gold font-display text-xs text-lux-black">
+                  {initials}
+                </span>
+                Account
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                aria-label="Sign out"
+                title="Sign out"
+                className="tracking-luxury flex items-center gap-1.5 rounded-full border border-[var(--rule)] px-3 py-1.5 text-ivory/80 transition hover:border-red-500/40 hover:text-red-400"
+                style={{ fontSize: "var(--step--2)" }}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           ) : (
             <Link
               to="/account"
@@ -327,6 +340,20 @@ export function SiteHeader() {
                 )}
                 Account
               </Link>
+              {userProfile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    signOut();
+                  }}
+                  className="tracking-luxury flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-red-400 transition hover:bg-muted touch-manipulation active:scale-[0.99]"
+                  style={{ fontSize: "var(--step--1)" }}
+                >
+                  <LogOut className="h-4 w-4 text-red-400" />
+                  Sign Out
+                </button>
+              )}
               <a
                 href={WHATSAPP_URL}
                 target="_blank"

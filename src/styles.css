@@ -813,9 +813,20 @@ body,
 
 /* ============ Suggested Properties row ============ */
 .suggested-card {
+  width: 260px;
   transition:
     border-color 0.4s ease,
     transform 0.4s ease;
+}
+@media (min-width: 640px) {
+  .suggested-card {
+    width: 290px;
+  }
+}
+@media (min-width: 1024px) {
+  .suggested-card {
+    width: 320px;
+  }
 }
 .suggested-card:hover {
   border-color: color-mix(in oklab, var(--foreground) 45%, transparent);
