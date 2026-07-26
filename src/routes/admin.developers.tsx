@@ -16,12 +16,12 @@ import {
 import { Download, Plus, Power, Search, Users } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { developersQueryOptions, DEVELOPERS_KEY } from "@/lib/developers.queries";
+import { developersQueryOptions, DEVELOPERS_KEY } from "@/api/queries/developers.queries";
 import {
   createDeveloper,
   setDeveloperActive,
   type DeveloperAccount,
-} from "@/lib/admin-developers.functions";
+} from "@/api/functions/admin-developers.functions";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
 
 export const Route = createFileRoute("/admin/developers")({

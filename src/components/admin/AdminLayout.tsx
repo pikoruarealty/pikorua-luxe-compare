@@ -2,7 +2,7 @@ import { type ReactNode, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Building2, Inbox, LayoutDashboard, UserRound, Users } from "lucide-react";
-import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/lib/admin.queries";
+import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/api/queries/admin.queries";
 import { supabase } from "@/integrations/supabase/client";
 import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
 

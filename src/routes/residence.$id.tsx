@@ -97,9 +97,9 @@ function getAmenityMeta(name: string): { Icon: typeof Sparkles; subtitle: string
 import { toast } from "sonner";
 import { useProperties, usePropertyLookup } from "@/context/PropertiesContext";
 import type { Property } from "@/types/property";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
-import { Lightbox } from "@/components/Lightbox";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { Lightbox } from "@/components/common/Lightbox";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { MAX_COMPARE, useCompareStore } from "@/stores/compare-store";
 import { ResidenceLayouts } from "@/components/residence/ResidenceLayouts";

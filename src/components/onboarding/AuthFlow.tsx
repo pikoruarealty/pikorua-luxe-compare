@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useServerFn } from "@tanstack/react-start";
 import { Briefcase, Store, TrendingUp, User as UserIcon, Loader2 } from "lucide-react";
 import { useOnboarding, type UserProfile } from "@/context/OnboardingContext";
-import { sendOtp, verifyOtp } from "@/lib/otp.functions";
-import { upsertProfileAfterOtp } from "@/lib/profile.functions";
+import { sendOtp, verifyOtp } from "@/api/functions/otp.functions";
+import { upsertProfileAfterOtp } from "@/api/functions/profile.functions";
 
 type Step = "details" | "phone" | "profession";
 

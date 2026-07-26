@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { PropertyListRow } from "@/components/property/PropertyListRow";
 import { useProperties } from "@/context/PropertiesContext";
 import { useFavoritesStore } from "@/stores/favorites-store";

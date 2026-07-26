@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
-import type { PropertyFormValues } from "./property-schema";
-import { slug as slugify } from "./slug";
+import type { PropertyFormValues } from "@/lib/property-schema";
+import { slug as slugify } from "@/lib/slug";
 import { toDbRow, uniqueSlug } from "./property-crud.functions";
 
 export interface SubmissionListItem {
@@ -98,7 +98,7 @@ export const approveSubmission = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { buildPropertyRow } = await import("./property-write.server");
+    const { buildPropertyRow } = await import("@/server/property-write.server");
 
     const { data: sub, error } = await supabaseAdmin
       .from("property_submissions")

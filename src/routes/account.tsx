@@ -19,12 +19,12 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useOnboarding, type UserProfile } from "@/context/OnboardingContext";
 import { useFavoritesStore } from "@/stores/favorites-store";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { updateProfile as updateProfileFn } from "@/lib/profile.functions";
+import { updateProfile as updateProfileFn } from "@/api/functions/profile.functions";
 
 export const Route = createFileRoute("/account")({
   head: () => ({

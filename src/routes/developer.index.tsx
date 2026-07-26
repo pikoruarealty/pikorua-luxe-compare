@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/portal/PageHeader";
 import { EmptyState } from "@/components/portal/EmptyState";
 import { Skeleton } from "@/components/portal/Skeleton";
 import { StatusBadge, submissionTone } from "@/components/portal/StatusBadge";
-import { getMyDeveloperDashboard } from "@/lib/developer-properties.functions";
+import { getMyDeveloperDashboard } from "@/api/functions/developer-properties.functions";
 
 export const Route = createFileRoute("/developer/")({
   component: DeveloperDashboard,

@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { listDevelopers } from "./admin-developers.functions";
+import { listDevelopers } from "@/api/functions/admin-developers.functions";
 
 export const DEVELOPERS_KEY = ["admin", "developers"] as const;
 

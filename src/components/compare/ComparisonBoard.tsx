@@ -12,7 +12,7 @@ import type { ConfigKey, Property } from "@/types/property";
 import { CONFIG_KEYS } from "@/types/property";
 import { toast } from "sonner";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { saveQuizAnswers } from "@/lib/profile.functions";
+import { saveQuizAnswers } from "@/api/functions/profile.functions";
 import { allowedConfigKeys, matchesPreferences, parseBudget } from "@/lib/preference-filter";
 import { AreaUnitToggle } from "@/components/compare/AreaUnitToggle";
 import { PropertyPickerModal } from "@/components/compare/PropertyPickerModal";

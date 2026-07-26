@@ -1,13 +1,13 @@
 import type { ConfigKey, PropertyCategory, PropertyConfigurations } from "@/types/property";
-import { slug } from "./slug";
+import { slug } from "@/lib/slug";
 import {
   aggregateArea,
   buildPriceSummary,
   normalizePossession,
   parseNumeric,
   summariseConfiguration,
-} from "./property-derivations";
-import { CONFIG_BUCKETS, type PropertyFormValues } from "./property-schema";
+} from "@/lib/property-derivations";
+import { CONFIG_BUCKETS, type PropertyFormValues } from "@/lib/property-schema";
 
 const BUCKET_TO_CONFIG_KEY: Record<string, ConfigKey> = {
   bhk4: "4 BHK",

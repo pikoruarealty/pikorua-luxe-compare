@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { FileText, PenLine } from "lucide-react";
 import { PropertyForm } from "@/components/admin/PropertyForm";
 import { emptyPropertyForm, type PropertyFormValues } from "@/lib/property-schema";
-import { submitPropertyForReview } from "@/lib/developer-properties.functions";
+import { submitPropertyForReview } from "@/api/functions/developer-properties.functions";
 import { BrochureUploadStep } from "./BrochureUploadStep";
 import { ExtractedFieldsReview } from "./ExtractedFieldsReview";
 import {

@@ -16,13 +16,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { submissionsQueryOptions, SUBMISSIONS_KEY } from "@/lib/submissions.queries";
+import { submissionsQueryOptions, SUBMISSIONS_KEY } from "@/api/queries/submissions.queries";
 import {
   getSubmission,
   approveSubmission,
   rejectSubmission,
-} from "@/lib/admin-submissions.functions";
-import { PROPERTIES_KEY } from "@/lib/properties.queries";
+} from "@/api/functions/admin-submissions.functions";
+import { PROPERTIES_KEY } from "@/api/queries/properties.queries";
 import type { PropertyFormValues } from "@/lib/property-schema";
 import { CONFIG_BUCKETS } from "@/lib/property-schema";
 

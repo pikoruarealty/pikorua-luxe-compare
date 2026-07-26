@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Expand } from "lucide-react";
 import type { Property } from "@/types/property";
 import { Section } from "./Section";
-import { Lightbox } from "@/components/Lightbox";
+import { Lightbox } from "@/components/common/Lightbox";
 
 const CATEGORIES = [
   { key: "livingRoom", label: "Living Room" },

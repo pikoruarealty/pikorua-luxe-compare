@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { listSubmissions, getSubmission } from "./admin-submissions.functions";
+import { listSubmissions, getSubmission } from "@/api/functions/admin-submissions.functions";
 
 export const SUBMISSIONS_KEY = ["admin", "submissions"] as const;
 

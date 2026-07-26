@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Expand } from "lucide-react";
 import type { Property } from "@/types/property";
 import { useImagePrewarm } from "@/hooks/use-image-prewarm";
-import { Lightbox } from "@/components/Lightbox";
+import { Lightbox } from "@/components/common/Lightbox";
 
 export function PhotoSlideshow({ property }: { property: Property }) {
   const slides = useMemo(() => {

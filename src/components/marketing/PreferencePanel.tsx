@@ -11,7 +11,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useOnboarding, type QuizAnswers } from "@/context/OnboardingContext";
-import { saveQuizAnswers as saveQuizAnswersFn } from "@/lib/profile.functions";
+import { saveQuizAnswers as saveQuizAnswersFn } from "@/api/functions/profile.functions";
 
 const PROPERTY_TYPES: Array<{ label: string; icon: typeof Home }> = [
   { label: "Bungalow", icon: Home },

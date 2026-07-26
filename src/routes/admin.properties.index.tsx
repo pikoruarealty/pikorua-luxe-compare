@@ -10,10 +10,10 @@ import { Skeleton } from "@/components/portal/Skeleton";
 import { TableWrap, Th, Td } from "@/components/portal/Table";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { adminPropertiesQueryOptions, PROPERTIES_KEY } from "@/lib/properties.queries";
-import { deleteProperty, setPropertyPublished } from "@/lib/property-crud.functions";
+import { adminPropertiesQueryOptions, PROPERTIES_KEY } from "@/api/queries/properties.queries";
+import { deleteProperty, setPropertyPublished } from "@/api/functions/property-crud.functions";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
-import type { AdminProperty } from "@/lib/properties.functions";
+import type { AdminProperty } from "@/api/functions/properties.functions";
 import {
   AlertDialog,
   AlertDialogAction,

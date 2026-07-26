@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, Loader2, Upload, X } from "lucide-react";
-import { extractFromBrochures } from "@/lib/brochure-extract.functions";
+import { extractFromBrochures } from "@/api/functions/brochure-extract.functions";
 import type { ExtractionResponse } from "@/lib/brochure-field-mapping";
 
 function fileToBase64(file: File): Promise<string> {

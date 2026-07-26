@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
-import type { ExtractionResponse } from "./brochure-field-mapping";
+import type { ExtractionResponse } from "@/lib/brochure-field-mapping";
 
 interface BrochureFile {
   fileName: string;

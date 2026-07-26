@@ -8,7 +8,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useImagePrewarm } from "@/hooks/use-image-prewarm";
 import { toast } from "sonner";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
-import { Lightbox } from "@/components/Lightbox";
+import { Lightbox } from "@/components/common/Lightbox";
 import { PropertyHoverCard, useHoverIntent } from "@/components/property/PropertyHoverCard";
 import { priceLabel } from "@/lib/price-format";
 

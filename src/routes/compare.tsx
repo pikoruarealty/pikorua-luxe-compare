@@ -5,8 +5,8 @@ import { useEffect, useMemo } from "react";
 import { usePropertyLookup } from "@/context/PropertiesContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import type { Property } from "@/types/property";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ComparisonHero } from "@/components/compare/ComparisonHero";
 import { PropertyHeaderCards } from "@/components/compare/PropertyHeaderCards";
 import { SectionNav } from "@/components/compare/SectionNav";
@@ -17,7 +17,7 @@ import { AdvantagesSection } from "@/components/compare/AdvantagesSection";
 import { DifferenceHighlights } from "@/components/compare/DifferenceHighlights";
 import { GalleryComparison } from "@/components/compare/GalleryComparison";
 import { ExpertVerdict } from "@/components/compare/ExpertVerdict";
-import { PreferenceBanner } from "@/components/PreferenceBanner";
+import { PreferenceBanner } from "@/components/marketing/PreferenceBanner";
 
 const searchSchema = z.object({
   ids: z.string().optional().default(""),

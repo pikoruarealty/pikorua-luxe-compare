@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
-import { propertyFormSchema, type PropertyFormValues } from "./property-schema";
+import { propertyFormSchema, type PropertyFormValues } from "@/lib/property-schema";
 
 export interface DeveloperProperty {
   id: string; // properties.id
@@ -92,7 +92,7 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
   })
   .handler(async ({ data, context }): Promise<PropertyFormValues & { id: string }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { toFormConfigs } = await import("./property-write.server");
+    const { toFormConfigs } = await import("@/server/property-write.server");
 
     const { data: row, error } = await supabaseAdmin
       .from("properties")

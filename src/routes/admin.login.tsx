@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { ADMIN_ME_KEY } from "@/lib/admin.queries";
-import { getCurrentAdminProfile } from "@/lib/admin-auth.functions";
+import { ADMIN_ME_KEY } from "@/api/queries/admin.queries";
+import { getCurrentAdminProfile } from "@/api/functions/admin-auth.functions";
 import { Field, Input } from "@/components/portal/FormControls";
 
 export const Route = createFileRoute("/admin/login")({

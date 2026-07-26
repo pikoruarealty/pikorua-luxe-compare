@@ -1,6 +1,6 @@
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useServerFn } from "@tanstack/react-start";
-import { saveQuizAnswers as saveQuizAnswersFn } from "@/lib/profile.functions";
+import { saveQuizAnswers as saveQuizAnswersFn } from "@/api/functions/profile.functions";
 
 export function PreferenceBanner() {
   const { quizAnswers, openQuizForEdit, setQuizAnswers } = useOnboarding();

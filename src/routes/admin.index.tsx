@@ -5,8 +5,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatTile } from "@/components/portal/StatTile";
 import { Skeleton } from "@/components/portal/Skeleton";
-import { adminMeQueryOptions } from "@/lib/admin.queries";
-import { getAdminStats } from "@/lib/customers.functions";
+import { adminMeQueryOptions } from "@/api/queries/admin.queries";
+import { getAdminStats } from "@/api/functions/customers.functions";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,

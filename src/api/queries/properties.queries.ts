@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { Property } from "@/types/property";
-import { getProperties, getAllPropertiesForAdmin } from "./properties.functions";
+import { getProperties, getAllPropertiesForAdmin } from "@/api/functions/properties.functions";
 
 export const PROPERTIES_KEY = ["properties"] as const;
 

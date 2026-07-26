@@ -7,9 +7,13 @@ import { EmptyState } from "@/components/portal/EmptyState";
 import { Skeleton } from "@/components/portal/Skeleton";
 import { TableWrap, Th, Td } from "@/components/portal/Table";
 import { FilterSelect } from "@/components/admin/FilterSelect";
-import { getCustomers, getCustomerDetail, type CustomerSummary } from "@/lib/customers.functions";
-import type { ActivityEvent } from "@/lib/activity.functions";
-import type { QuizAnswersDTO } from "@/lib/profile.functions";
+import {
+  getCustomers,
+  getCustomerDetail,
+  type CustomerSummary,
+} from "@/api/functions/customers.functions";
+import type { ActivityEvent } from "@/api/functions/activity.functions";
+import type { QuizAnswersDTO } from "@/api/functions/profile.functions";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
 import { parseBudget } from "@/lib/preference-filter";
 

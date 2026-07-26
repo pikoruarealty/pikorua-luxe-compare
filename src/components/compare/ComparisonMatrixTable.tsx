@@ -16,7 +16,7 @@ import { formatAreaNumber, parseBareSqFt, unitLabel } from "@/lib/area-units";
 import { livePossessionLabel } from "@/lib/possession-format";
 import { priceLabel } from "@/lib/price-format";
 import { safeHttpUrl } from "@/lib/utils";
-import { calculatePropertyDistances } from "@/lib/distance.functions";
+import { calculatePropertyDistances } from "@/api/functions/distance.functions";
 import { useAreaUnitStore } from "@/stores/area-unit-store";
 
 const TERM_INFO: Record<string, { title: string; body: string }> = {

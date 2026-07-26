@@ -2,9 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import type { PropertyConfigurations } from "@/types/property";
-import { propertyFormSchema, type PropertyFormValues } from "./property-schema";
-import { slug as slugify } from "./slug";
-import type { PropertyRowInsert } from "./property-write.server";
+import { propertyFormSchema, type PropertyFormValues } from "@/lib/property-schema";
+import { slug as slugify } from "@/lib/slug";
+import type { PropertyRowInsert } from "@/server/property-write.server";
 
 /** JSONB columns are typed as Json; our richer shapes serialise cleanly into them.
  *  Exported for admin-submissions.functions.ts, which applies an approved
@@ -48,7 +48,7 @@ export const createProperty = createServerFn({ method: "POST" })
   .inputValidator((data: PropertyFormValues) => propertyFormSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { buildPropertyRow } = await import("./property-write.server");
+    const { buildPropertyRow } = await import("@/server/property-write.server");
 
     const desired = slugify(data.name);
     const finalSlug = await uniqueSlug(supabaseAdmin as never, desired);
@@ -71,7 +71,7 @@ export const updateProperty = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { buildPropertyRow } = await import("./property-write.server");
+    const { buildPropertyRow } = await import("@/server/property-write.server");
 
     const desired = slugify(data.values.name);
     const finalSlug = await uniqueSlug(supabaseAdmin as never, desired, data.id);
@@ -120,7 +120,7 @@ export const getPropertyForEdit = createServerFn({ method: "GET" })
   })
   .handler(async ({ data }): Promise<PropertyFormValues & { id: string }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { toFormConfigs } = await import("./property-write.server");
+    const { toFormConfigs } = await import("@/server/property-write.server");
 
     const { data: row, error } = await supabaseAdmin
       .from("properties")

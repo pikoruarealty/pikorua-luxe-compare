@@ -13,7 +13,7 @@ import {
   getSessionProfile,
   saveQuizAnswers as saveQuizAnswersFn,
   signOutProfile,
-} from "@/lib/profile.functions";
+} from "@/api/functions/profile.functions";
 import { useActivityLog } from "@/hooks/use-activity-log";
 
 export type OnboardingPhase =

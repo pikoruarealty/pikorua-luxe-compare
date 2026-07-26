@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
-import { uploadPropertyImage } from "@/lib/property-images.functions";
+import { uploadPropertyImage } from "@/api/functions/property-images.functions";
 
 export function ImageSlotInput({
   label,
