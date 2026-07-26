@@ -9,31 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as CompareRouteImport } from './routes/compare'
-import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as ResidenceIdRouteImport } from './routes/residence.$id'
-import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
+import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
+import { Route as ResidenceIdRouteImport } from './routes/residence.$id'
 import { Route as AdminPropertiesIndexRouteImport } from './routes/admin.properties.index'
-import { Route as DeveloperPropertiesNewRouteImport } from './routes/developer.properties.new'
-import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.properties.$id'
-import { Route as AdminPropertiesNewRouteImport } from './routes/admin.properties.new'
 import { Route as AdminPropertiesPropertyIdRouteImport } from './routes/admin.properties.$propertyId'
+import { Route as AdminPropertiesNewRouteImport } from './routes/admin.properties.new'
+import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.properties.$id'
+import { Route as DeveloperPropertiesNewRouteImport } from './routes/developer.properties.new'
 
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompareRoute = CompareRouteImport.update({
-  id: '/compare',
-  path: '/compare',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -41,14 +36,14 @@ const AccountRoute = AccountRouteImport.update({
   path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeveloperIndexRoute = DeveloperIndexRouteImport.update({
-  id: '/developer/',
-  path: '/developer/',
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -56,19 +51,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResidenceIdRoute = ResidenceIdRouteImport.update({
-  id: '/residence/$id',
-  path: '/residence/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
-  id: '/admin/submissions',
-  path: '/admin/submissions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/admin/login',
-  path: '/admin/login',
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/admin/customers',
+  path: '/admin/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDevelopersRoute = AdminDevelopersRouteImport.update({
@@ -76,29 +61,29 @@ const AdminDevelopersRoute = AdminDevelopersRouteImport.update({
   path: '/admin/developers',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminCustomersRoute = AdminCustomersRouteImport.update({
-  id: '/admin/customers',
-  path: '/admin/customers',
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
+  id: '/admin/submissions',
+  path: '/admin/submissions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperIndexRoute = DeveloperIndexRouteImport.update({
+  id: '/developer/',
+  path: '/developer/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResidenceIdRoute = ResidenceIdRouteImport.update({
+  id: '/residence/$id',
+  path: '/residence/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPropertiesIndexRoute = AdminPropertiesIndexRouteImport.update({
   id: '/admin/properties/',
   path: '/admin/properties/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DeveloperPropertiesNewRoute = DeveloperPropertiesNewRouteImport.update({
-  id: '/developer/properties/new',
-  path: '/developer/properties/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DeveloperPropertiesIdRoute = DeveloperPropertiesIdRouteImport.update({
-  id: '/developer/properties/$id',
-  path: '/developer/properties/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminPropertiesNewRoute = AdminPropertiesNewRouteImport.update({
-  id: '/admin/properties/new',
-  path: '/admin/properties/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPropertiesPropertyIdRoute =
@@ -107,6 +92,21 @@ const AdminPropertiesPropertyIdRoute =
     path: '/admin/properties/$propertyId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminPropertiesNewRoute = AdminPropertiesNewRouteImport.update({
+  id: '/admin/properties/new',
+  path: '/admin/properties/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperPropertiesIdRoute = DeveloperPropertiesIdRouteImport.update({
+  id: '/developer/properties/$id',
+  path: '/developer/properties/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperPropertiesNewRoute = DeveloperPropertiesNewRouteImport.update({
+  id: '/developer/properties/new',
+  path: '/developer/properties/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -241,18 +241,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compare': {
-      id: '/compare'
-      path: '/compare'
-      fullPath: '/compare'
-      preLoaderRoute: typeof CompareRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -262,18 +255,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/developer/': {
-      id: '/developer/'
-      path: '/developer'
-      fullPath: '/developer/'
-      preLoaderRoute: typeof DeveloperIndexRouteImport
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -283,25 +276,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/residence/$id': {
-      id: '/residence/$id'
-      path: '/residence/$id'
-      fullPath: '/residence/$id'
-      preLoaderRoute: typeof ResidenceIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/submissions': {
-      id: '/admin/submissions'
-      path: '/admin/submissions'
-      fullPath: '/admin/submissions'
-      preLoaderRoute: typeof AdminSubmissionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/admin/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/admin/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/developers': {
@@ -311,11 +290,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDevelopersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/customers': {
-      id: '/admin/customers'
-      path: '/admin/customers'
-      fullPath: '/admin/customers'
-      preLoaderRoute: typeof AdminCustomersRouteImport
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/submissions': {
+      id: '/admin/submissions'
+      path: '/admin/submissions'
+      fullPath: '/admin/submissions'
+      preLoaderRoute: typeof AdminSubmissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer/': {
+      id: '/developer/'
+      path: '/developer'
+      fullPath: '/developer/'
+      preLoaderRoute: typeof DeveloperIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/residence/$id': {
+      id: '/residence/$id'
+      path: '/residence/$id'
+      fullPath: '/residence/$id'
+      preLoaderRoute: typeof ResidenceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/properties/': {
@@ -325,18 +325,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPropertiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/developer/properties/new': {
-      id: '/developer/properties/new'
-      path: '/developer/properties/new'
-      fullPath: '/developer/properties/new'
-      preLoaderRoute: typeof DeveloperPropertiesNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/developer/properties/$id': {
-      id: '/developer/properties/$id'
-      path: '/developer/properties/$id'
-      fullPath: '/developer/properties/$id'
-      preLoaderRoute: typeof DeveloperPropertiesIdRouteImport
+    '/admin/properties/$propertyId': {
+      id: '/admin/properties/$propertyId'
+      path: '/admin/properties/$propertyId'
+      fullPath: '/admin/properties/$propertyId'
+      preLoaderRoute: typeof AdminPropertiesPropertyIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/properties/new': {
@@ -346,11 +339,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPropertiesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/properties/$propertyId': {
-      id: '/admin/properties/$propertyId'
-      path: '/admin/properties/$propertyId'
-      fullPath: '/admin/properties/$propertyId'
-      preLoaderRoute: typeof AdminPropertiesPropertyIdRouteImport
+    '/developer/properties/$id': {
+      id: '/developer/properties/$id'
+      path: '/developer/properties/$id'
+      fullPath: '/developer/properties/$id'
+      preLoaderRoute: typeof DeveloperPropertiesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer/properties/new': {
+      id: '/developer/properties/new'
+      path: '/developer/properties/new'
+      fullPath: '/developer/properties/new'
+      preLoaderRoute: typeof DeveloperPropertiesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
