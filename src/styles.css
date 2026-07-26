@@ -447,12 +447,10 @@ html.theme-anim * {
 }
 
 @utility hover-lift {
-  transition:
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.45s ease;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .hover-lift:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
 
 /* This is the eyebrow/label treatment — kept under its existing name (105
@@ -470,18 +468,10 @@ html.theme-anim * {
   color: #121212 !important;
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 8px 24px -8px rgba(200, 164, 93, 0.5) !important;
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition: filter 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 .foil:hover {
   filter: brightness(1.08) saturate(1.05);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    0 14px 34px -8px rgba(200, 164, 93, 0.7) !important;
   transform: translateY(-1px);
 }
 .foil:active {
@@ -499,7 +489,6 @@ html.theme-anim * {
   border-color: rgba(200, 164, 93, 0.95) !important;
   background: var(--champagne, #c8a45d) !important;
   color: #121212 !important;
-  box-shadow: 0 6px 22px -6px rgba(200, 164, 93, 0.45) !important;
 }
 
 /* Gold gradient text */
@@ -660,10 +649,7 @@ img {
 
 .group:hover .media-frame,
 .media-frame:hover {
-  box-shadow:
-    0 1px 0 0 color-mix(in oklab, var(--foreground) 8%, transparent) inset,
-    0 28px 60px -28px color-mix(in oklab, var(--foreground) 36%, transparent),
-    0 8px 20px -8px color-mix(in oklab, var(--foreground) 18%, transparent);
+  /* No shadow on hover — elevation is communicated via border only */
 }
 .light .media-frame {
   background: #f3f3f3;
@@ -856,7 +842,6 @@ body.suggested-popup-open .suggested-marquee-track {
 .suggested-card {
   width: 240px;
   transition:
-    box-shadow 0.4s ease,
     border-color 0.4s ease,
     transform 0.4s ease;
 }
@@ -892,21 +877,9 @@ body.suggested-popup-open .suggested-marquee-track {
 
 /* Flash + sustained focus ring when a row is opened from a suggestion */
 @keyframes row-flash-pulse {
-  0% {
-    box-shadow:
-      0 0 0 0 color-mix(in oklab, var(--foreground) 55%, transparent),
-      0 0 0 0 color-mix(in oklab, var(--foreground) 20%, transparent);
-  }
-  60% {
-    box-shadow:
-      0 0 0 18px color-mix(in oklab, var(--foreground) 0%, transparent),
-      0 22px 60px -18px color-mix(in oklab, var(--foreground) 30%, transparent);
-  }
-  100% {
-    box-shadow:
-      0 0 0 0 color-mix(in oklab, var(--foreground) 0%, transparent),
-      0 0 0 0 color-mix(in oklab, var(--foreground) 0%, transparent);
-  }
+  0%   { outline-color: color-mix(in oklab, var(--foreground) 55%, transparent); }
+  60%  { outline-color: color-mix(in oklab, var(--foreground) 15%, transparent); }
+  100% { outline-color: transparent; }
 }
 .row-flash {
   border-radius: 24px;
