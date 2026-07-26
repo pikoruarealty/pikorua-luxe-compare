@@ -135,9 +135,9 @@
     0 20px 48px -24px color-mix(in oklab, var(--foreground) 26%, transparent);
 
   /* Swatch matte charcoal luxury dark theme palette */
-  --lux-black: #141619;
-  --soft-black: #1a1d22;
-  --graphite: #22262c;
+  --lux-black: #0f1114;
+  --soft-black: #141619;
+  --graphite: #1a1d22;
   --ivory: #f4f5f7;
 
   --champagne-gold: #c8a45d;
@@ -147,22 +147,22 @@
   --brand: #c8a45d;
   --brand-soft: #f7ebd0;
   --brand-strong: #ab853c;
-  --brand-ink: #141619;
+  --brand-ink: #0f1114;
 
-  --background: #141619;
+  --background: #0f1114;
   --foreground: #f4f5f7;
-  --card: #1a1d22;
+  --card: #141619;
   --card-foreground: #f4f5f7;
-  --popover: #1a1d22;
+  --popover: #141619;
   --popover-foreground: #f4f5f7;
   --primary: #c8a45d;
-  --primary-foreground: #141619;
-  --secondary: #22262c;
+  --primary-foreground: #0f1114;
+  --secondary: #1a1d22;
   --secondary-foreground: #f4f5f7;
-  --muted: #272c34;
+  --muted: #22262c;
   --muted-foreground: #9ea4b0;
   --accent: #c8a45d;
-  --accent-foreground: #141619;
+  --accent-foreground: #0f1114;
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: #f4f5f7;
   --border: rgba(255, 255, 255, 0.09);
@@ -171,18 +171,18 @@
   --ring: #c8a45d;
 
   --gradient-gold: linear-gradient(135deg, #f7ebd0 0%, #c8a45d 60%, #ab853c 100%);
-  --gradient-dark: linear-gradient(180deg, #141619 0%, #1a1d22 100%);
+  --gradient-dark: linear-gradient(180deg, #0f1114 0%, #141619 100%);
   --gradient-radial-gold: none;
 
   --shadow-gold: none;
   --shadow-deep: none;
   --shadow-glass: none;
 
-  --glass-bg: rgba(26, 29, 34, 0.88);
+  --glass-bg: rgba(20, 22, 25, 0.88);
   --glass-border: rgba(200, 164, 93, 0.2);
 
   /* Sticky label column in the comparison matrix */
-  --sticky-col-bg: #1d2026;
+  --sticky-col-bg: #141619;
 }
 
 .light {
@@ -995,41 +995,41 @@ body.suggested-popup-open .suggested-marquee-track {
   --brand: #c8a45d;
   --brand-soft: #f7ebd0;
   --brand-strong: #ab853c;
-  --brand-ink: #141619;
+  --brand-ink: #0f1114;
   --champagne-gold: #c8a45d;
   --antique-gold: #ab853c;
   --muted-gold: #85662b;
-  --background: #141619;
+  --background: #0f1114;
   --foreground: #f4f5f7;
-  --card: #1a1d22;
+  --card: #141619;
   --card-foreground: #f4f5f7;
-  --popover: #1a1d22;
+  --popover: #141619;
   --popover-foreground: #f4f5f7;
   --primary: #c8a45d;
-  --primary-foreground: #141619;
-  --secondary: #22262c;
+  --primary-foreground: #0f1114;
+  --secondary: #1a1d22;
   --secondary-foreground: #f4f5f7;
-  --muted: #272c34;
+  --muted: #22262c;
   --muted-foreground: #9ea4b0;
   --accent: #c8a45d;
-  --accent-foreground: #141619;
+  --accent-foreground: #0f1114;
   --border: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(200, 164, 93, 0.24);
   --input: rgba(255, 255, 255, 0.12);
   --ring: #c8a45d;
   --gradient-gold: linear-gradient(135deg, #f7ebd0 0%, #c8a45d 60%, #ab853c 100%);
-  --gradient-dark: linear-gradient(180deg, #141619 0%, #1a1d22 100%);
+  --gradient-dark: linear-gradient(180deg, #0f1114 0%, #141619 100%);
   --shadow-gold: none;
   --shadow-deep: none;
   --shadow-glass: none;
-  --glass-bg: rgba(26, 29, 34, 0.88);
+  --glass-bg: rgba(20, 22, 25, 0.88);
   --glass-border: rgba(200, 164, 93, 0.2);
 }
 
 /* ---------- Body background ---------- */
 .dark body,
 .dark[data-palette="bright"] body {
-  background-color: #141619;
+  background-color: #0f1114;
   background-image:
     radial-gradient(1200px 650px at 15% -10%, rgba(200, 164, 93, 0.07), transparent 65%),
     radial-gradient(900px 500px at 85% 0%, rgba(255, 255, 255, 0.02), transparent 50%);
