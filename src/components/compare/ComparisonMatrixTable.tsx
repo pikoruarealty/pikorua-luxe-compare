@@ -241,19 +241,6 @@ export function ComparisonMatrixTable({
 
           {/* ─── 3. CONFIGURATIONS ────────────────────────────────── */}
           <SectionLabel title="CONFIGURATIONS" />
-          <Row
-            label="Starting Price"
-            items={items}
-            gridTpl={gridTpl}
-            render={(p) => (
-              <p
-                className="font-display font-semibold text-champagne md:text-center"
-                style={{ fontSize: "var(--step-0)" }}
-              >
-                {priceLabel(p)}
-              </p>
-            )}
-          />
           {visibleConfigKeys.map((k) => (
             <Row
               key={`config-area-${k}`}
