@@ -9,19 +9,33 @@ import { PropertyQuiz } from "./PropertyQuiz";
 import { ReviewPreferences } from "./ReviewPreferences";
 
 export function OnboardingOverlay() {
-  const { phase, setPhase, quizAnswers, quizEditMode, cancelQuizEdit } = useOnboarding();
-  // The public sign-in / quiz gate must never appear on the admin portal.
-  const isAdminRoute = useRouterState({
-    select: (s) => s.location.pathname.startsWith("/admin"),
+  const { phase, setPhase, quizAnswers, quizEditMode, cancelQuizEdit, hydrated, userProfile } =
+    useOnboarding();
+  // The public sign-in / quiz gate must never appear on the admin or developer
+  // portals — those have their own account-based auth entirely.
+  const isPortalRoute = useRouterState({
+    select: (s) =>
+      s.location.pathname.startsWith("/admin") || s.location.pathname.startsWith("/developer"),
   });
 
-  // Auth and the first-time quiz are compulsory — the only way out is a
-  // signed-in profile / completed quiz. Editing preferences later (reopened
-  // from account settings) is the one case that stays dismissable.
+  // An account is required to use the site at all, so identity is asked for
+  // ahead of any browsing. Because this keys off "no profile + idle", it also
+  // re-arms after a sign-out rather than only firing once per visit.
+  useEffect(() => {
+    if (!hydrated || isPortalRoute || userProfile) return;
+    if (phase === "idle") setPhase("auth");
+  }, [hydrated, isPortalRoute, userProfile, phase, setPhase]);
+
+  // Signing in is compulsory: no close button, no backdrop click, no Escape,
+  // because there is nothing to fall back to. Every later phase stays
+  // dismissable — by then the visitor already has an account.
+  const locked = phase === "auth";
+
   const dismiss = useCallback(() => {
+    if (locked) return;
     if (quizEditMode) cancelQuizEdit();
     setPhase("idle");
-  }, [quizEditMode, cancelQuizEdit, setPhase]);
+  }, [locked, quizEditMode, cancelQuizEdit, setPhase]);
 
   // Escape key cancels/dismisses the overlay.
   useEffect(() => {
@@ -45,7 +59,7 @@ export function OnboardingOverlay() {
   }, [phase]);
 
   const active =
-    !isAdminRoute &&
+    !isPortalRoute &&
     (phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz");
 
   return (
@@ -85,15 +99,17 @@ export function OnboardingOverlay() {
               }}
             />
 
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label="Close"
-              title="Close"
-              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--rule)] bg-card/90 text-foreground transition-colors hover:border-foreground/40 hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {!locked && (
+              <button
+                type="button"
+                onClick={dismiss}
+                aria-label="Close"
+                title="Close"
+                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--rule)] bg-card/90 text-foreground transition-colors hover:border-foreground/40 hover:bg-muted"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <div className="relative flex flex-1 flex-col" style={{ zIndex: 1 }}>
               {phase === "auth" && <AuthFlow />}
               {phase === "welcome" && <WelcomeCard />}

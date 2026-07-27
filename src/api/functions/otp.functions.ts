@@ -14,32 +14,6 @@ const sessionConfig = () => ({
   },
 });
 
-const encoder = new TextEncoder();
-
-function base64UrlEncode(value: string | ArrayBuffer) {
-  const bytes = typeof value === "string" ? encoder.encode(value) : new Uint8Array(value);
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-async function signOtpToken(phone: string) {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET missing");
-  const payload = JSON.stringify({ phone, verifiedAt: Date.now() });
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
-  return `${base64UrlEncode(payload)}.${base64UrlEncode(signature)}`;
-}
-
 export const sendOtp = createServerFn({ method: "POST" })
   .inputValidator((data: { phone: string }) => {
     if (!data || typeof data.phone !== "string" || data.phone.length < 6) {
@@ -96,6 +70,7 @@ export const verifyOtp = createServerFn({ method: "POST" })
     // Mark phone as verified for ~10 min so the next step can write the profile.
     const session = await useSession<{ phone: string; verifiedAt: number }>(sessionConfig());
     await session.update({ phone: data.phone, verifiedAt: Date.now() });
-    const verificationToken = await signOtpToken(data.phone);
+    const { signClaim } = await import("@/server/verification-token.server");
+    const verificationToken = await signClaim({ phone: data.phone, verifiedAt: Date.now() });
     return { verified: true, verificationToken };
   });
