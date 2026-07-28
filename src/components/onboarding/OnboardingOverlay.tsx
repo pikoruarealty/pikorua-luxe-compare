@@ -26,6 +26,49 @@ export function OnboardingOverlay() {
     if (phase === "idle") setPhase("auth");
   }, [hydrated, isPortalRoute, userProfile, phase, setPhase]);
 
+  // welcome -> site-preview lands the visitor straight on the property
+  // picker (the "suite" section, 3 comparison slots) instead of the top of
+  // the homepage, then opens the quiz the moment they scroll or tap.
+  // Site-wide CSS sets `scroll-behavior: smooth`, which makes
+  // scrollIntoView({behavior:"auto"}) animate instead of jumping instantly —
+  // so the listener below would arm while that animation was still in flight
+  // and mistake its tail end for the visitor's first scroll. Forcing the html
+  // element's scroll-behavior to "auto" for the jump makes it truly instant,
+  // so the listener can arm on the very next frame with nothing left to fire.
+  useEffect(() => {
+    if (isPortalRoute || phase !== "site-preview") return;
+    const suite = document.getElementById("suite");
+    if (suite) {
+      const html = document.documentElement;
+      const prevScrollBehavior = html.style.scrollBehavior;
+      html.style.scrollBehavior = "auto";
+      suite.scrollIntoView({ behavior: "auto", block: "start" });
+      html.style.scrollBehavior = prevScrollBehavior;
+    }
+
+    let armed = false;
+    let baseline = window.scrollY;
+    const armFrame = requestAnimationFrame(() => {
+      baseline = window.scrollY;
+      armed = true;
+    });
+
+    const triggerQuiz = () => setPhase("quiz");
+    const onScroll = () => {
+      if (armed && Math.abs(window.scrollY - baseline) > 40) triggerQuiz();
+    };
+    const onInteract = () => {
+      if (armed) triggerQuiz();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pointerdown", onInteract);
+    return () => {
+      cancelAnimationFrame(armFrame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pointerdown", onInteract);
+    };
+  }, [isPortalRoute, phase, setPhase]);
+
   // Signing in is compulsory: no close button, no backdrop click, no Escape,
   // because there is nothing to fall back to. Every later phase stays
   // dismissable — by then the visitor already has an account.

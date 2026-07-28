@@ -3,13 +3,14 @@ import { Sparkles } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
 
 export function WelcomeCard() {
-  const { userProfile, setPhase, completeOnboarding } = useOnboarding();
+  const { userProfile, setPhase } = useOnboarding();
   const firstName = userProfile?.name?.trim().split(/\s+/)[0] ?? "there";
 
-  const handleStart = () => {
-    completeOnboarding(null);
-    setPhase("idle");
-  };
+  // Hands off to "site-preview", which drops the visitor on the comparison
+  // suite and opens the quiz on their first interaction. Completing onboarding
+  // here instead would close the overlay on the homepage and skip the quiz
+  // entirely, leaving us with no preferences to match properties against.
+  const handleStart = () => setPhase("site-preview");
 
   return (
     <motion.div
