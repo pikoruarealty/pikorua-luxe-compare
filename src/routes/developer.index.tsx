@@ -29,7 +29,7 @@ function DeveloperDashboard() {
       <PageHeader
         eyebrow="Developer"
         title="My Properties"
-        description="Your listings on Pikorua and the status of every change you've submitted."
+        description="Your listings on PropCompare and the status of every change you've submitted."
         actions={
           <Link
             to="/developer/properties/new"
@@ -64,7 +64,7 @@ function DeveloperDashboard() {
               <EmptyState
                 icon={Building2}
                 title="No properties yet"
-                message="Add your first property to get it in front of buyers on Pikorua."
+                message="Add your first property to get it in front of buyers on PropCompare."
                 action={
                   <Link
                     to="/developer/properties/new"

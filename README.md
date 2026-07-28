@@ -1,4 +1,4 @@
-# Pikorua — Luxury Residence Comparison
+# PropCompare — Compare. Decide. Confidently.
 
 A private-client platform for comparing ultra-luxury residences side by side. Buyers
 pick two or three projects and see every material detail — configurations, room

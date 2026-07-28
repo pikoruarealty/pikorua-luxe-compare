@@ -7,7 +7,7 @@ export function ExpertVerdict({ properties }: { properties: Property[] }) {
   return (
     <Section
       id="verdict"
-      eyebrow="07 · Pikorua Expert Verdict"
+      eyebrow="07 · PropCompare Expert Verdict"
       title="A private-client perspective"
       description="Considered guidance from our luxury advisory desk."
     >
@@ -47,7 +47,7 @@ export function ExpertVerdict({ properties }: { properties: Property[] }) {
                   className="tracking-luxury text-champagne"
                   style={{ fontSize: "var(--step--2)" }}
                 >
-                  Pikorua · Private Advisory
+                  PropCompare · Private Advisory
                 </p>
               </div>
             </div>

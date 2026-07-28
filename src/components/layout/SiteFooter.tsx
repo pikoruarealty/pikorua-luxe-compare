@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, MessageCircle } from "lucide-react";
 
 const WHATSAPP_NUMBER = "916354359222";
-const WHATSAPP_MESSAGE = "Hi PIKORUA, I'd like to know more about your luxury residences.";
+const WHATSAPP_MESSAGE = "Hi PropCompare, I'd like to know more about your luxury residences.";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
 export function SiteFooter() {
@@ -20,12 +20,12 @@ export function SiteFooter() {
                 <span className="font-display text-base gold-text">P</span>
               </span>
               <div className="leading-tight">
-                <p className="font-display text-xl leading-none text-ivory">PIKORUA</p>
+                <p className="font-display text-xl leading-none text-ivory">PropCompare</p>
                 <p
                   className="font-label tracking-luxury mt-1 text-champagne"
                   style={{ fontSize: "var(--step--2)" }}
                 >
-                  Property Consultant
+                  Compare. Decide.
                 </p>
               </div>
             </Link>
@@ -33,7 +33,7 @@ export function SiteFooter() {
               className="mt-5 max-w-sm leading-relaxed text-muted-foreground"
               style={{ fontSize: "var(--step--1)" }}
             >
-              An editorial suite for comparing ultra-luxury residences. Curated by Pikorua's
+              An editorial suite for comparing ultra-luxury residences. Curated by PropCompare's
               private-client advisory to help you decide with clarity.
             </p>
           </div>
@@ -107,7 +107,7 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--rule)] pt-6 sm:flex-row">
           <p className="text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
-            © {new Date().getFullYear()} Pikorua Realty. All rights reserved.
+            © {new Date().getFullYear()} PropCompare Realty. All rights reserved.
           </p>
           <p
             className="font-label tracking-luxury text-muted-foreground"

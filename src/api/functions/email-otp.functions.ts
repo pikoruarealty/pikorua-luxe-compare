@@ -55,7 +55,7 @@ function escapeHtml(value: string): string {
 function emailBody(code: string) {
   const spaced = code.split("").join(" ");
   return {
-    text: `Your Pikorua verification code is ${code}. It expires in 10 minutes. If you didn't request this, you can ignore this email.`,
+    text: `Your PropCompare verification code is ${code}. It expires in 10 minutes. If you didn't request this, you can ignore this email.`,
     html: `<!doctype html>
 <html>
   <body style="margin:0;padding:0;background:#f4f5f7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -63,7 +63,7 @@ function emailBody(code: string) {
       <tr><td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e6e7ea;">
           <tr><td style="padding:32px 32px 8px;">
-            <p style="margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#ab853c;font-weight:700;">Pikorua</p>
+            <p style="margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#ab853c;font-weight:700;">PropCompare</p>
             <h1 style="margin:14px 0 0;font-size:22px;line-height:1.3;color:#0f1114;font-weight:600;">Confirm your email</h1>
             <p style="margin:10px 0 0;font-size:14px;line-height:1.6;color:#5c6270;">Enter this code to finish creating your account.</p>
           </td></tr>
@@ -74,7 +74,7 @@ function emailBody(code: string) {
             <p style="margin:16px 0 0;font-size:12.5px;line-height:1.6;color:#8b909c;">This code expires in 10 minutes. If you didn't request it, you can safely ignore this email.</p>
           </td></tr>
           <tr><td style="padding:0 32px 30px;border-top:1px solid #eeeff1;">
-            <p style="margin:18px 0 0;font-size:11.5px;color:#a1a5ae;">Pikorua &middot; Luxury residence comparison</p>
+            <p style="margin:18px 0 0;font-size:11.5px;color:#a1a5ae;">PropCompare &middot; Compare. Decide. Confidently.</p>
           </td></tr>
         </table>
       </td></tr>
@@ -99,9 +99,9 @@ async function deliver(email: string, code: string): Promise<void> {
       accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { name: process.env.BREVO_SENDER_NAME || "Pikorua", email: senderEmail },
+      sender: { name: process.env.BREVO_SENDER_NAME || "PropCompare", email: senderEmail },
       to: [{ email }],
-      subject: `${code} is your Pikorua verification code`,
+      subject: `${code} is your PropCompare verification code`,
       htmlContent: html,
       textContent: text,
     }),

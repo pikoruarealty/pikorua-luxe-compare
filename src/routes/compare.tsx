@@ -29,12 +29,12 @@ export const Route = createFileRoute("/compare")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Comparison Suite — Pikorua" },
+      { title: "Comparison Suite — PropCompare" },
       {
         name: "description",
-        content: "Side-by-side comparison of luxury residences from the Pikorua collection.",
+        content: "Side-by-side comparison of luxury residences from the PropCompare collection.",
       },
-      { property: "og:title", content: "Comparison Suite — Pikorua" },
+      { property: "og:title", content: "Comparison Suite — PropCompare" },
       {
         property: "og:description",
         content: "Side-by-side comparison of luxury residences.",

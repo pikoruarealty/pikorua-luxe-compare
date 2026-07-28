@@ -79,7 +79,7 @@ export function PortalShell({
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="border-b border-(--rule) px-6 py-5">
-        <p className="font-display text-lg tracking-[0.16em] gold-text">PIKORUA</p>
+        <p className="font-display text-lg tracking-[0.02em] gold-text">PropCompare</p>
         <p className="mt-1 font-label text-[10px] tracking-luxury text-muted-foreground">
           {portalLabel}
         </p>
@@ -176,7 +176,7 @@ export function PortalShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
         <header className="glass sticky top-0 z-30 flex items-center justify-between px-4 py-3 lg:hidden">
-          <p className="font-display text-base tracking-[0.16em] gold-text">PIKORUA</p>
+          <p className="font-display text-base tracking-[0.02em] gold-text">PropCompare</p>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <button

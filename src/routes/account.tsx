@@ -29,10 +29,10 @@ import { updateProfile as updateProfileFn } from "@/api/functions/profile.functi
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "Your Account — PIKORUA" },
+      { title: "Your Account — PropCompare" },
       {
         name: "description",
-        content: "Manage your Pikorua profile and saved property preferences.",
+        content: "Manage your PropCompare profile and saved property preferences.",
       },
     ],
   }),

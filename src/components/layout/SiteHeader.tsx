@@ -8,7 +8,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useTheme } from "@/context/ThemeContext";
 
 const WHATSAPP_NUMBER = "916354359222"; // country code + number, no + or spaces
-const WHATSAPP_MESSAGE = "Hi PIKORUA, I'd like to know more about your luxury residences.";
+const WHATSAPP_MESSAGE = "Hi PropCompare, I'd like to know more about your luxury residences.";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
 const NAV_LINKS = [
@@ -100,12 +100,12 @@ export function SiteHeader() {
             <span className="font-display text-sm gold-text">P</span>
           </span>
           <div className="leading-tight">
-            <p className="font-display text-lg leading-none text-ivory">PIKORUA</p>
+            <p className="font-display text-lg leading-none text-ivory">PropCompare</p>
             <p
               className="font-label tracking-luxury mt-1 text-champagne"
               style={{ fontSize: "var(--step--2)" }}
             >
-              Property Consultant
+              Compare. Decide.
             </p>
           </div>
         </Link>

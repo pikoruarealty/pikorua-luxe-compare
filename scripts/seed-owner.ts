@@ -76,7 +76,7 @@ async function main() {
       id: userId,
       role: "owner",
       email,
-      full_name: "Pikorua Owner",
+      full_name: "PropCompare Owner",
       is_active: true,
     },
     { onConflict: "id" },

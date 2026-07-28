@@ -114,7 +114,7 @@ const PHONE_NUMBER = "+916354359222";
 export const Route = createFileRoute("/residence/$id")({
   head: () => ({
     meta: [
-      { title: "Residence — Pikorua" },
+      { title: "Residence — PropCompare" },
       {
         name: "description",
         content:
@@ -198,7 +198,7 @@ function ResidenceContent({ property }: { property: Property }) {
   };
 
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    `Hi PIKORUA, I'd like to know more about ${property.name} (${property.location}).`,
+    `Hi PropCompare, I'd like to know more about ${property.name} (${property.location}).`,
   )}`;
 
   const others = properties.filter((p) => p.id !== property.id).slice(0, 3);
@@ -501,7 +501,7 @@ function ResidenceContent({ property }: { property: Property }) {
               >
                 <div className="flex items-center justify-between">
                   <span className="tracking-luxury text-xs font-semibold uppercase text-champagne">
-                    Pikorua Advisory Perspective
+                    PropCompare Advisory Perspective
                   </span>
                   <Quote className="h-6 w-6 text-champagne/40" />
                 </div>
@@ -643,7 +643,7 @@ function ResidenceContent({ property }: { property: Property }) {
             {selectedFlag ? "In Suite" : "Compare"}
           </button>
           <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi PIKORUA, I would like to inquire about ${property.name} (${property.location}).`)}`}
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi PropCompare, I would like to inquire about ${property.name} (${property.location}).`)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex h-10 items-center gap-1.5 rounded-full bg-champagne px-4 text-xs font-bold uppercase text-lux-black shadow-md"

@@ -29,7 +29,7 @@ export function ShareCompareButton({ properties, className = "" }: Props) {
   const names = properties.map((p) => p.name);
   const label = names.join(" vs ");
   const url = buildShareUrl(properties);
-  const message = `Take a look at this comparison on Pikorua — ${label}:\n${url}`;
+  const message = `Take a look at this comparison on PropCompare — ${label}:\n${url}`;
 
   const copy = async () => {
     try {
@@ -44,7 +44,7 @@ export function ShareCompareButton({ properties, className = "" }: Props) {
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   const mailUrl = `mailto:?subject=${encodeURIComponent(
-    `Pikorua comparison — ${label}`,
+    `PropCompare comparison — ${label}`,
   )}&body=${encodeURIComponent(message)}`;
 
   // The OS share sheet is the best option where it exists (mobile), so offer
@@ -52,7 +52,7 @@ export function ShareCompareButton({ properties, className = "" }: Props) {
   const nativeShare = async () => {
     if (typeof navigator === "undefined" || typeof navigator.share !== "function") return false;
     try {
-      await navigator.share({ title: `Pikorua comparison — ${label}`, text: label, url });
+      await navigator.share({ title: `PropCompare comparison — ${label}`, text: label, url });
       return true;
     } catch {
       // User dismissed the sheet — fall through to the popover options.

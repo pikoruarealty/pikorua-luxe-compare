@@ -21,7 +21,7 @@ async function throttledFetch(url: string): Promise<Response> {
   if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
   lastCallAt = Date.now();
   return fetch(url, {
-    headers: { "User-Agent": "PikoruaLuxuryCompare/1.0 (distance-estimate feature)" },
+    headers: { "User-Agent": "PropCompare/1.0 (distance-estimate feature)" },
   });
 }
 

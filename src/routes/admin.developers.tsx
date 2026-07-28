@@ -45,7 +45,7 @@ function randomPassword(): string {
   const words = ["Ridge", "Harbor", "Cobalt", "Amber", "Delta", "Marble", "Terra", "Onyx"];
   const w = words[Math.floor(Math.random() * words.length)];
   const n = Math.floor(1000 + Math.random() * 9000);
-  return `Pikorua-${w}${n}!`;
+  return `PropCompare-${w}${n}!`;
 }
 
 function AdminDevelopers() {
@@ -75,7 +75,7 @@ function AdminDevelopers() {
       { label: "Pending submissions", value: (d) => d.pendingSubmissions },
       { label: "Status", value: (d) => (d.isActive ? "Active" : "Disabled") },
     ]);
-    downloadCsv(`pikorua-developers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`propcompare-developers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
   const toggleMutation = useMutation({

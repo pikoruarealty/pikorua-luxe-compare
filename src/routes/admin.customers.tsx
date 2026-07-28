@@ -115,7 +115,7 @@ function AdminCustomers() {
       { label: "Interactions", value: (c) => c.activityCount },
       { label: "Joined", value: (c) => fmtDate(c.createdAt) },
     ]);
-    downloadCsv(`pikorua-customers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`propcompare-customers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
   return (

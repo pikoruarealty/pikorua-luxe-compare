@@ -111,7 +111,7 @@ function AdminProperties() {
       { label: "Total units", value: (p) => p.totalUnits },
       { label: "Published", value: (p) => (p.isPublished ? "Live" : "Hidden") },
     ]);
-    downloadCsv(`pikorua-properties-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`propcompare-properties-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
   const isBusy = (id: string) => publishMutation.isPending && publishMutation.variables?.id === id;

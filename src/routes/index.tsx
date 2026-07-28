@@ -34,16 +34,16 @@ import type { Property } from "@/types/property";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pikorua — Luxury Residences" },
+      { title: "PropCompare — Compare. Decide. Confidently." },
       {
         name: "description",
         content:
-          "Compose a side-by-side comparison of ultra-luxury residences with Pikorua's curated comparison suite.",
+          "Compare ultra-luxury residences side by side and decide with clarity — configurations, pricing, RERA and possession, all in one view.",
       },
-      { property: "og:title", content: "Pikorua — Luxury Residences" },
+      { property: "og:title", content: "PropCompare — Compare. Decide. Confidently." },
       {
         property: "og:description",
-        content: "Compare ultra-luxury residences side by side.",
+        content: "Compare ultra-luxury residences side by side and decide with clarity.",
       },
     ],
   }),

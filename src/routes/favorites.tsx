@@ -13,10 +13,10 @@ import { useState } from "react";
 export const Route = createFileRoute("/favorites")({
   head: () => ({
     meta: [
-      { title: "Saved Residences — Pikorua" },
+      { title: "Saved Residences — PropCompare" },
       {
         name: "description",
-        content: "Your curated collection of saved luxury residences on Pikorua.",
+        content: "Your curated collection of saved luxury residences on PropCompare.",
       },
     ],
   }),

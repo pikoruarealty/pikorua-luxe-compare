@@ -385,7 +385,7 @@ export function AuthFlow() {
         {screen === "choice" && (
           <Pane key="choice">
             <h2 className="font-display text-foreground" style={{ fontSize: "var(--step-2)" }}>
-              Welcome to Pikorua
+              Welcome to PropCompare
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Sign in to pick up where you left off, or create an account to start comparing.
@@ -516,7 +516,7 @@ export function AuthFlow() {
               Create your account
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              A private profile, just for your Pikorua experience.
+              A private profile, just for your PropCompare experience.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -577,7 +577,7 @@ export function AuthFlow() {
                   Now verify your number
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Email confirmed. Every Pikorua account is secured with a verified phone number.
+                  Email confirmed. Every PropCompare account is secured with a verified phone number.
                 </p>
                 <div className="mt-8">
                   <PhoneField
@@ -860,7 +860,9 @@ function PhoneField({
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
           placeholder="98765 43210"
-          className="h-12 flex-1 rounded-card border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
+          // Placeholder is deliberately far lighter than --muted-foreground:
+          // at full strength it reads as an already-entered number.
+          className="h-12 flex-1 rounded-card border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground/45 outline-none focus:border-champagne/60"
         />
       </div>
     </>
@@ -901,7 +903,7 @@ function FieldInput({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
         placeholder={placeholder}
-        className="h-12 w-full rounded-card border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-champagne/60"
+        className="h-12 w-full rounded-card border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground/45 outline-none focus:border-champagne/60"
       />
     </div>
   );

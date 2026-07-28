@@ -70,7 +70,7 @@ function AdminLogin() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="font-display text-2xl tracking-[0.2em] gold-text">PIKORUA</p>
+          <p className="font-display text-2xl tracking-[0.02em] gold-text">PropCompare</p>
           <div className="mt-3 flex items-center justify-center gap-2.5">
             <span className="h-px w-6 bg-(--rule-strong)" />
             <p className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">

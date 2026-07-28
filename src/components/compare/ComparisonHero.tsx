@@ -65,7 +65,7 @@ export function ComparisonHero({ properties }: ComparisonHeroProps) {
           className="mx-auto mt-7 max-w-xl font-medium leading-relaxed text-muted-foreground sm:mt-10"
           style={{ fontSize: "var(--step-0)" }}
         >
-          A side-by-side study of design, scale and quiet privilege — curated by Pikorua's
+          A side-by-side study of design, scale and quiet privilege — curated by PropCompare's
           private-client advisory.
         </motion.p>
       </div>

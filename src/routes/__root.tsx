@@ -78,13 +78,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PIKORUA — Luxury Property Consultant" },
+      { title: "PropCompare — Compare. Decide. Confidently." },
       {
         name: "description",
         content:
-          "Compare ultra-luxury residences side by side. Curated by Pikorua's private-client advisory.",
+          "Compare ultra-luxury residences side by side and decide with clarity — configurations, pricing, RERA and possession, all in one view.",
       },
-      { property: "og:title", content: "PIKORUA — Luxury Property Consultant" },
+      { property: "og:title", content: "PropCompare — Compare. Decide. Confidently." },
       {
         property: "og:description",
         content: "Compare ultra-luxury residences side by side.",
