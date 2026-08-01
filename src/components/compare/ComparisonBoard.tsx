@@ -61,8 +61,17 @@ export function ComparisonBoard({
   const noMatches = Boolean(quizAnswers) && filtered.length === 0;
   const pickable = filtered.length > 0 ? filtered : allProperties;
   const visibleConfigKeys = useMemo<ConfigKey[]>(() => {
+    // A configuration none of the compared properties offers is a screenful of
+    // "Not available" that tells the visitor nothing — drop it either way.
+    const offered = (k: ConfigKey) => items.some((p) => (p.configurations[k]?.length ?? 0) > 0);
+
     const allowed = allowedConfigKeys(quizAnswers);
-    if (allowed.length === 0 || noMatches) return CONFIG_KEYS;
+    if (allowed.length === 0 || noMatches) {
+      const present = CONFIG_KEYS.filter(offered);
+      // Nothing at all to show (empty suite) — fall back to the full set so the
+      // table still has its section scaffolding.
+      return present.length > 0 ? present : CONFIG_KEYS;
+    }
     const set = new Set<ConfigKey>(allowed);
     const budget = parseBudget(quizAnswers?.budgetSub || quizAnswers?.budgetRange);
     for (const p of items) {
@@ -83,7 +92,9 @@ export function ComparisonBoard({
         if (anyVariantFits) set.add(k);
       }
     }
-    return CONFIG_KEYS.filter((k) => set.has(k));
+    // A quiz-preferred configuration still gets dropped when nobody offers it.
+    const visible = CONFIG_KEYS.filter((k) => set.has(k) && offered(k));
+    return visible.length > 0 ? visible : CONFIG_KEYS.filter((k) => set.has(k));
   }, [quizAnswers, noMatches, items]);
 
   const slotBudgetStatus = useMemo<Record<string, "in" | "near" | "far">>(() => {

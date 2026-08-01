@@ -11,9 +11,15 @@ export function variantLabel(v: ConfigDetail, idx: number): string {
   return v.type ?? `Type ${String.fromCharCode(65 + idx)}`;
 }
 
-/** Just the distinguishing part — "Type 2" → "2" — for the narrow strips. */
+/** Just the distinguishing part, for the narrow strips. Brochure labels are
+ *  rarely as tidy as "Type A" — a plan book prints "TYPE - 4 SUB UNIT TYPE - 4.2",
+ *  where the trailing number is the only thing that tells variants apart.
+ *  Taking the first two characters of that left every strip reading "- ". */
 function shortLabel(label: string): string {
-  return label.replace(/^type\s*/i, "").slice(0, 2) || "?";
+  const numbers = label.match(/\d+(?:\.\d+)*/g);
+  if (numbers?.length) return numbers[numbers.length - 1].slice(0, 4);
+  const cleaned = label.replace(/^type\b/i, "").replace(/^[\s\-–—:.]+/, "");
+  return (cleaned || label).slice(0, 2) || "?";
 }
 
 /** Collapsed strips and the bands beneath them share this width and gap so the

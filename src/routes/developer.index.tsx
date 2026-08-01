@@ -134,7 +134,21 @@ function DeveloperDashboard() {
                         </p>
                       )}
                     </div>
-                    <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
+                      {/* Only while it's still pending — once reviewed, the
+                          submission is a record of what was decided. */}
+                      {s.status === "pending" && (
+                        <Link
+                          to="/developer/submissions/$id"
+                          params={{ id: s.id }}
+                          title="Edit this submission"
+                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { BrochureEnrichPanel } from "@/components/developer/BrochureEnrichPanel";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PropertyForm } from "@/components/admin/PropertyForm";
@@ -17,6 +19,8 @@ function EditProperty() {
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [enriched, setEnriched] = useState<PropertyFormValues | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   const {
     data: property,
@@ -55,12 +59,26 @@ function EditProperty() {
       {error && <p className="text-sm text-red-500">{(error as Error).message}</p>}
 
       {property && (
-        <PropertyForm
-          defaultValues={property}
-          submitLabel="Save changes"
-          submitting={mutation.isPending}
-          onSubmit={(values) => mutation.mutate(values)}
-        />
+        <>
+          <div className="mb-6">
+            <BrochureEnrichPanel
+              current={enriched ?? property}
+              onApply={(merged) => {
+                setEnriched(merged);
+                // PropertyForm owns its react-hook-form state, so remount it to
+                // pick up the merged values as fresh defaults.
+                setFormKey((k) => k + 1);
+              }}
+            />
+          </div>
+          <PropertyForm
+            key={formKey}
+            defaultValues={enriched ?? property}
+            submitLabel="Save changes"
+            submitting={mutation.isPending}
+            onSubmit={(values) => mutation.mutate(values)}
+          />
+        </>
       )}
     </AdminLayout>
   );

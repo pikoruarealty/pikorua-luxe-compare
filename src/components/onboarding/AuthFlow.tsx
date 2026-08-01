@@ -22,6 +22,8 @@ import {
   completeLogin,
 } from "@/api/functions/profile.functions";
 import { OtpBoxes } from "@/components/onboarding/OtpBoxes";
+import { GoogleSignInButton } from "@/components/onboarding/GoogleSignInButton";
+import type { GoogleIdentity } from "@/api/functions/google-auth.functions";
 
 /** choice → (login: identity → otp) | (signup: details → email-otp → phone → profession) */
 type Screen =
@@ -208,6 +210,40 @@ export function AuthFlow() {
       setError(errText(e, "That code didn't match. Try again."));
       setShake((s) => s + 1);
       setOtpReset((k) => k + 1);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Google has already proven the address, so its token stands in for the
+   *  email OTP. On the sign-in path we go straight to the account; on sign-up
+   *  we skip the email step and land on phone verification, which stays
+   *  compulsory — the phone is what makes an account unique. */
+  const handleGoogle = async (identity: GoogleIdentity) => {
+    setEmail(identity.email);
+    setEmailToken(identity.emailToken);
+    if (identity.name && !name.trim()) setName(identity.name);
+
+    if (screen === "signup-details") {
+      go("signup-phone");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    try {
+      const saved = await completeLoginFn({ data: { emailToken: identity.emailToken } });
+      landAfterAuth(saved);
+    } catch (e) {
+      const message = errText(e, "Couldn't sign you in.");
+      // No account yet — Google proved the email, so carry that into sign-up
+      // rather than making them start over.
+      if (/No account found/i.test(message)) {
+        setError("No account with that Google email yet — let's create one.");
+        go("signup-phone");
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -483,6 +519,8 @@ export function AuthFlow() {
               <GoldButton onClick={startLogin} loading={busy}>
                 Send code
               </GoldButton>
+              <OrDivider />
+              <GoogleSignInButton onIdentity={handleGoogle} onError={setError} />
             </div>
           </Pane>
         )}
@@ -541,6 +579,14 @@ export function AuthFlow() {
                 style={{ fontSize: "var(--step--2)" }}
               >
                 We'll email you a 6-digit code.
+              </p>
+              <OrDivider />
+              <GoogleSignInButton onIdentity={handleGoogle} onError={setError} />
+              <p
+                className="mt-3 text-center text-muted-foreground"
+                style={{ fontSize: "var(--step--2)" }}
+              >
+                Google confirms your email — you'll still verify your phone.
               </p>
             </div>
           </Pane>
@@ -866,6 +912,21 @@ function PhoneField({
         />
       </div>
     </>
+  );
+}
+
+function OrDivider() {
+  return (
+    <div className="my-5 flex items-center gap-3">
+      <span className="h-px flex-1 bg-border" />
+      <span
+        className="tracking-luxury text-muted-foreground"
+        style={{ fontSize: "var(--step--2)" }}
+      >
+        or
+      </span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
   );
 }
 

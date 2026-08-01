@@ -20,6 +20,57 @@ import { ImageSlotInput } from "./ImageSlotInput";
 
 type BucketKey = (typeof CONFIG_BUCKETS)[number]["key"];
 
+/** Every plain text field on the form. A blank one can't just be skipped past —
+ *  it has to be filled in or explicitly marked "not applicable", so a submission
+ *  reflects a decision about each detail rather than an unread form. */
+const TRACKED_FIELDS = [
+  "name",
+  "developer",
+  "category",
+  "status",
+  "possession",
+  "possessionAsOf",
+  "location",
+  "city",
+  "state",
+  "tagline",
+  "expertNote",
+  "plotSize",
+  "availableBhkTypes",
+  "totalTowers",
+  "totalFloors",
+  "unitsPerFloor",
+  "totalUnits",
+  "reraId",
+  "reraUrl",
+  "proposedStartDateRera",
+  "parkingLevels",
+  "podiumStructure",
+  "liftsPerTower",
+  "openSpace",
+  "geyserHeatPumpProvided",
+  "vrvAcProvided",
+  "windowGlazing",
+  "bathSanitaryFittings",
+  "flooringType",
+  "unitsPerAcre",
+  "constructionQuality",
+  "internalCeilingHeight",
+  "clubhouseSize",
+  "developerExperienceYears",
+  "totalDeliveredProjects",
+  "ongoingProjects",
+  "developerBackground",
+  // Only rendered for Plots / Bungalow — excluded below when hidden, since a
+  // field nobody can see must never be the thing blocking a submit.
+  "plotSuperArea",
+  "plotCarpetArea",
+] as const;
+
+const PLOT_ONLY_FIELDS = ["plotSuperArea", "plotCarpetArea"] as const;
+
+type TrackedField = (typeof TRACKED_FIELDS)[number];
+
 export function PropertyForm({
   defaultValues,
   submitLabel,
@@ -46,16 +97,90 @@ export function PropertyForm({
   const isPlot = category === "Plots" || category === "Bungalow";
   const [activeBucket, setActiveBucket] = useState<BucketKey>("bhk4");
 
+  const [naFields, setNaFields] = useState<Record<string, boolean>>({});
+  const [naError, setNaError] = useState(0);
+  const allValues = watch();
+
+  const isBlank = (field: TrackedField) =>
+    !String((allValues as Record<string, unknown>)[field] ?? "").trim();
+  const unhandled = TRACKED_FIELDS.filter((f) => {
+    if (!isPlot && (PLOT_ONLY_FIELDS as readonly string[]).includes(f)) return false;
+    return isBlank(f) && !naFields[f];
+  });
+
+  /** Wraps Field with the "not applicable" affordance. The toggle only appears
+   *  once a field is actually blank — there is nothing to mark N/A about a
+   *  field that already has a value. */
+  const NaField = ({
+    name,
+    label,
+    error,
+    hint,
+    children,
+  }: {
+    name: TrackedField;
+    label: string;
+    error?: string;
+    hint?: string;
+    children: React.ReactNode;
+  }) => {
+    const blank = isBlank(name);
+    const marked = Boolean(naFields[name]);
+    const missed = naError > 0 && blank && !marked;
+    return (
+      <div
+        data-na-field={name}
+        className={missed ? "rounded-lg ring-2 ring-red-500/60 ring-offset-2 ring-offset-background" : ""}
+      >
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
+            {label}
+          </span>
+          {blank && (
+            <label className="flex cursor-pointer items-center gap-1 text-[10px] font-medium text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={marked}
+                onChange={(e) => setNaFields((s) => ({ ...s, [name]: e.target.checked }))}
+                className="h-3 w-3"
+              />
+              N/A
+            </label>
+          )}
+        </div>
+        {children}
+        {hint && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
+        {error && <span className="mt-1 block text-xs text-red-600 dark:text-red-400">{error}</span>}
+        {missed && (
+          <span className="mt-1 block text-xs text-red-600 dark:text-red-400">
+            Fill this in, or tick N/A.
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const submit = handleSubmit((values) => {
+    if (unhandled.length > 0) {
+      setNaError((n) => n + 1);
+      document
+        .querySelector(`[data-na-field="${unhandled[0]}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    onSubmit(values);
+  });
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl space-y-10 pb-16">
+    <form onSubmit={submit} className="max-w-4xl space-y-10 pb-16">
       <Section title="Basics">
         <Grid>
-          <Field label="Property name" error={formState.errors.name?.message}>
+          <NaField name="name" label="Property name" error={formState.errors.name?.message}>
             <Input {...register("name")} placeholder="e.g. Ikebana" />
-          </Field>
-          <Field label="Developer">
+          </NaField>
+          <NaField name="developer" label="Developer">
             <Input {...register("developer")} placeholder="e.g. Gala" />
-          </Field>
+          </NaField>
           <Field label="Category">
             <Select {...register("category")}>
               <option value="Apartment">Apartment</option>
@@ -63,31 +188,31 @@ export function PropertyForm({
               <option value="Plots">Plots</option>
             </Select>
           </Field>
-          <Field label="Status">
+          <NaField name="status" label="Status">
             <Input {...register("status")} placeholder="e.g. Near Possession" />
-          </Field>
-          <Field label="Possession">
+          </NaField>
+          <NaField name="possession" label="Possession">
             <Input {...register("possession")} placeholder="e.g. 9 Months or RTMI" />
-          </Field>
-          <Field label="Possession confirmed as of">
+          </NaField>
+          <NaField name="possessionAsOf" label="Possession confirmed as of">
             <Input type="date" {...register("possessionAsOf")} />
-          </Field>
-          <Field label="Location">
+          </NaField>
+          <NaField name="location" label="Location">
             <Input {...register("location")} placeholder="e.g. Sindhu Bhavan Road" />
-          </Field>
-          <Field label="City">
+          </NaField>
+          <NaField name="city" label="City">
             <Input {...register("city")} placeholder="Ahmedabad" />
-          </Field>
-          <Field label="State">
+          </NaField>
+          <NaField name="state" label="State">
             <Input {...register("state")} placeholder="Gujarat" />
-          </Field>
+          </NaField>
         </Grid>
-        <Field label="Tagline">
+        <NaField name="tagline" label="Tagline">
           <Input {...register("tagline")} placeholder="Shown under the property name" />
-        </Field>
-        <Field label="Expert note">
+        </NaField>
+        <NaField name="expertNote" label="Expert note">
           <Textarea {...register("expertNote")} rows={3} />
-        </Field>
+        </NaField>
         {!hidePublishToggle && (
           <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" {...register("isPublished")} className="h-4 w-4" />
@@ -102,115 +227,115 @@ export function PropertyForm({
           hint="Used instead of per-configuration areas for Bungalow and Plots."
         >
           <Grid>
-            <Field label="Plot area (sq ft)">
+            <NaField name="plotSuperArea" label="Plot area (sq ft)">
               <Input {...register("plotSuperArea")} placeholder="e.g. 12000" />
-            </Field>
-            <Field label="Built-up area (sq ft)">
+            </NaField>
+            <NaField name="plotCarpetArea" label="Built-up area (sq ft)">
               <Input {...register("plotCarpetArea")} placeholder="e.g. 8000" />
-            </Field>
+            </NaField>
           </Grid>
         </Section>
       )}
 
       <Section title="Project Structure">
         <Grid>
-          <Field label="Plot size">
+          <NaField name="plotSize" label="Plot size">
             <Input {...register("plotSize")} placeholder="e.g. 5400 sq ft" />
-          </Field>
-          <Field label="Available BHK types">
+          </NaField>
+          <NaField name="availableBhkTypes" label="Available BHK types">
             <Input {...register("availableBhkTypes")} placeholder="e.g. 4, 5, 6 BHK" />
-          </Field>
-          <Field label="Total towers">
+          </NaField>
+          <NaField name="totalTowers" label="Total towers">
             <Input {...register("totalTowers")} placeholder="e.g. 3" />
-          </Field>
-          <Field label="Total floors">
+          </NaField>
+          <NaField name="totalFloors" label="Total floors">
             <Input {...register("totalFloors")} placeholder="e.g. 24" />
-          </Field>
-          <Field label="Units per floor">
+          </NaField>
+          <NaField name="unitsPerFloor" label="Units per floor">
             <Input {...register("unitsPerFloor")} placeholder="e.g. 4" />
-          </Field>
-          <Field label="Total units">
+          </NaField>
+          <NaField name="totalUnits" label="Total units">
             <Input {...register("totalUnits")} placeholder="e.g. 96" />
-          </Field>
+          </NaField>
         </Grid>
       </Section>
 
       <Section title="RERA & Approvals">
         <Grid>
-          <Field label="RERA ID">
+          <NaField name="reraId" label="RERA ID">
             <Input {...register("reraId")} placeholder="e.g. PR/GJ/AHMEDABAD/..." />
-          </Field>
-          <Field label="RERA link">
+          </NaField>
+          <NaField name="reraUrl" label="RERA link">
             <Input {...register("reraUrl")} placeholder="https://gujrera.gujarat.gov.in/..." />
-          </Field>
-          <Field label="Proposed start date (RERA)">
+          </NaField>
+          <NaField name="proposedStartDateRera" label="Proposed start date (RERA)">
             <Input {...register("proposedStartDateRera")} placeholder="e.g. Jan 2025" />
-          </Field>
+          </NaField>
         </Grid>
       </Section>
 
       <Section title="Construction & Amenities">
         <Grid>
-          <Field label="Parking levels">
+          <NaField name="parkingLevels" label="Parking levels">
             <Input {...register("parkingLevels")} placeholder="e.g. 2" />
-          </Field>
-          <Field label="Podium structure">
+          </NaField>
+          <NaField name="podiumStructure" label="Podium structure">
             <Input {...register("podiumStructure")} placeholder="e.g. 2-Level Podium" />
-          </Field>
-          <Field label="Lifts per tower">
+          </NaField>
+          <NaField name="liftsPerTower" label="Lifts per tower">
             <Input {...register("liftsPerTower")} placeholder="e.g. 3" />
-          </Field>
-          <Field label="Open space">
+          </NaField>
+          <NaField name="openSpace" label="Open space">
             <Input {...register("openSpace")} placeholder="e.g. 70% Open Area" />
-          </Field>
-          <Field label="Geyser / heat pump provided">
+          </NaField>
+          <NaField name="geyserHeatPumpProvided" label="Geyser / heat pump provided">
             <Input
               {...register("geyserHeatPumpProvided")}
               placeholder="e.g. Yes – instant geyser"
             />
-          </Field>
-          <Field label="VRV / AC provided">
+          </NaField>
+          <NaField name="vrvAcProvided" label="VRV / AC provided">
             <Input {...register("vrvAcProvided")} placeholder="e.g. Yes, all bedrooms" />
-          </Field>
-          <Field label="Window glasses">
+          </NaField>
+          <NaField name="windowGlazing" label="Window glasses">
             <Input {...register("windowGlazing")} placeholder="e.g. Double-glazed soundproof" />
-          </Field>
-          <Field label="Bath & sanitary fittings">
+          </NaField>
+          <NaField name="bathSanitaryFittings" label="Bath & sanitary fittings">
             <Input {...register("bathSanitaryFittings")} placeholder="e.g. Kohler, Jaguar" />
-          </Field>
-          <Field label="Flooring">
+          </NaField>
+          <NaField name="flooringType" label="Flooring">
             <Input {...register("flooringType")} placeholder="e.g. Italian marble" />
-          </Field>
-          <Field label="Density (units per acre)">
+          </NaField>
+          <NaField name="unitsPerAcre" label="Density (units per acre)">
             <Input {...register("unitsPerAcre")} placeholder="e.g. 18" />
-          </Field>
-          <Field label="Construction quality">
+          </NaField>
+          <NaField name="constructionQuality" label="Construction quality">
             <Input {...register("constructionQuality")} placeholder="e.g. RCC framed structure" />
-          </Field>
-          <Field label="Internal ceiling height">
+          </NaField>
+          <NaField name="internalCeilingHeight" label="Internal ceiling height">
             <Input {...register("internalCeilingHeight")} placeholder="e.g. 10 ft" />
-          </Field>
-          <Field label="Clubhouse size">
+          </NaField>
+          <NaField name="clubhouseSize" label="Clubhouse size">
             <Input {...register("clubhouseSize")} placeholder="e.g. 15,000 sq ft" />
-          </Field>
+          </NaField>
         </Grid>
       </Section>
 
       <Section title="Developer">
         <Grid>
-          <Field label="Experience (years)">
+          <NaField name="developerExperienceYears" label="Experience (years)">
             <Input {...register("developerExperienceYears")} placeholder="e.g. 25" />
-          </Field>
-          <Field label="Total delivered projects">
+          </NaField>
+          <NaField name="totalDeliveredProjects" label="Total delivered projects">
             <Input {...register("totalDeliveredProjects")} placeholder="e.g. 40" />
-          </Field>
-          <Field label="Ongoing projects">
+          </NaField>
+          <NaField name="ongoingProjects" label="Ongoing projects">
             <Input {...register("ongoingProjects")} placeholder="e.g. 6" />
-          </Field>
+          </NaField>
         </Grid>
-        <Field label="Background">
+        <NaField name="developerBackground" label="Background">
           <Textarea {...register("developerBackground")} rows={3} />
-        </Field>
+        </NaField>
         <Field label="Notable delivered projects">
           <StringListEditor
             items={watch("notableDeliveredProjects") ?? []}
@@ -300,7 +425,7 @@ export function PropertyForm({
         />
       </Section>
 
-      <div className="sticky bottom-0 z-10 flex gap-3 border-t border-(--rule) bg-background/90 py-4 backdrop-blur">
+      <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-3 border-t border-(--rule) bg-background/90 py-4 backdrop-blur">
         <button
           type="submit"
           disabled={submitting}
@@ -308,6 +433,14 @@ export function PropertyForm({
         >
           {submitting ? "Saving…" : submitLabel}
         </button>
+        {unhandled.length > 0 && (
+          <span
+            className={`text-xs ${naError > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+          >
+            {unhandled.length} field{unhandled.length > 1 ? "s" : ""} still blank — fill in or tick
+            N/A
+          </span>
+        )}
       </div>
     </form>
   );

@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, Loader2, Upload, X } from "lucide-react";
-import { extractFromBrochures } from "@/api/functions/brochure-extract.functions";
+import {
+  startBrochureExtraction,
+  getBrochureExtractionProgress,
+  getBrochureExtraction,
+} from "@/api/functions/brochure-extract.functions";
 import type { ExtractionResponse } from "@/lib/brochure-field-mapping";
 
 function fileToBase64(file: File): Promise<string> {
@@ -24,8 +28,21 @@ export function BrochureUploadStep({
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [extracting, setExtracting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState("");
-  const extractFn = useServerFn(extractFromBrochures);
+  const startFn = useServerFn(startBrochureExtraction);
+  const progressFn = useServerFn(getBrochureExtractionProgress);
+  const resultFn = useServerFn(getBrochureExtraction);
+
+  // Guards against a poll landing after the step unmounts (developer hit Back
+  // mid-extraction), which would otherwise setState on a dead component.
+  const cancelledRef = useRef(false);
+  useEffect(() => {
+    cancelledRef.current = false;
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
@@ -36,18 +53,49 @@ export function BrochureUploadStep({
   const extract = async () => {
     if (files.length === 0) return;
     setExtracting(true);
+    setProgress(null);
     setError("");
     try {
       const encoded = await Promise.all(
         files.map(async (f) => ({ fileName: f.name, fileBase64: await fileToBase64(f) })),
       );
-      const result = await extractFn({ data: { files: encoded } });
-      onExtracted(result);
+      const { jobId } = await startFn({ data: { files: encoded } });
+
+      // Extraction is a background job on the service — one LLM call per batch
+      // of pages, so a full brochure runs for minutes. Poll rather than hold a
+      // request open, which no serverless platform would allow anyway.
+      for (;;) {
+        if (cancelledRef.current) return;
+        await new Promise((r) => setTimeout(r, 3000));
+        if (cancelledRef.current) return;
+
+        const p = await progressFn({ data: { jobId } });
+        setProgress({ done: p.batchesDone, total: p.batchesTotal });
+
+        if (p.status === "done") break;
+        if (p.status === "error") throw new Error(p.error ?? "Extraction failed on the server.");
+        if (p.status === "cancelled" || p.status === "cancelling") {
+          throw new Error("Extraction was cancelled.");
+        }
+      }
+
+      const result = await resultFn({ data: { jobId } });
+      if (!cancelledRef.current) onExtracted(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Extraction failed. Try again.");
+      if (!cancelledRef.current) {
+        setError(err instanceof Error ? err.message : "Extraction failed. Try again.");
+      }
     } finally {
-      setExtracting(false);
+      if (!cancelledRef.current) {
+        setExtracting(false);
+        setProgress(null);
+      }
     }
+  };
+
+  const progressLabel = () => {
+    if (!progress || progress.total === 0) return "Reading your files…";
+    return `Extracting… page batch ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`;
   };
 
   return (
@@ -113,7 +161,7 @@ export function BrochureUploadStep({
           className="foil inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[11px] font-semibold tracking-luxury uppercase disabled:opacity-60"
         >
           {extracting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {extracting ? "Extracting… this can take a minute" : "Extract details"}
+          {extracting ? progressLabel() : "Extract details"}
         </button>
       </div>
     </div>

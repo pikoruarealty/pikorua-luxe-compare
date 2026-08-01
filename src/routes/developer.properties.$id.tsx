@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 import { DeveloperLayout } from "@/components/developer/DeveloperLayout";
 import { PropertyForm } from "@/components/admin/PropertyForm";
+import { BrochureEnrichPanel } from "@/components/developer/BrochureEnrichPanel";
 import {
   getMyPropertyForEdit,
   submitPropertyForReview,
@@ -17,6 +19,8 @@ export const Route = createFileRoute("/developer/properties/$id")({
 function EditDeveloperProperty() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const [enriched, setEnriched] = useState<PropertyFormValues | null>(null);
+  const [formKey, setFormKey] = useState(0);
   const { data, isPending, error } = useQuery({
     queryKey: ["developer", "property", id],
     queryFn: () => getMyPropertyForEdit({ data: { id } }),
@@ -41,8 +45,18 @@ function EditDeveloperProperty() {
           <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
             The live property stays exactly as it is until your admin approves these changes.
           </p>
+          <div className="mb-6">
+            <BrochureEnrichPanel
+              current={enriched ?? data}
+              onApply={(merged) => {
+                setEnriched(merged);
+                setFormKey((k) => k + 1);
+              }}
+            />
+          </div>
           <PropertyForm
-            defaultValues={data}
+            key={formKey}
+            defaultValues={enriched ?? data}
             submitLabel="Submit edit for review"
             hidePublishToggle
             submitting={submitMutation.isPending}

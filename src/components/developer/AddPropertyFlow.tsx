@@ -2,19 +2,16 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileText, PenLine } from "lucide-react";
+import { ArrowLeft, FileText, PenLine } from "lucide-react";
 import { PropertyForm } from "@/components/admin/PropertyForm";
 import { emptyPropertyForm, type PropertyFormValues } from "@/lib/property-schema";
 import { submitPropertyForReview } from "@/api/functions/developer-properties.functions";
 import { BrochureUploadStep } from "./BrochureUploadStep";
 import { ExtractedFieldsReview } from "./ExtractedFieldsReview";
-import {
-  extractedFieldList,
-  mapExtractedPayload,
-  type ExtractionResponse,
-} from "@/lib/brochure-field-mapping";
+import { BrochureImagePicker } from "./BrochureImagePicker";
+import { mapExtractedPayload, type ExtractionResponse } from "@/lib/brochure-field-mapping";
 
-type Step = "choose" | "upload" | "review" | "form";
+type Step = "choose" | "upload" | "review" | "images" | "form";
 
 /** New-property flow: manual entry or brochure OCR, both ending on the same
  *  form, both ending in a submission the owner has to approve before it's
@@ -86,27 +83,54 @@ export function AddPropertyFlow() {
     return (
       <ExtractedFieldsReview
         response={extraction}
-        fields={extractedFieldList(extraction)}
         onCancel={() => setStep("upload")}
-        onContinue={(partial) => {
+        onContinue={(partial, _approved, overrides) => {
           setFormDefaults({
             ...emptyPropertyForm(),
-            ...mapExtractedPayload(extraction.form_payload),
+            ...mapExtractedPayload(extraction.extraction, overrides),
             ...partial,
           });
+          setStep("images");
+        }}
+      />
+    );
+  }
+
+  if (step === "images" && extraction) {
+    return (
+      <BrochureImagePicker
+        response={extraction}
+        propertyName={formDefaults?.name ?? ""}
+        onCancel={() => setStep("review")}
+        onContinue={(images) => {
+          setFormDefaults((prev) => ({ ...(prev ?? emptyPropertyForm()), ...images }));
           setStep("form");
         }}
       />
     );
   }
 
+  // Whichever path got here, there has to be a way back out — otherwise a
+  // developer who picked the wrong option is stuck with a full blank form.
+  const backTo: Step = extraction ? "images" : "choose";
+
   return (
-    <PropertyForm
-      defaultValues={formDefaults}
-      submitLabel="Submit for review"
-      hidePublishToggle
-      submitting={submitMutation.isPending}
-      onSubmit={(values) => submitMutation.mutate(values)}
-    />
+    <div>
+      <button
+        type="button"
+        onClick={() => setStep(backTo)}
+        className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-(--rule-strong) px-4 py-2 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {extraction ? "Back to photos" : "Back"}
+      </button>
+      <PropertyForm
+        defaultValues={formDefaults}
+        submitLabel="Submit for review"
+        hidePublishToggle
+        submitting={submitMutation.isPending}
+        onSubmit={(values) => submitMutation.mutate(values)}
+      />
+    </div>
   );
 }

@@ -163,6 +163,54 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
     };
   });
 
+/** Developer-only: reopen one of their own still-pending submissions so it can
+ *  be corrected. Approved and rejected ones are history and stay read-only —
+ *  an approved submission's changes already live on the property itself. */
+export const getMyPendingSubmission = createServerFn({ method: "GET" })
+  .middleware([requireAdminAuth])
+  .inputValidator((data: { id: string }) => {
+    if (!data?.id) throw new Error("Missing submission id");
+    return { id: data.id };
+  })
+  .handler(async ({ data, context }): Promise<PropertyFormValues> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
+      .from("property_submissions")
+      .select("payload, status")
+      .eq("id", data.id)
+      .eq("developer_id", context.adminProfile.id)
+      .maybeSingle();
+    if (error || !row) throw new Error("Submission not found");
+    if (row.status !== "pending") {
+      throw new Error("Only submissions still awaiting review can be edited.");
+    }
+    return propertyFormSchema.parse(row.payload);
+  });
+
+/** Developer-only: replace the payload of a pending submission in place, so
+ *  correcting a mistake doesn't leave the owner with two near-identical
+ *  requests to review. */
+export const updateMyPendingSubmission = createServerFn({ method: "POST" })
+  .middleware([requireAdminAuth])
+  .inputValidator((data: { id: string; values: PropertyFormValues }) => {
+    if (!data?.id) throw new Error("Missing submission id");
+    return { id: data.id, values: propertyFormSchema.parse(data.values) };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: updated, error } = await supabaseAdmin
+      .from("property_submissions")
+      .update({ payload: data.values as never })
+      .eq("id", data.id)
+      .eq("developer_id", context.adminProfile.id)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("That submission is no longer editable — it has been reviewed.");
+    return { ok: true };
+  });
+
 /** Developer-only: creates a pending review request. Never writes to
  *  `properties` directly — an owner approval is what actually publishes a new
  *  property or applies an edit to a live one (see admin-submissions.functions.ts). */

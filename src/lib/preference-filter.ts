@@ -71,7 +71,11 @@ export function hasActiveFilters(answers: QuizAnswers | null | undefined): boole
 /** Does property satisfy quiz filters? Used to show only matching residences. */
 export function matchesPreferences(p: Property, answers: QuizAnswers | null | undefined): boolean {
   if (!answers) return true;
-  if (answers.city && p.city !== answers.city) return false;
+  // Case-folded: the catalog holds both "Ahmedabad" and "AHMEDABAD", and an
+  // exact match silently dropped every property spelled the other way.
+  const sameCity = (a: string | undefined, b: string | undefined) =>
+    (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
+  if (answers.city && !sameCity(p.city, answers.city)) return false;
   if (!categoryAllowed(p, answers)) return false;
 
   const wantedKeys = allowedConfigKeys(answers);
