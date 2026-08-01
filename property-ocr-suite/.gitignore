@@ -1,0 +1,15 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# runtime storage (uploaded PDFs, extracted images, saved jobs)
+backend/storage/
+
+# OS
+.DS_Store

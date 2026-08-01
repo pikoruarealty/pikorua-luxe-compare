@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Add Property — Brochure OCR Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <h1>Add property</h1>
+  </div>
+  <div class="topbar-right" id="statusPill"></div>
+</header>
+
+<div class="layout">
+
+  <!-- Section jump rail -->
+  <nav class="rail" id="rail"></nav>
+
+  <main class="content">
+
+    <!-- Upload / extraction panel -->
+    <section class="panel upload-panel" id="uploadPanel">
+      <div class="panel-head">
+        <h2>1. Upload brochure</h2>
+        <p class="panel-sub">PDF only — brochure, RERA certificate, price list, floor plan. Upload as many as you have for this property; we'll merge them into one record.</p>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="application/pdf" multiple hidden />
+        <div class="dropzone-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4M12 4L7 9M12 4l5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+          <p><strong>Click to choose files</strong> or drag PDFs here</p>
+          <span class="file-list" id="fileList">No files selected</span>
+        </div>
+      </div>
+      <div class="field-input-row">
+        <button class="btn btn-primary" id="extractBtn" disabled>Extract from brochure</button>
+        <button class="btn btn-ghost" type="button" id="skipBtn">No brochure — fill in manually</button>
+        <button class="btn btn-stop" type="button" id="stopExtractBtn" hidden>Stop</button>
+      </div>
+      <div class="progress-wrap" id="progressWrap" hidden>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel"></div>
+      </div>
+      <div class="warnings" id="warnings" hidden></div>
+    </section>
+
+    <!-- Form sections, rendered by app.js once extraction is available or on manual start -->
+    <form id="propertyForm" hidden>
+
+      <section class="panel" id="section-basics" data-section="Basics">
+        <div class="panel-head"><h2>Basics</h2></div>
+        <div class="field-grid" id="fields-basics"></div>
+      </section>
+
+      <section class="panel" id="section-structure" data-section="Project Structure">
+        <div class="panel-head"><h2>Project Structure</h2></div>
+        <div class="field-grid" id="fields-structure"></div>
+      </section>
+
+      <section class="panel" id="section-rera" data-section="RERA & Approvals">
+        <div class="panel-head"><h2>RERA &amp; Approvals</h2></div>
+        <div class="field-grid" id="fields-rera"></div>
+      </section>
+
+      <section class="panel" id="section-construction" data-section="Construction & Amenities">
+        <div class="panel-head"><h2>Construction &amp; Amenities</h2></div>
+        <div class="field-grid" id="fields-construction"></div>
+      </section>
+
+      <section class="panel" id="section-developer" data-section="Developer">
+        <div class="panel-head"><h2>Developer</h2></div>
+        <div class="field-grid" id="fields-developer"></div>
+        <div class="subblock">
+          <h3>Notable delivered projects</h3>
+          <div class="chip-list" id="notableProjects"></div>
+          <div class="add-row">
+            <input type="text" id="notableProjectInput" placeholder="e.g. Godrej Garden City" />
+            <button type="button" class="btn btn-ghost" id="addNotableProject">Add</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="section-configurations" data-section="Configurations">
+        <div class="panel-head">
+          <h2>Configurations</h2>
+          <p class="panel-sub">One card per distinct layout, with every room size read off the plan. Floor plans rarely repeat the BHK count, so where the brochure doesn't state it we count the bedrooms and mark it <em>(counted)</em> — check those before saving. Sizes are shown exactly as printed on the drawing.</p>
+        </div>
+        <div class="config-tabs" id="configTabs"></div>
+        <div id="configVariants"></div>
+        <button type="button" class="btn btn-ghost" id="addVariantBtn">+ Add variant</button>
+      </section>
+
+      <section class="panel" id="section-images" data-section="Images">
+        <div class="panel-head">
+          <h2>Images</h2>
+          <p class="panel-sub">Upload a file or paste an image URL. Candidates pulled from the brochure are shown below each slot — click one to use it.</p>
+        </div>
+        <div class="image-slots" id="imageSlots"></div>
+        <div class="subblock" id="imageCandidatesBlock">
+          <h3>Found in brochure <span class="muted-count" id="candidateCount"></span></h3>
+          <p class="panel-sub">We can't tell a pool photo from a living room photo — pick the right slot above, then click a candidate to assign it.</p>
+          <div class="candidate-grid" id="imageCandidates"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="section-amenities" data-section="Amenities">
+        <div class="panel-head"><h2>Amenities</h2></div>
+        <div class="chip-list" id="amenitiesList"></div>
+        <div class="add-row">
+          <input type="text" id="amenityInput" placeholder="e.g. Infinity Pool" />
+          <button type="button" class="btn btn-ghost" id="addAmenity">Add</button>
+        </div>
+      </section>
+
+      <section class="panel" id="section-highlights" data-section="Highlights">
+        <div class="panel-head"><h2>Highlights / advantages</h2></div>
+        <div class="chip-list" id="highlightsList"></div>
+        <div class="add-row">
+          <input type="text" id="highlightInput" placeholder="e.g. Handover within months" />
+          <button type="button" class="btn btn-ghost" id="addHighlight">Add</button>
+        </div>
+      </section>
+
+      <div class="submit-row">
+        <div class="review-progress" id="reviewProgress"></div>
+        <button type="submit" class="btn btn-primary btn-large" id="createBtn">Create property</button>
+      </div>
+
+    </form>
+
+  </main>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
