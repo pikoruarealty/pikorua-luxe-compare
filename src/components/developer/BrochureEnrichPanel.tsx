@@ -2,21 +2,12 @@ import { useMemo, useState } from "react";
 import { FileUp, X } from "lucide-react";
 import { BrochureUploadStep } from "./BrochureUploadStep";
 import {
-  extractedFieldList,
-  mapExtractedPayload,
+  buildMergeRows,
+  findMappingGaps,
   type ExtractionResponse,
+  type MergeRow,
 } from "@/lib/brochure-field-mapping";
-import type { PropertyFormValues } from "@/lib/property-schema";
-
-type Row = {
-  key: string;
-  label: string;
-  current: string;
-  incoming: string;
-  /** A blank field is a gap to fill; a different value is a conflict to decide. */
-  conflict: boolean;
-  apply: (into: PropertyFormValues) => void;
-};
+import { CONFIG_BUCKETS, type PropertyFormValues } from "@/lib/property-schema";
 
 /** Lets an existing property be topped up from a brochure: whatever is still
  *  blank gets filled, and anything that disagrees with what's already saved has
@@ -33,76 +24,19 @@ export function BrochureEnrichPanel({
   const [extraction, setExtraction] = useState<ExtractionResponse | null>(null);
   const [chosen, setChosen] = useState<Record<string, boolean>>({});
 
-  const rows = useMemo<Row[]>(() => {
-    if (!extraction) return [];
-    const out: Row[] = [];
+  const rows = useMemo<MergeRow[]>(
+    () => (extraction ? buildMergeRows(current, extraction) : []),
+    [extraction, current],
+  );
 
-    for (const f of extractedFieldList(extraction)) {
-      const existing = String(
-        (current as unknown as Record<string, unknown>)[f.formField] ?? "",
-      ).trim();
-      if (existing === f.value) continue;
-      out.push({
-        key: f.formField,
-        label: f.label,
-        current: existing,
-        incoming: f.value,
-        conflict: existing !== "",
-        apply: (into) => {
-          (into as unknown as Record<string, unknown>)[f.formField] = f.value;
-        },
-      });
-    }
-
-    const mapped = mapExtractedPayload(extraction.extraction);
-
-    const incomingAmenities = mapped.amenities ?? [];
-    if (incomingAmenities.length) {
-      const existing = current.amenities ?? [];
-      const fresh = incomingAmenities.filter((a) => !existing.includes(a));
-      if (fresh.length) {
-        out.push({
-          key: "__amenities",
-          label: `Amenities — ${fresh.length} new`,
-          current: existing.length ? `${existing.length} already listed` : "none",
-          incoming: fresh.join(" · "),
-          // Adding to a list never destroys anything, so this is a gap, not a clash.
-          conflict: false,
-          apply: (into) => {
-            into.amenities = [...existing, ...fresh];
-          },
-        });
-      }
-    }
-
-    const incomingConfigs = mapped.configs;
-    if (incomingConfigs) {
-      const counts = Object.entries(incomingConfigs)
-        .filter(([, v]) => v.length > 0)
-        .map(([k, v]) => `${k}: ${v.length}`)
-        .join(", ");
-      const existingCount = Object.values(current.configs ?? {}).reduce(
-        (n, v) => n + (v?.length ?? 0),
-        0,
-      );
-      if (counts) {
-        out.push({
-          key: "__configs",
-          label: "Configurations",
-          current: existingCount ? `${existingCount} variant(s) already saved` : "none",
-          incoming: counts,
-          // Variant arrays can't be merged safely — matching "Type A" across two
-          // sources is guesswork — so this is all-or-nothing and off by default.
-          conflict: existingCount > 0,
-          apply: (into) => {
-            into.configs = incomingConfigs as PropertyFormValues["configs"];
-          },
-        });
-      }
-    }
-
-    return out;
-  }, [extraction, current]);
+  // What the brochure contained that this form has no home for. Shown rather
+  // than swallowed: a plan book using conventions the mapping doesn't know
+  // produces a thin listing that looks exactly like a thin brochure, and the
+  // difference was only ever noticed weeks later by someone reading the form.
+  const gaps = useMemo(
+    () => (extraction ? findMappingGaps(extraction.extraction) : null),
+    [extraction],
+  );
 
   const reset = () => {
     setStep("idle");
@@ -112,24 +46,19 @@ export function BrochureEnrichPanel({
 
   const handleExtracted = (result: ExtractionResponse) => {
     setExtraction(result);
-    // Gaps are pre-ticked because filling a blank can't lose anything; conflicts
-    // start off, so overwriting saved data is always a deliberate choice.
-    const list = extractedFieldList(result);
-    const pre: Record<string, boolean> = {};
-    for (const f of list) {
-      const existing = String(
-        (current as unknown as Record<string, unknown>)[f.formField] ?? "",
-      ).trim();
-      if (existing === "") pre[f.formField] = true;
-    }
-    pre.__amenities = true;
-    setChosen(pre);
+    setChosen({});
     setStep("merge");
   };
 
+  /** Gaps default to ticked because filling a blank can't lose anything;
+   *  conflicts default to off, so overwriting saved data is always a deliberate
+   *  choice. `chosen` only ever holds what the reviewer actually changed. */
+  const isOn = (row: MergeRow) => chosen[row.key] ?? !row.conflict;
+
   const applySelected = () => {
     const merged = structuredClone(current);
-    for (const row of rows) if (chosen[row.key]) row.apply(merged);
+    merged.configs = merged.configs ?? { bhk3: [], bhk4: [], bhk5: [], penthouse: [], duplex: [] };
+    for (const row of rows) if (isOn(row)) row.apply(merged);
     onApply(merged);
     reset();
   };
@@ -169,12 +98,46 @@ export function BrochureEnrichPanel({
         </button>
       </div>
 
-      {step === "upload" && (
-        <BrochureUploadStep onExtracted={handleExtracted} onCancel={reset} />
-      )}
+      {step === "upload" && <BrochureUploadStep onExtracted={handleExtracted} onCancel={reset} />}
 
       {step === "merge" && (
         <>
+          {gaps &&
+            (gaps.droppedVariants.length > 0 ||
+              gaps.bedroomShortfall.length > 0 ||
+              gaps.unparsedDimensions.length > 0) && (
+              <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
+                <p className="font-label text-[10px] font-semibold tracking-luxury text-amber-700 uppercase dark:text-amber-400">
+                  Read from the brochure but not filled in
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  {gaps.droppedVariants.map((v) => (
+                    <li key={v.label}>
+                      <span className="text-foreground">{v.label}</span> — {v.rooms} rooms;{" "}
+                      {v.stated
+                        ? `a ${v.bhkType}, and this form holds only ${CONFIG_BUCKETS.map((b) => b.label).join(", ")}.`
+                        : "we couldn't tell what size this layout is, so it has to be entered by hand."}
+                    </li>
+                  ))}
+                  {gaps.bedroomShortfall.map((s) => (
+                    <li key={`short-${s.variant}`}>
+                      <span className="text-foreground">{s.variant}</span> — the sheet says{" "}
+                      {s.stated} BHK but only {s.found} bedroom{s.found === 1 ? "" : "s"} could be
+                      read off the plan. Check the remaining {s.stated - s.found} against the
+                      brochure before saving.
+                    </li>
+                  ))}
+                  {gaps.unparsedDimensions.length > 0 && (
+                    <li>
+                      {gaps.unparsedDimensions.length} room size(s) printed in a style we
+                      couldn&apos;t read — they come through exactly as printed, without a sq ft
+                      figure.
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nothing new — everything the brochure mentions already matches what's saved.
@@ -182,7 +145,7 @@ export function BrochureEnrichPanel({
           ) : (
             <div className="space-y-2">
               {rows.map((row) => {
-                const on = Boolean(chosen[row.key]);
+                const on = isOn(row);
                 return (
                   <label
                     key={row.key}
@@ -244,7 +207,7 @@ export function BrochureEnrichPanel({
                   Apply to form
                 </button>
                 <span className="text-xs text-muted-foreground">
-                  {rows.filter((r) => chosen[r.key]).length} of {rows.length} selected
+                  {rows.filter(isOn).length} of {rows.length} selected
                 </span>
               </>
             )}

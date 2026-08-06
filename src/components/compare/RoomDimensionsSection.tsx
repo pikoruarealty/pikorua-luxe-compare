@@ -11,6 +11,7 @@ type RoomKey =
   "livingArea" | "kitchen" | "bedroom1" | "bedroom2" | "bedroom3" | "bedroom4" | "bedroom5";
 
 const BEDROOM_COUNT: Record<ConfigKey, number> = {
+  "3 BHK": 3,
   "4 BHK": 4,
   "5 BHK": 5,
   Penthouse: 5,

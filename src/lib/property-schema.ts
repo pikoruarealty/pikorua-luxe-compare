@@ -23,9 +23,31 @@ export const configDetailSchema = z.object({
 
 export type ConfigDetailInput = z.infer<typeof configDetailSchema>;
 
+/** Every editable measurement on one layout variant, in the order a human
+ *  reads them. Shared so the admin form's inputs and the brochure merge panel
+ *  can never drift apart on which fields exist or what they're called. */
+export const VARIANT_FIELDS = [
+  { name: "area", label: "Super built-up (sq ft)" },
+  { name: "carpet", label: "Carpet (sq ft)" },
+  { name: "builtUpArea", label: "Built-up (sq ft)" },
+  { name: "price", label: "Price (Cr)" },
+  { name: "rate", label: "Rate (per sq ft)" },
+  { name: "bathrooms", label: "Bathrooms" },
+  { name: "balconies", label: "Balconies" },
+  { name: "servantRoom", label: "Servant room" },
+  { name: "livingArea", label: "Drawing / Living / Dining" },
+  { name: "kitchen", label: "Kitchen" },
+  { name: "bedroom1", label: "Bedroom 1" },
+  { name: "bedroom2", label: "Bedroom 2" },
+  { name: "bedroom3", label: "Bedroom 3" },
+  { name: "bedroom4", label: "Bedroom 4" },
+  { name: "bedroom5", label: "Bedroom 5" },
+] as const;
+
 // Internal safe keys (no spaces) used as form field-array names; translated to
 // the real ConfigKey strings ("4 BHK", etc.) only at submit/load time.
 export const CONFIG_BUCKETS = [
+  { key: "bhk3", label: "3 BHK" },
   { key: "bhk4", label: "4 BHK" },
   { key: "bhk5", label: "5 BHK" },
   { key: "penthouse", label: "Penthouse" },
@@ -93,6 +115,7 @@ export const propertyFormSchema = z.object({
   ongoingProjects: z.string().trim().optional().default(""),
   notableDeliveredProjects: z.array(z.string().trim().min(1)).default([]),
   configs: z.object({
+    bhk3: z.array(configDetailSchema).default([]),
     bhk4: z.array(configDetailSchema).default([]),
     bhk5: z.array(configDetailSchema).default([]),
     penthouse: z.array(configDetailSchema).default([]),
@@ -170,7 +193,7 @@ export function emptyPropertyForm(): PropertyFormValues {
     totalDeliveredProjects: "",
     ongoingProjects: "",
     notableDeliveredProjects: [],
-    configs: { bhk4: [], bhk5: [], penthouse: [], duplex: [] },
+    configs: { bhk3: [], bhk4: [], bhk5: [], penthouse: [], duplex: [] },
     isPublished: true,
   };
 }

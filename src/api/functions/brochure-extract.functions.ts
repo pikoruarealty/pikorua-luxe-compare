@@ -2,13 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
 import type { ExtractionResponse, PropertyExtraction } from "@/lib/brochure-field-mapping";
 
-interface BrochureFile {
-  fileName: string;
-  fileBase64: string;
-}
-
-const MAX_FILES = 6;
-const MAX_BASE64_LENGTH = 55_000_000; // ~40MB binary
+/** How long a browser has to start its upload after asking for a ticket. Long
+ *  enough to pick up a slow connection, short enough that a token scraped from
+ *  a request log is worthless by the time anyone reads it. */
+const UPLOAD_TICKET_TTL_SECONDS = 900;
 
 /** Statuses the service reports back from GET /api/properties/{id}/progress. */
 export interface ExtractionProgress {
@@ -39,54 +36,47 @@ async function readError(res: Response, fallback: string): Promise<string> {
   return body?.detail ?? body?.error ?? fallback;
 }
 
-/** Uploads the PDFs and returns immediately with a job id. Extraction runs in
- *  the background on the service — a full brochure takes minutes, far longer
- *  than any serverless request may stay open, so the client polls from here. */
-export const startBrochureExtraction = createServerFn({ method: "POST" })
+/** `<unix-expiry>.<hex hmac>` — Web Crypto so this works unchanged on both
+ *  Cloudflare Workers and Vercel's node runtime. */
+async function signUploadToken(secret: string): Promise<string> {
+  const expiry = String(Math.floor(Date.now() / 1000) + UPLOAD_TICKET_TTL_SECONDS);
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(expiry));
+  const hex = Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `${expiry}.${hex}`;
+}
+
+/** Authorises the browser to upload its brochures straight to the extractor.
+ *
+ *  The file deliberately does not travel through this server. A brochure runs
+ *  to tens of megabytes — one here is 31MB, another larger — and both of our
+ *  deploy targets cap what may be POSTed to a server function (Vercel at
+ *  4.5MB). Relaying the bytes would therefore fail in production no matter what
+ *  limit this code claimed, and base64-ing them for the trip added a third
+ *  again on top. So the browser gets a short-lived signed ticket and posts the
+ *  raw files to the service itself; everything after that — progress, results,
+ *  images — still goes through here, because those payloads are small and the
+ *  service key stays server-side. */
+export const createBrochureUploadTicket = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
-  .inputValidator((data: { files: BrochureFile[] }) => {
-    if (!Array.isArray(data?.files) || data.files.length === 0) {
-      throw new Error("Upload at least one brochure PDF");
-    }
-    if (data.files.length > MAX_FILES) {
-      throw new Error(`Upload at most ${MAX_FILES} files at a time`);
-    }
-    for (const f of data.files) {
-      if (!f?.fileName || !f?.fileBase64) throw new Error("Malformed file upload");
-      if (f.fileBase64.length > MAX_BASE64_LENGTH) throw new Error(`${f.fileName} is too large`);
-    }
-    return { files: data.files };
-  })
-  .handler(async ({ data }): Promise<{ jobId: string }> => {
-    const { baseUrl, headers } = serviceConfig();
-
-    const form = new FormData();
-    for (const f of data.files) {
-      const base64 = f.fileBase64.includes(",")
-        ? f.fileBase64.slice(f.fileBase64.indexOf(",") + 1)
-        : f.fileBase64;
-      const buffer = Buffer.from(base64, "base64");
-      if (buffer.length === 0) continue;
-      const name = f.fileName.toLowerCase().endsWith(".pdf") ? f.fileName : `${f.fileName}.pdf`;
-      form.append("files", new Blob([buffer], { type: "application/pdf" }), name);
-    }
-
-    let res: Response;
-    try {
-      res = await fetch(`${baseUrl}/api/properties/extract`, {
-        method: "POST",
-        headers,
-        body: form,
-        signal: AbortSignal.timeout(60_000),
-      });
-    } catch {
-      throw new Error("Couldn't reach the OCR service. It may be offline — try again shortly.");
-    }
-
-    if (!res.ok) throw new Error(await readError(res, `OCR service error (${res.status})`));
-    const body = (await res.json()) as { job_id?: string };
-    if (!body?.job_id) throw new Error("OCR service didn't return a job id");
-    return { jobId: body.job_id };
+  .handler(async (): Promise<{ uploadUrl: string; token: string }> => {
+    const { baseUrl } = serviceConfig();
+    const apiKey = process.env.BROCHURE_EXTRACTOR_API_KEY;
+    return {
+      uploadUrl: `${baseUrl}/api/properties/extract`,
+      // An extractor running without a key configured wants no auth header at
+      // all — sending an unverifiable one would be rejected outright.
+      token: apiKey ? await signUploadToken(apiKey) : "",
+    };
   });
 
 /** Polled by the upload step until the job finishes. */
@@ -105,10 +95,18 @@ export const getBrochureExtractionProgress = createServerFn({ method: "POST" })
     try {
       res = await fetch(`${baseUrl}/api/properties/${encodeURIComponent(data.jobId)}/progress`, {
         headers,
-        signal: AbortSignal.timeout(20_000),
+        // Generous: this is polled for minutes on end, so the cost of waiting
+        // out a slow response is far lower than the cost of abandoning a job
+        // that is still running. The caller retries either way.
+        signal: AbortSignal.timeout(45_000),
       });
-    } catch {
-      throw new Error("Lost contact with the OCR service. It may have restarted.");
+    } catch (err) {
+      // Don't guess at a cause in the message — an earlier version claimed the
+      // service had restarted, which sent debugging down the wrong path when
+      // the truth was a dropped keep-alive socket on a job that finished fine.
+      // The caller retries these, so this only ever surfaces if they persist.
+      const reason = err instanceof Error ? err.message : String(err);
+      throw new Error(`Couldn't read extraction progress: ${reason}`);
     }
 
     if (!res.ok) throw new Error(await readError(res, `OCR service error (${res.status})`));
@@ -209,7 +207,10 @@ export const importBrochureImage = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const safe = (s: string) =>
-      (s || "").toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
+      (s || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9.-]+/g, "-")
+        .replace(/^-|-$/g, "");
     const ext = contentType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
     const objectPath = `${safe(data.folder) || "brochure"}/${safe(data.slot)}-${Date.now()}.${ext}`;
 

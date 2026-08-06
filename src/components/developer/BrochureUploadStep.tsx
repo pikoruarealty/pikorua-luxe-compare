@@ -2,20 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, Loader2, Upload, X } from "lucide-react";
 import {
-  startBrochureExtraction,
+  createBrochureUploadTicket,
   getBrochureExtractionProgress,
   getBrochureExtraction,
 } from "@/api/functions/brochure-extract.functions";
 import type { ExtractionResponse } from "@/lib/brochure-field-mapping";
+import { pollUntilExtracted } from "@/lib/poll-extraction";
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+const MAX_FILES = 6;
 
 /** Step 1 of the OCR path: pick brochure PDFs, send them to the extractor
  *  service, hand the result up once it comes back. */
@@ -30,7 +24,7 @@ export function BrochureUploadStep({
   const [extracting, setExtracting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState("");
-  const startFn = useServerFn(startBrochureExtraction);
+  const ticketFn = useServerFn(createBrochureUploadTicket);
   const progressFn = useServerFn(getBrochureExtractionProgress);
   const resultFn = useServerFn(getBrochureExtraction);
 
@@ -47,7 +41,41 @@ export function BrochureUploadStep({
   const addFiles = (list: FileList | null) => {
     if (!list) return;
     const pdfs = Array.from(list).filter((f) => f.type === "application/pdf");
-    setFiles((prev) => [...prev, ...pdfs]);
+    setError("");
+    setFiles((prev) => [...prev, ...pdfs].slice(0, MAX_FILES));
+  };
+
+  /** Posts the PDFs to the extractor itself rather than through our own server,
+   *  which could not carry them: brochures run to tens of megabytes and a
+   *  serverless request body is capped in single digits. The ticket is what
+   *  makes that safe — the browser never sees the service key. */
+  const upload = async (): Promise<string> => {
+    const { uploadUrl, token } = await ticketFn();
+
+    const form = new FormData();
+    for (const file of files) {
+      const name = file.name.toLowerCase().endsWith(".pdf") ? file.name : `${file.name}.pdf`;
+      form.append("files", file, name);
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+    } catch {
+      throw new Error("Couldn't reach the OCR service. It may be offline — try again shortly.");
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.detail ?? body?.error ?? `OCR service error (${res.status})`);
+    }
+    const body = (await res.json()) as { job_id?: string };
+    if (!body?.job_id) throw new Error("OCR service didn't return a job id");
+    return body.job_id;
   };
 
   const extract = async () => {
@@ -56,28 +84,18 @@ export function BrochureUploadStep({
     setProgress(null);
     setError("");
     try {
-      const encoded = await Promise.all(
-        files.map(async (f) => ({ fileName: f.name, fileBase64: await fileToBase64(f) })),
-      );
-      const { jobId } = await startFn({ data: { files: encoded } });
+      const jobId = await upload();
 
       // Extraction is a background job on the service — one LLM call per batch
       // of pages, so a full brochure runs for minutes. Poll rather than hold a
       // request open, which no serverless platform would allow anyway.
-      for (;;) {
-        if (cancelledRef.current) return;
-        await new Promise((r) => setTimeout(r, 3000));
-        if (cancelledRef.current) return;
-
-        const p = await progressFn({ data: { jobId } });
-        setProgress({ done: p.batchesDone, total: p.batchesTotal });
-
-        if (p.status === "done") break;
-        if (p.status === "error") throw new Error(p.error ?? "Extraction failed on the server.");
-        if (p.status === "cancelled" || p.status === "cancelling") {
-          throw new Error("Extraction was cancelled.");
-        }
-      }
+      await pollUntilExtracted({
+        fetchProgress: () => progressFn({ data: { jobId } }),
+        onProgress: (done, total) => setProgress({ done, total }),
+        isCancelled: () => cancelledRef.current,
+        wait: (ms) => new Promise((r) => setTimeout(r, ms)),
+      });
+      if (cancelledRef.current) return;
 
       const result = await resultFn({ data: { jobId } });
       if (!cancelledRef.current) onExtracted(result);
@@ -94,7 +112,7 @@ export function BrochureUploadStep({
   };
 
   const progressLabel = () => {
-    if (!progress || progress.total === 0) return "Reading your files…";
+    if (!progress || progress.total === 0) return "Uploading your files…";
     return `Extracting… page batch ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`;
   };
 
@@ -130,6 +148,9 @@ export function BrochureUploadStep({
               <span className="flex min-w-0 items-center gap-2 truncate text-foreground">
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">{f.name}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {(f.size / 1024 / 1024).toFixed(1)} MB
+                </span>
               </span>
               <button
                 type="button"

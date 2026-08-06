@@ -9,6 +9,7 @@ const DASH = "—";
 type FieldKey = keyof ConfigDetail;
 
 const BEDROOM_COUNT: Record<ConfigKey, number> = {
+  "3 BHK": 3,
   "4 BHK": 4,
   "5 BHK": 5,
   Penthouse: 5,

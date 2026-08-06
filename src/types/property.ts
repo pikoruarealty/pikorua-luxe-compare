@@ -1,6 +1,6 @@
 export type PropertyStatus = string;
 export type PropertyCategory = "Apartment" | "Bungalow" | "Plots";
-export type ConfigKey = "4 BHK" | "5 BHK" | "Penthouse" | "Duplex";
+export type ConfigKey = "3 BHK" | "4 BHK" | "5 BHK" | "Penthouse" | "Duplex";
 
 export interface PropertyGallery {
   livingRoom: string;
@@ -101,4 +101,5 @@ export interface ComparisonRow {
   highlightIndex?: number;
 }
 
-export const CONFIG_KEYS: ConfigKey[] = ["4 BHK", "5 BHK", "Penthouse", "Duplex"];
+// Ascending, so a comparison reads smallest home to largest.
+export const CONFIG_KEYS: ConfigKey[] = ["3 BHK", "4 BHK", "5 BHK", "Penthouse", "Duplex"];

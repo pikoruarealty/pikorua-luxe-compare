@@ -13,6 +13,7 @@ import {
   emptyConfigDetail,
   emptyPropertyForm,
   propertyFormSchema,
+  VARIANT_FIELDS,
   type PropertyFormValues,
 } from "@/lib/property-schema";
 import { Field, Input, Textarea, Select } from "@/components/portal/FormControls";
@@ -445,24 +446,6 @@ export function PropertyForm({
     </form>
   );
 }
-
-const VARIANT_FIELDS = [
-  { name: "area", label: "Super built-up (sq ft)" },
-  { name: "carpet", label: "Carpet (sq ft)" },
-  { name: "builtUpArea", label: "Built-up (sq ft)" },
-  { name: "price", label: "Price (Cr)" },
-  { name: "rate", label: "Rate (per sq ft)" },
-  { name: "bathrooms", label: "Bathrooms" },
-  { name: "balconies", label: "Balconies" },
-  { name: "servantRoom", label: "Servant room" },
-  { name: "livingArea", label: "Drawing / Living / Dining" },
-  { name: "kitchen", label: "Kitchen" },
-  { name: "bedroom1", label: "Bedroom 1" },
-  { name: "bedroom2", label: "Bedroom 2" },
-  { name: "bedroom3", label: "Bedroom 3" },
-  { name: "bedroom4", label: "Bedroom 4" },
-  { name: "bedroom5", label: "Bedroom 5" },
-] as const;
 
 function ConfigBucketEditor({
   bucketKey,

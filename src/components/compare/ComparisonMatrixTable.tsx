@@ -45,6 +45,7 @@ type RoomKey =
 
 function roomFieldsFor(k: ConfigKey): { key: RoomKey; label: string }[] {
   const bedroomCount: Record<ConfigKey, number> = {
+    "3 BHK": 3,
     "4 BHK": 4,
     "5 BHK": 5,
     Penthouse: 5,
