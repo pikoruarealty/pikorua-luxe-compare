@@ -13,6 +13,7 @@ the brochure's confidence score.
 
 from __future__ import annotations
 
+import re
 from typing import List
 
 from .schema import ConfigVariant, ExtractedField, PropertyExtraction
@@ -59,7 +60,29 @@ def _is_substantive(v: ConfigVariant) -> bool:
     its place with room detail or a commercial figure."""
     if len(v.rooms) > 1:
         return True
-    return any(f.found for f in (v.carpet_area, v.built_up_area, v.price))
+    return any(
+        f.found
+        for f in (
+            v.carpet_area,
+            v.built_up_area,
+            v.super_built_up_area,
+            v.price,
+            v.rate_per_sqft,
+        )
+    )
+
+
+# A duplex or a penthouse occupies two storeys and is therefore drawn on two
+# sheets — "5 BHK DUPLEX LOWER FLOOR PLAN" and "…UPPER FLOOR PLAN". They are
+# one home: bedrooms 1-3 downstairs, 4-5 upstairs. Left unmerged they arrive as
+# two half-empty layouts, and the listing shows a five-bedroom duplex as a
+# three-bedroom one next to a two-bedroom one.
+# Books say "UPPER FLOOR PLAN", "LOWER LEVEL", "GROUND FLOOR" — all the same
+# idea, all meaning "this sheet is one storey of the home named beside it".
+_FLOOR_QUALIFIER_RE = re.compile(
+    r"\b(?:lower|upper|ground|first|second|third|typical)?\s*(?:floor|level)\s*(?:plan)?\b",
+    re.IGNORECASE,
+)
 
 
 def _variant_key(v: ConfigVariant) -> str:
@@ -67,10 +90,26 @@ def _variant_key(v: ConfigVariant) -> str:
     series it's drawn for. The series matters — one plan sheet often
     draws "101 to 1101" and "102 to 1102" as mirrored units whose room
     sizes genuinely differ, so collapsing them would silently discard
-    one of the two real layouts."""
+    one of the two real layouts. Which STOREY of a multi-level home a
+    sheet shows does not: those halves belong together."""
+    raw_label = " ".join(str(v.variant_label.value or "").split()).strip().lower()
+    label = " ".join(_FLOOR_QUALIFIER_RE.sub("", raw_label).split()).strip()
+    multi_level = label != raw_label
+
+    if multi_level:
+        # For one storey of a multi-level home, only the home's own name says
+        # WHICH home it is. Its bedroom count describes just that sheet — a
+        # penthouse arrives as "2 BHK" downstairs and "3 BHK" upstairs — and
+        # its floor series says where the sheet sits, not what it belongs to.
+        # A real book printed the series on the lower sheet and left it off the
+        # upper one, and keying on either split one five-bedroom penthouse into
+        # a two- and a three-bedroom home. Two genuinely different penthouses
+        # are distinguished in the label itself ("4 BHK PENTHOUSE" vs "5 BHK").
+        return f"|{label}|"
+
     parts = [
         str(v.bhk_type.value or "").strip().lower(),
-        str(v.variant_label.value or "").strip().lower(),
+        label,
         str(v.floor_range.value or "").strip().lower(),
     ]
     return "|".join(parts)
@@ -121,7 +160,16 @@ def _dedupe_configurations(variants: List[ConfigVariant]) -> List[ConfigVariant]
             order.append(key)
             continue
         existing = merged[key]
-        for field_name in ("bhk_type", "variant_label", "floor_range", "carpet_area", "built_up_area", "price"):
+        for field_name in (
+            "bhk_type",
+            "variant_label",
+            "floor_range",
+            "carpet_area",
+            "built_up_area",
+            "super_built_up_area",
+            "price",
+            "rate_per_sqft",
+        ):
             setattr(
                 existing,
                 field_name,

@@ -30,14 +30,25 @@ Auth: every request under /api needs header `X-Service-Key` matching
 SERVICE_API_KEY from .env. This is a shared secret between this
 service and whatever calls it (your friend's developer portal) — it
 is NOT the OpenAI/Anthropic key, and it never touches the LLM.
+
+POST /api/properties/extract additionally accepts a short-lived
+`Authorization: Bearer <expiry>.<hmac>` token signed with that same
+key. Brochures run to tens of megabytes and the website is deployed to
+serverless hosts that cap request bodies at a few MB, so the file has
+to go from the browser to this service directly rather than through
+the website. The browser gets a token, never the key, and the token
+opens no other endpoint.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import logging
 import shutil
 import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Dict, List
@@ -71,6 +82,43 @@ def require_service_key(x_service_key: str | None = Header(default=None)) -> Non
         return  # no key configured -> auth disabled (local dev convenience)
     if x_service_key != settings.SERVICE_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid or missing X-Service-Key header")
+
+
+def _verify_upload_token(token: str) -> bool:
+    """`<unix-expiry>.<hex hmac of that expiry>`, signed with the shared key.
+
+    A brochure is tens of megabytes and the website runs on serverless hosts
+    that cap request bodies at a few MB, so the file cannot be relayed through
+    it — the browser has to reach this service directly. It still must not hold
+    the shared key, so the website mints one of these instead: good for minutes,
+    useless for anything but starting an extraction."""
+    try:
+        expiry_str, signature = token.split(".", 1)
+        expiry = int(expiry_str)
+    except (ValueError, AttributeError):
+        return False
+    if expiry < int(time.time()):
+        return False
+    expected = hmac.new(
+        settings.SERVICE_API_KEY.encode(), expiry_str.encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+
+def require_upload_auth(
+    x_service_key: str | None = Header(default=None),
+    authorization: str | None = Header(default=None),
+) -> None:
+    """Upload accepts the shared key OR a short-lived signed token. Only this
+    one endpoint does — a leaked token must not also read back other jobs."""
+    if not settings.SERVICE_API_KEY:
+        return
+    if x_service_key == settings.SERVICE_API_KEY:
+        return
+    if authorization and authorization.startswith("Bearer "):
+        if _verify_upload_token(authorization[7:]):
+            return
+    raise HTTPException(status_code=401, detail="Invalid or missing upload credentials")
 
 
 def _job_path(job_id: str) -> Path:
@@ -122,9 +170,40 @@ def _is_cancelled(job_id: str) -> bool:
         return job_id in _cancelled_jobs
 
 
+def _summarise_pages(numbers: List[int]) -> str:
+    """"41-57" rather than seventeen comma-separated integers."""
+    if not numbers:
+        return ""
+    runs: List[tuple[int, int]] = []
+    start = prev = numbers[0]
+    for n in numbers[1:]:
+        if n == prev + 1:
+            prev = n
+            continue
+        runs.append((start, prev))
+        start = prev = n
+    runs.append((start, prev))
+    return ", ".join(str(a) if a == b else f"{a}-{b}" for a, b in runs)
+
+
 def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -> None:
     try:
-        pages_by_file = [(path, read_pdf(path)) for path in saved_paths]
+        read_warnings: List[str] = []
+        pages_by_file = []
+        for path in saved_paths:
+            document = read_pdf(path)
+            pages_by_file.append((path, document.pages))
+            if document.skipped_pages:
+                # Never let this be silent. A brochure longer than the page
+                # budget is the single likeliest reason an extraction comes
+                # back thin, and without this the human blames the model.
+                read_warnings.append(
+                    f"{path.name}: {len(document.skipped_pages)} page(s) skipped — over the "
+                    f"{settings.MAX_PAGES_PER_DOC}-page limit (pages "
+                    f"{_summarise_pages(document.skipped_pages)}). Floor plans and price "
+                    f"tables were kept in preference to marketing pages; raise "
+                    f"MAX_PAGES_PER_DOC to read the whole document."
+                )
         # Ask the extractor how it will actually split these, rather
         # than recomputing the arithmetic here — floor-plan pages get
         # their own calls, so a plain divide would under-count.
@@ -168,6 +247,7 @@ def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -
 
         merged = merge_extractions(per_file_extractions)
         merged = normalize(merged)
+        merged.warnings.extend(read_warnings)
         _save_job(job_id, merged)
         _set_progress(job_id, status="done")
     except ExtractionUnavailable as exc:
@@ -180,7 +260,7 @@ def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -
         _set_progress(job_id, status="error", error=str(exc))
 
 
-@app.post("/api/properties/extract", dependencies=[Depends(require_service_key)])
+@app.post("/api/properties/extract", dependencies=[Depends(require_upload_auth)])
 async def extract_property(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
     if not files:
         raise HTTPException(status_code=400, detail="Upload at least one PDF file")

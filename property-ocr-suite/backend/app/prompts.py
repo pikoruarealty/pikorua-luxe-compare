@@ -35,8 +35,15 @@ summarise into a house-style phrase.
 shown on these pages. A row is worth reporting if the page gives it a label \
 (e.g. "Unit - A", "Type B", "4 BHK") — it does NOT also need an area or price.
 
-6. FLOOR PLANS — read these pages exhaustively. If a page is a unit plan \
-(a drawing labelled "Unit - A", "Typical Plan", etc.), then:
+6. FLOOR PLANS — read these pages exhaustively. Work the drawing corner to \
+corner, not just its middle: the smallest labels — a 4'3"X5'0" toilet, a \
+wash yard, a dress — sit at the edges and in the gaps between the big rooms, \
+and those are exactly the ones that get missed. Where a page is supplied with \
+close-up crops as well as the whole sheet, the crops exist so you can read \
+that small print; go through each one. They overlap and they are the SAME \
+drawing, so a room appearing in two crops is one room, reported once — never \
+a second unit. If a page is a unit plan (a drawing labelled "Unit - A", \
+"Typical Plan", etc.), then:
    a. One configurations row per distinct unit layout on the page. Brochures \
 routinely draw one unit type as two mirrored series with DIFFERENT room sizes \
 (e.g. "101 to 1101" and "102 to 1102") — those are TWO separate rows, each with \
@@ -67,8 +74,37 @@ that exact wording rather than shortening it.
    e. Only attribute a room to a unit if the drawing places it in that unit. \
 If you genuinely cannot tell which of two units a room belongs to, leave it out \
 rather than guessing — a wrong room size is worse than a missing one.
+   f. COUNT-CHECK before you answer. If the sheet calls the unit "4 BHK", its \
+"rooms" list must contain four bedrooms; "5 BHK" means five. Finding fewer \
+almost always means a bedroom was missed on a busy drawing, not that the \
+brochure mislabelled its own plan — so re-read the sheet and look for the ones \
+you skipped. If after re-reading a bedroom genuinely is not drawn, report what \
+you see; never invent one, and never copy another bedroom's size to make the \
+count work.
 
-7. Return ONLY valid JSON matching the schema you were given in the user \
+7. AREA STATEMENTS AND PRICE LISTS — a table listing units against their \
+sizes is as important as the drawing, and is the usual source for the three \
+area figures. Read every row:
+   a. Each row is a configurations entry, keyed to the unit label in that row \
+("Unit A", "Type 2"). If a unit already has a row from its floor plan, report \
+it again with the same "variant_label" and "floor_range" — the two reports are \
+folded together downstream, so never leave a figure out because you saw the \
+unit elsewhere.
+   b. These three are DIFFERENT numbers and must not be used for one another. \
+Map the column heading you actually see:
+      - "Carpet Area" / "RERA Carpet" -> "carpet_area"
+      - "Built-up Area" / "BUA" -> "built_up_area"
+      - "Super Built-up" / "Super Area" / "Saleable Area" -> "super_built_up_area"
+   If a sheet prints only one area with no qualifying word, report it as \
+"built_up_area" and leave the other two out — do not spread one number across \
+all three.
+   c. Keep the unit as printed ("3358 sq.ft.", "312.5 sq.m.") — never convert \
+between sq ft, sq m and sq yd, and never add up rooms to derive an area.
+   d. "rate_per_sqft" is the per-square-foot rate ("Basic rate 9800/-"), \
+"price" is the total consideration ("6.57 Cr"). A figure in Cr or Lakh is never \
+a rate; a figure in the thousands per sq ft is never a total price.
+
+8. Return ONLY valid JSON matching the schema you were given in the user \
 message. No prose, no markdown fences, no commentary before or after.
 """
 
@@ -132,7 +168,9 @@ on these pages — do not include nulls, just leave the key out entirely):
       "floor_range": {...},              // "101 to 1101" — the series this plan is for
       "carpet_area": {...},
       "built_up_area": {...},
+      "super_built_up_area": {...},      // "Super Built-up" / "Saleable" / "Super Area"
       "price": {...},
+      "rate_per_sqft": {...},            // "Basic rate" / "Rate per sq. ft."
       "rooms": [
         {
           "room_name":  {"value": "BEDROOM",      "page": 13, "evidence": "BEDROOM 12'0\\" X 17'0\\"", "confidence": 0.95},

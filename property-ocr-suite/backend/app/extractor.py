@@ -191,7 +191,9 @@ def _merge_batch_into(target: PropertyExtraction, raw: Dict[str, Any], file_name
                 floor_range=_field(row.get("floor_range"), file_name),
                 carpet_area=_field(row.get("carpet_area"), file_name),
                 built_up_area=_field(row.get("built_up_area"), file_name),
+                super_built_up_area=_field(row.get("super_built_up_area"), file_name),
                 price=_field(row.get("price"), file_name),
+                rate_per_sqft=_field(row.get("rate_per_sqft"), file_name),
                 rooms=rooms,
             )
         )
@@ -254,8 +256,29 @@ def _pages_meta_block(pages: List[PageContent]) -> str:
     parts = []
     for p in pages:
         text_block = p.text or p.ocr_text or "(no extractable text layer on this page)"
-        parts.append(f"--- PAGE {p.page_number} (file: {p.file_name}) ---\n{text_block}")
+        header = f"--- PAGE {p.page_number} (file: {p.file_name}) ---"
+        if p.detail_tiles:
+            header += (
+                f"\n[Images for this page: the whole sheet, then {len(p.detail_tiles)} "
+                "overlapping close-ups of it, in reading order. The close-ups are the "
+                "SAME drawing magnified so the small print is legible — they are not "
+                "further pages and not further units. Because they overlap, a room "
+                "may appear in two of them; report it once.]"
+            )
+        parts.append(f"{header}\n{text_block}")
     return "\n\n".join(parts)
+
+
+def _page_images(pages: List[PageContent]) -> List[tuple[str, str]]:
+    """(page label, base64 jpeg) for everything we send, whole sheets first
+    and their close-ups immediately after, so the order matches what the text
+    block above says the model is looking at."""
+    out: List[tuple[str, str]] = []
+    for p in pages:
+        out.append((f"page {p.page_number}", p.image_b64))
+        for n, tile in enumerate(p.detail_tiles, start=1):
+            out.append((f"page {p.page_number} close-up {n}", tile))
+    return out
 
 
 def _chunk(items: List[PageContent], size: int) -> List[List[PageContent]]:
@@ -304,9 +327,14 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
         max_retries=0,
     )
     content = [{"type": "text", "text": build_user_prompt(_pages_meta_block(pages))}]
-    for p in pages:
+    for _, b64 in _page_images(pages):
         content.append(
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{p.image_b64}"}}
+            {
+                "type": "image_url",
+                # "high" keeps the API from downsampling a plan sheet to the
+                # point its room labels stop being letters.
+                "image_url": {"url": f"data:image/jpeg;base64,{b64}", "detail": "high"},
+            }
         )
     resp = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
@@ -331,11 +359,11 @@ def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
 
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=60.0, max_retries=0)
     content = [{"type": "text", "text": build_user_prompt(_pages_meta_block(pages))}]
-    for p in pages:
+    for _, b64 in _page_images(pages):
         content.append(
             {
                 "type": "image",
-                "source": {"type": "base64", "media_type": "image/jpeg", "data": p.image_b64},
+                "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
             }
         )
     resp = client.messages.create(

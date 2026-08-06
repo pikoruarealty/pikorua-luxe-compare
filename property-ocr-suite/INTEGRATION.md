@@ -12,6 +12,25 @@ X-Service-Key: <value of SERVICE_API_KEY in backend/.env>
 (If `SERVICE_API_KEY` is left empty in `.env`, auth is disabled —
 convenient for local dev, not for anything public-facing.)
 
+### Uploading from a browser
+
+`POST /api/properties/extract` alone also accepts a short-lived signed
+ticket, so a browser can send the file here directly without ever
+holding the shared key:
+
+```
+Authorization: Bearer <unix-expiry>.<hex hmac-sha256 of that expiry>
+```
+
+signed with `SERVICE_API_KEY`. This exists because brochures run to
+tens of megabytes while serverless hosts cap request bodies at a few
+(Vercel: 4.5 MB) — relaying the file through your own server simply
+cannot work at that size. Mint the ticket server-side, hand only the
+ticket to the browser, and keep every other endpoint on the key.
+
+An expired, re-timed or wrongly signed ticket is rejected, and a ticket
+opens no endpoint but this one.
+
 ## Endpoints
 
 ### `POST /api/properties/extract`

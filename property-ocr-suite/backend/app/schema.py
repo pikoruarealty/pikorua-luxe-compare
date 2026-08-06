@@ -85,7 +85,13 @@ class ConfigVariant(BaseModel):
     floor_range: ExtractedField = PydanticField(default_factory=blank_field)  # "101 to 1101"
     carpet_area: ExtractedField = PydanticField(default_factory=blank_field)
     built_up_area: ExtractedField = PydanticField(default_factory=blank_field)
+    # The headline size a buyer is quoted — brochures and price lists print it
+    # as "Super Built-up", "Saleable Area" or "Super Area". Kept distinct from
+    # built_up_area because the two are different numbers on the same sheet.
+    super_built_up_area: ExtractedField = PydanticField(default_factory=blank_field)
     price: ExtractedField = PydanticField(default_factory=blank_field)
+    # "Basic rate" / "Rate per sq ft" off a price list.
+    rate_per_sqft: ExtractedField = PydanticField(default_factory=blank_field)
     rooms: List[RoomDimension] = PydanticField(default_factory=list)
 
 

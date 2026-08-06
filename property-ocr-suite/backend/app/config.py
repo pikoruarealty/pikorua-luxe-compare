@@ -52,6 +52,27 @@ class Settings:
     # A page is treated as a floor plan once its text layer carries at
     # least this many feet-and-inches dimension strings.
     FLOORPLAN_DIMENSION_HITS: int = int(os.getenv("FLOORPLAN_DIMENSION_HITS", "6"))
+    # ...but plenty of brochures ship with no text layer at all — every
+    # label, room sizes included, is artwork. Those pages read as ordinary
+    # marketing to the check above, so the plan sheets quietly lose both
+    # the extra resolution and the dedicated LLM call they need: one such
+    # book returned nine rooms for a 4 BHK, a different nine each run.
+    #
+    # A drawing is line art, so count the page's vector paths instead. Real
+    # marketing pages sit in the tens; plan sheets run to hundreds or
+    # thousands. Measured across this project's brochures, no marketing
+    # page cleared 100 and no plan sheet came in under 350.
+    FLOORPLAN_VECTOR_PATHS: int = int(os.getenv("FLOORPLAN_VECTOR_PATHS", "300"))
+    # Vision APIs downscale what you send them — Claude to a 1568px long edge,
+    # OpenAI likewise — so a plan sheet sent as one big image arrives at the
+    # model no sharper than a small one, and the 4'3"X5'0" tucked into a corner
+    # is simply not resolvable. Sending overlapping crops is the only way to
+    # buy real magnification: each crop is downscaled on its own, so a 2x2 grid
+    # doubles the linear detail the model actually sees. The overlap keeps a
+    # label that straddles a seam from being sliced in half.
+    # Set the grid to 1 to switch tiling off.
+    FLOORPLAN_TILE_GRID: int = int(os.getenv("FLOORPLAN_TILE_GRID", "2"))
+    FLOORPLAN_TILE_OVERLAP: float = float(os.getenv("FLOORPLAN_TILE_OVERLAP", "0.12"))
     IMAGE_JPEG_QUALITY: int = int(os.getenv("IMAGE_JPEG_QUALITY", "82"))
     # Below this confidence, a field is treated as "not found" and left
     # blank for manual entry rather than shown pre-ticked.
