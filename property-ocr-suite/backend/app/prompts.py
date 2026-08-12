@@ -100,6 +100,26 @@ Map the column heading you actually see:
 all three.
    c. Keep the unit as printed ("3358 sq.ft.", "312.5 sq.m.") — never convert \
 between sq ft, sq m and sq yd, and never add up rooms to derive an area.
+   b1. MANY AREA TABLES ARE LAID OUT AS COLUMNS = AREA TYPE, ROWS = UNIT:
+
+         |              | CARPET AREA | WASH AREA | BALCONY AREA
+         | SQ. MT.      |    308.29   |    7.24   |    43.61
+         | SQ. FT.      |   3317.20   |   77.90   |   469.24
+
+   Read DOWN the column whose heading you want and take the SQ. FT. row. Here \
+carpet_area is 3317.20 sq.ft. — NOT 77.90, which is the wash area, and NOT \
+308.29, which is the same carpet area in square metres. Taking a number from \
+one column under another column's heading is the single most common way this \
+table is misread. The leftmost column is usually labels ("SQ. MT.", "SQ. FT.", \
+a unit name), not data.
+   b2. Only three column headings map to a field: carpet, built-up, and super \
+built-up / saleable. WASH AREA, BALCONY AREA, TERRACE AREA, COMMON AREA, \
+LOFT, PARKING and anything else have NO field — leave them out entirely rather \
+than putting them somewhere they nearly fit.
+   b3. If the table has no built-up column, omit built_up_area. Do NOT promote \
+the carpet figure into it, and never report the same number for two different \
+area fields — they are different measurements and equal values mean one of \
+them was invented.
    d. "rate_per_sqft" is the per-square-foot rate ("Basic rate 9800/-"), \
 "price" is the total consideration ("6.57 Cr"). A figure in Cr or Lakh is never \
 a rate; a figure in the thousands per sq ft is never a total price.

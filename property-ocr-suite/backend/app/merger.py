@@ -58,7 +58,11 @@ def _is_substantive(v: ConfigVariant) -> bool:
     the model but carry no rooms, no area and no price, so they arrive
     as a shelf of empty cards that bury the real ones. A layout earns
     its place with room detail or a commercial figure."""
-    if len(v.rooms) > 1:
+    # Rooms only count when they carry a size. One brochure produced a "Foyer
+    # Block A" holding a meter room, a substation and a DG set room, none of
+    # them measured — building services, not a home, but three rooms all the
+    # same, so a bare count let it through as a layout.
+    if sum(1 for r in v.rooms if r.dimension.found) > 1:
         return True
     return any(
         f.found

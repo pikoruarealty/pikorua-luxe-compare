@@ -245,6 +245,106 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
             field.confidence = min(field.confidence, 0.35)
 
 
+_NUMBER_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
+# Roughly sq ft per sq m. An area table printing both units side by side is
+# where the two get confused for one another.
+_SQ_FT_PER_SQ_M = 10.7639
+
+_AREA_FIELDS = ("carpet_area", "built_up_area", "super_built_up_area")
+
+
+def _numbers(text: str) -> List[float]:
+    out = []
+    for m in _NUMBER_RE.finditer(text or ""):
+        try:
+            out.append(float(m.group().replace(",", "")))
+        except ValueError:
+            continue
+    return out
+
+
+def _demote(field, result: PropertyExtraction, message: str) -> None:
+    log.warning(message)
+    result.warnings.append(message)
+    field.confidence = min(field.confidence, 0.35)
+
+
+def _validate_area_fields(result: PropertyExtraction) -> None:
+    """Sanity-check the three area figures against each other and against the
+    evidence they were quoted from.
+
+    Area tables are the most error-prone thing in a brochure: the columns are
+    area types, the rows are units, and one brochure's table gave up its wash
+    area as the carpet area and its carpet area as a built-up area it does not
+    even have. Nothing here can know the right number — but "carpet is 2% of
+    built-up" and "the value isn't in the snippet it was quoted from" are both
+    knowable, and either one means a human should look before this is saved."""
+    for variant in result.configurations:
+        label = str(variant.variant_label.value or variant.bhk_type.value or "layout")
+
+        for name in _AREA_FIELDS:
+            field = getattr(variant, name)
+            if not field.found or field.value is None or not field.evidence:
+                continue
+            values = _numbers(str(field.value))
+            if not values:
+                continue
+            # Every found field is required to carry a verbatim snippet proving
+            # it. If the number isn't in its own snippet, it wasn't read there.
+            if not any(
+                any(abs(v - e) < 0.01 for e in _numbers(field.evidence)) for v in values
+            ):
+                _demote(
+                    field,
+                    result,
+                    f'{label}: {name} "{field.value}" does not appear in the text it was '
+                    f'quoted from ("{field.evidence}") — check it against the brochure',
+                )
+
+        pairs = [("carpet_area", "built_up_area"), ("built_up_area", "super_built_up_area")]
+        for smaller_name, larger_name in pairs:
+            smaller = getattr(variant, smaller_name)
+            larger = getattr(variant, larger_name)
+            if not (smaller.found and larger.found):
+                continue
+            a = _numbers(str(smaller.value))
+            b = _numbers(str(larger.value))
+            if not a or not b or a[0] <= 0 or b[0] <= 0:
+                continue
+            ratio = b[0] / a[0]
+
+            if abs(a[0] - b[0]) < 0.01:
+                _demote(
+                    larger,
+                    result,
+                    f"{label}: {smaller_name} and {larger_name} are both {smaller.value} — "
+                    f"they are different measurements, so one of them is wrong",
+                )
+            elif 0.9 * _SQ_FT_PER_SQ_M <= ratio <= 1.1 * _SQ_FT_PER_SQ_M:
+                _demote(
+                    smaller,
+                    result,
+                    f"{label}: {smaller_name} ({smaller.value}) and {larger_name} "
+                    f"({larger.value}) differ by about the sq m to sq ft factor — these "
+                    f"look like one area read from two different rows of the same table",
+                )
+            elif ratio > 3:
+                _demote(
+                    smaller,
+                    result,
+                    f"{label}: {smaller_name} ({smaller.value}) is implausibly small next "
+                    f"to {larger_name} ({larger.value}) — likely read from the wrong "
+                    f"column of an area table",
+                )
+            elif ratio < 1:
+                _demote(
+                    larger,
+                    result,
+                    f"{label}: {larger_name} ({larger.value}) is smaller than "
+                    f"{smaller_name} ({smaller.value}), which cannot be right",
+                )
+
+
 def _pages_meta_block(pages: List[PageContent]) -> str:
     # Measured on the sample brochure: feeding plan pages as x,y-tagged
     # blocks — on the theory that position disambiguates which of a
@@ -445,4 +545,5 @@ def extract_from_pages(
         raise ExtractionUnavailable(_describe(last_failure))
 
     _validate_room_dimensions(result, pages)
+    _validate_area_fields(result)
     return result

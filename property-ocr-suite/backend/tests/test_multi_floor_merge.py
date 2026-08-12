@@ -148,6 +148,34 @@ def test_upper_and_lower_LEVEL_are_treated_like_floor_plans():
     assert len(merge_extractions([e]).configurations) == 1
 
 
+def test_building_services_are_not_a_layout():
+    """A real brochure produced a "Foyer Block A" holding a meter room, a
+    substation and a DG set room — none of them measured. Three rooms, so a
+    bare count let it through as a home."""
+    services = ConfigVariant(
+        variant_label=field("Foyer Block A"),
+        rooms=[
+            RoomDimension(room_name=field(n))
+            for n in ("Meter Room", "Substation", "DG set room")
+        ],
+    )
+    real = variant("Unit - A", [("BEDROOM", "12'-0\" X 14'-0\"")], bhk="4 BHK")
+    real.rooms.append(RoomDimension(room_name=field("BEDROOM"), dimension=field("13'0\" X 15'0\"")))
+    merged = merge_extractions([PropertyExtraction(configurations=[services, real])])
+    assert _labels(merged) == ["Unit - A"]
+
+
+def test_an_unmeasured_layout_survives_on_its_price_alone():
+    """A price list row carries no rooms at all, and is still a real unit."""
+    priced = ConfigVariant(
+        variant_label=field("Unit - B"),
+        price=field("6.57 Cr"),
+        rooms=[RoomDimension(room_name=field("BEDROOM"))],
+    )
+    merged = merge_extractions([PropertyExtraction(configurations=[priced])])
+    assert _labels(merged) == ["Unit - B"]
+
+
 def test_a_room_reported_on_both_sheets_is_not_duplicated():
     e = PropertyExtraction(
         configurations=[
