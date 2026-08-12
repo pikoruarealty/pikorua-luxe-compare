@@ -38,6 +38,17 @@ export function BrochureEnrichPanel({
     [extraction],
   );
 
+  /** What the extractor itself flagged while reading — a carpet area that is
+   *  2% of its built-up, a figure absent from the snippet it was quoted from.
+   *  The add-property screen has always shown these; this one did not, which
+   *  is exactly where a wrong area got through. Room-size warnings run to
+   *  dozens on a big plan book, so the area ones lead. */
+  const serviceWarnings = useMemo(() => {
+    const all = extraction?.extraction.warnings ?? [];
+    const areas = all.filter((w) => /area/i.test(w) && !/printed on that page/i.test(w));
+    return (areas.length ? areas : all).slice(0, 8);
+  }, [extraction]);
+
   const reset = () => {
     setStep("idle");
     setExtraction(null);
@@ -105,7 +116,8 @@ export function BrochureEnrichPanel({
           {gaps &&
             (gaps.droppedVariants.length > 0 ||
               gaps.bedroomShortfall.length > 0 ||
-              gaps.unparsedDimensions.length > 0) && (
+              gaps.unparsedDimensions.length > 0 ||
+              serviceWarnings.length > 0) && (
               <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
                 <p className="font-label text-[10px] font-semibold tracking-luxury text-amber-700 uppercase dark:text-amber-400">
                   Read from the brochure but not filled in
@@ -126,6 +138,9 @@ export function BrochureEnrichPanel({
                       read off the plan. Check the remaining {s.stated - s.found} against the
                       brochure before saving.
                     </li>
+                  ))}
+                  {serviceWarnings.map((w) => (
+                    <li key={w}>{w}</li>
                   ))}
                   {gaps.unparsedDimensions.length > 0 && (
                     <li>

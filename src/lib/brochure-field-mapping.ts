@@ -549,7 +549,16 @@ export interface MappingGaps {
    *  is a size this product deliberately doesn't list — nothing is broken, a
    *  human just has to decide. A sheet that says nothing and whose bedrooms
    *  couldn't be counted is a real gap in this mapping. */
-  droppedVariants: { label: string; bhkType: string; rooms: number; stated: boolean }[];
+  droppedVariants: {
+    label: string;
+    bhkType: string;
+    rooms: number;
+    stated: boolean;
+    /** Not a home at all — no measured room, no area, no price. One brochure
+     *  reported a "Foyer Block A" of meter room, substation and DG set room.
+     *  Dropping that is right; calling it a mapping failure is not. */
+    notAResidence: boolean;
+  }[];
   /** The sheet says "4 BHK" and only three bedrooms were read off it. Nothing
    *  here can invent the fourth — but quietly filing a three-bedroom 4 BHK is
    *  how a listing goes out wrong, so say so. */
@@ -576,11 +585,19 @@ export function findMappingGaps(
       bucketFor(text(variant.bhk_type), text(variant.variant_label), variant.rooms ?? []);
     if (!bucket) {
       const bhkType = text(variant.bhk_type);
+      const measured = (variant.rooms ?? []).filter((r) => textOrNull(r.dimension)).length;
+      const priced = [
+        variant.carpet_area,
+        variant.built_up_area,
+        variant.super_built_up_area,
+        variant.price,
+      ].some((f) => text(f));
       gaps.droppedVariants.push({
         label,
         bhkType,
         rooms: (variant.rooms ?? []).length,
         stated: /\b\d+\s*bhk\b/.test(`${bhkType} ${label}`.toLowerCase()),
+        notAResidence: measured === 0 && !priced,
       });
       return;
     }

@@ -181,10 +181,7 @@ assert.equal(
   "Living & Dining 720 sq ft (40'0\" × 18'0\") + Drawing Room 278 sq ft (15'0\" × 18'6\")",
 );
 // "KITCHEN" is dropped from each part — the field is already the kitchen.
-assert.equal(
-  sv.kitchen,
-  "Display 120 sq ft (12'0\" × 10'0\") + Core 120 sq ft (12'0\" × 10'0\")",
-);
+assert.equal(sv.kitchen, "Display 120 sq ft (12'0\" × 10'0\") + Core 120 sq ft (12'0\" × 10'0\")");
 // A single room carries no name, just the measurement.
 assert.equal(sv.bedroom1, "260 sq ft (13'0\" × 20'0\")");
 // A misread is passed through verbatim rather than becoming "17760 sq ft".
@@ -284,7 +281,11 @@ const unnumbered = {
   ],
 } as unknown as PropertyExtraction;
 const fallback = mapExtractedPayload(unnumbered).configs!.bhk4[0];
-assert.equal(fallback.bedroom1, "252 sq ft (14'0\" × 18'0\")", "master still leads when unnumbered");
+assert.equal(
+  fallback.bedroom1,
+  "252 sq ft (14'0\" × 18'0\")",
+  "master still leads when unnumbered",
+);
 assert.equal(fallback.bedroom2, "216 sq ft (12'0\" × 18'0\")");
 
 // --- A penthouse names itself on the plan title, not in bhk_type. ---
@@ -429,7 +430,36 @@ const stated = findMappingGaps({
 } as unknown as PropertyExtraction);
 assert.equal(stated.droppedVariants[0].stated, true, "an explicit 2 BHK is a stated size");
 assert.equal(unlabelledGaps.droppedVariants[0].stated, true);
-console.log("dropped layouts   : stated sizes told apart from real gaps");
+// Building services are not a home, and calling that a mapping failure would
+// leave the regression crying wolf on every brochure that lists a substation.
+const services = findMappingGaps({
+  ...extraction,
+  configurations: [
+    {
+      ...extraction.configurations[0],
+      bhk_type: blank(),
+      variant_label: f("Foyer Block A"),
+      carpet_area: blank(),
+      built_up_area: blank(),
+      super_built_up_area: blank(),
+      price: blank(),
+      rooms: [room("Meter Room", null), room("Substation", null), room("DG set room", null)],
+    },
+  ],
+} as unknown as PropertyExtraction);
+assert.equal(services.droppedVariants.length, 1);
+assert.equal(
+  services.droppedVariants[0].notAResidence,
+  true,
+  "no measured room, no area, no price",
+);
+// A layout we genuinely failed to identify must NOT be excused the same way.
+assert.equal(
+  unlabelledGaps.droppedVariants.every((d) => !d.notAResidence || d.stated),
+  true,
+  "a real home must never be written off as building services",
+);
+console.log("dropped layouts   : stated sizes and building services told apart from real gaps");
 
 // --- A plan page the model half-read looks exactly like a smaller home. ---
 const halfRead = {
@@ -485,9 +515,7 @@ const SIZE_STYLES: [string, string][] = [
 for (const [printed, expected] of SIZE_STYLES) {
   const one = {
     ...extraction,
-    configurations: [
-      { ...extraction.configurations[0], rooms: [room("BED ROOM", printed)] },
-    ],
+    configurations: [{ ...extraction.configurations[0], rooms: [room("BED ROOM", printed)] }],
   } as unknown as PropertyExtraction;
   const got = mapExtractedPayload(one).configs!.bhk4[0].bedroom1;
   assert.equal(got, expected, `size style ${JSON.stringify(printed)} must parse`);

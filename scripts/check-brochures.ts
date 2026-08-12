@@ -77,8 +77,11 @@ for (const { name, extraction } of brochures) {
 
   // A sheet that names a size this product doesn't list ("2 BHK") is a product
   // decision, not a bug. A sheet we simply could not identify is the bug.
-  const unidentified = gaps.droppedVariants.filter((d) => !d.stated);
+  const unidentified = gaps.droppedVariants.filter((d) => !d.stated && !d.notAResidence);
   const unsupported = gaps.droppedVariants.filter((d) => d.stated);
+  for (const d of gaps.droppedVariants.filter((d) => d.notAResidence && !d.stated)) {
+    console.log(`  · "${d.label}" is not a home — no measured room, no area, no price`);
+  }
   if (unidentified.length) {
     totalDropped += unidentified.length;
     console.log(`  ⚠ ${unidentified.length} layout(s) could not be identified at all:`);
