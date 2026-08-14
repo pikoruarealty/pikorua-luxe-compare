@@ -5,6 +5,7 @@ import {
   createBrochureUploadTicket,
   getBrochureExtractionProgress,
   getBrochureExtraction,
+  cancelBrochureExtraction,
 } from "@/api/functions/brochure-extract.functions";
 import type { ExtractionResponse } from "@/lib/brochure-field-mapping";
 import { pollUntilExtracted } from "@/lib/poll-extraction";
@@ -27,16 +28,28 @@ export function BrochureUploadStep({
   const ticketFn = useServerFn(createBrochureUploadTicket);
   const progressFn = useServerFn(getBrochureExtractionProgress);
   const resultFn = useServerFn(getBrochureExtraction);
+  const cancelFn = useServerFn(cancelBrochureExtraction);
 
   // Guards against a poll landing after the step unmounts (developer hit Back
   // mid-extraction), which would otherwise setState on a dead component.
   const cancelledRef = useRef(false);
+  // The job the service is currently running, so leaving the step can stop it
+  // rather than just stopping us from watching. Every page it would still have
+  // read is a billed vision-LLM call for a result nobody will collect.
+  const jobIdRef = useRef<string | null>(null);
   useEffect(() => {
     cancelledRef.current = false;
     return () => {
       cancelledRef.current = true;
+      const jobId = jobIdRef.current;
+      if (jobId) {
+        jobIdRef.current = null;
+        void cancelFn({ data: { jobId } }).catch(() => {
+          // Best effort: the step is already gone, and the job stops on its own.
+        });
+      }
     };
-  }, []);
+  }, [cancelFn]);
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
@@ -62,7 +75,7 @@ export function BrochureUploadStep({
     try {
       res = await fetch(uploadUrl, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
     } catch {
@@ -85,6 +98,7 @@ export function BrochureUploadStep({
     setError("");
     try {
       const jobId = await upload();
+      jobIdRef.current = jobId;
 
       // Extraction is a background job on the service — one LLM call per batch
       // of pages, so a full brochure runs for minutes. Poll rather than hold a
@@ -98,6 +112,8 @@ export function BrochureUploadStep({
       if (cancelledRef.current) return;
 
       const result = await resultFn({ data: { jobId } });
+      // Finished: nothing left to cancel on unmount.
+      jobIdRef.current = null;
       if (!cancelledRef.current) onExtracted(result);
     } catch (err) {
       if (!cancelledRef.current) {

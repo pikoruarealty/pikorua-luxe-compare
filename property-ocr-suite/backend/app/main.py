@@ -28,16 +28,23 @@ Endpoints:
 
 Auth: every request under /api needs header `X-Service-Key` matching
 SERVICE_API_KEY from .env. This is a shared secret between this
-service and whatever calls it (your friend's developer portal) — it
-is NOT the OpenAI/Anthropic key, and it never touches the LLM.
+service and whatever calls it (the developer portal) — it is NOT the
+OpenAI/Anthropic key, and it never touches the LLM. The service will
+not start without one unless ALLOW_INSECURE_LOCAL=1 says so out loud.
 
-POST /api/properties/extract additionally accepts a short-lived
-`Authorization: Bearer <expiry>.<hmac>` token signed with that same
-key. Brochures run to tens of megabytes and the website is deployed to
-serverless hosts that cap request bodies at a few MB, so the file has
-to go from the browser to this service directly rather than through
-the website. The browser gets a token, never the key, and the token
-opens no other endpoint.
+Two routes also accept a short-lived signed ticket, because a browser
+has to reach them directly and must never hold the shared key:
+
+  POST /api/properties/extract
+      `Authorization: Bearer <expiry>.<hmac>`. Brochures run to tens of
+      megabytes and the website is deployed to hosts that cap request
+      bodies at a few MB, so the file cannot be relayed through it.
+
+  GET  /api/images/{job_id}/{filename}
+      `?t=<expiry>.<hmac>`, because an <img> tag cannot send a header.
+
+The scope is part of the signed message, so the two kinds of ticket are
+not interchangeable and neither opens anything else.
 """
 
 from __future__ import annotations
@@ -53,7 +60,16 @@ import uuid
 from pathlib import Path
 from typing import Dict, List
 
-from fastapi import BackgroundTasks, Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -71,27 +87,41 @@ app = FastAPI(title="Property Brochure OCR", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to your actual frontend origin in production
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["X-Service-Key", "Authorization", "Content-Type"],
 )
 
 
+def _auth_disabled() -> bool:
+    """True only when the service was deliberately started without a key.
+
+    config.check_auth_configured() refuses to boot in that state unless
+    ALLOW_INSECURE_LOCAL=1, so reaching this is a local-development choice
+    rather than a missing environment variable in production."""
+    return not settings.SERVICE_API_KEY and settings.ALLOW_INSECURE_LOCAL
+
+
 def require_service_key(x_service_key: str | None = Header(default=None)) -> None:
-    if not settings.SERVICE_API_KEY:
-        return  # no key configured -> auth disabled (local dev convenience)
-    if x_service_key != settings.SERVICE_API_KEY:
+    if _auth_disabled():
+        return
+    # compare_digest, not !=, so the comparison does not leak the key one
+    # character at a time through its own timing.
+    if not x_service_key or not hmac.compare_digest(x_service_key, settings.SERVICE_API_KEY):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Service-Key header")
 
 
-def _verify_upload_token(token: str) -> bool:
-    """`<unix-expiry>.<hex hmac of that expiry>`, signed with the shared key.
+def _verify_signed_ticket(token: str, scope: str = "") -> bool:
+    """`<unix-expiry>.<hex hmac of scope+expiry>`, signed with the shared key.
 
     A brochure is tens of megabytes and the website runs on serverless hosts
     that cap request bodies at a few MB, so the file cannot be relayed through
     it — the browser has to reach this service directly. It still must not hold
     the shared key, so the website mints one of these instead: good for minutes,
-    useless for anything but starting an extraction."""
+    useless for anything but the scope it was signed for.
+
+    `scope` is part of the signed message, so a ticket minted to upload a
+    brochure will not also open the extracted images, and vice versa."""
     try:
         expiry_str, signature = token.split(".", 1)
         expiry = int(expiry_str)
@@ -100,9 +130,13 @@ def _verify_upload_token(token: str) -> bool:
     if expiry < int(time.time()):
         return False
     expected = hmac.new(
-        settings.SERVICE_API_KEY.encode(), expiry_str.encode(), hashlib.sha256
+        settings.SERVICE_API_KEY.encode(), f"{scope}{expiry_str}".encode(), hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature)
+
+
+def _verify_upload_token(token: str) -> bool:
+    return _verify_signed_ticket(token, "")
 
 
 def require_upload_auth(
@@ -111,9 +145,9 @@ def require_upload_auth(
 ) -> None:
     """Upload accepts the shared key OR a short-lived signed token. Only this
     one endpoint does — a leaked token must not also read back other jobs."""
-    if not settings.SERVICE_API_KEY:
+    if _auth_disabled():
         return
-    if x_service_key == settings.SERVICE_API_KEY:
+    if x_service_key and hmac.compare_digest(x_service_key, settings.SERVICE_API_KEY):
         return
     if authorization and authorization.startswith("Bearer "):
         if _verify_upload_token(authorization[7:]):
@@ -186,19 +220,26 @@ def _summarise_pages(numbers: List[int]) -> str:
     return ", ".join(str(a) if a == b else f"{a}-{b}" for a, b in runs)
 
 
-def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -> None:
+def _run_extraction(
+    job_id: str, saved_paths: List[tuple[Path, str]], job_image_dir: Path
+) -> None:
+    """`saved_paths` pairs each stored file with the name the uploader gave it.
+
+    The two differ on purpose: what lands on disk is a generated name, because
+    the uploaded one is attacker-controlled, but every message the human reads
+    should still say "Prestige Park Grove.pdf" rather than a hex string."""
     try:
         read_warnings: List[str] = []
         pages_by_file = []
-        for path in saved_paths:
+        for path, label in saved_paths:
             document = read_pdf(path)
-            pages_by_file.append((path, document.pages))
+            pages_by_file.append((path, label, document.pages))
             if document.skipped_pages:
                 # Never let this be silent. A brochure longer than the page
                 # budget is the single likeliest reason an extraction comes
                 # back thin, and without this the human blames the model.
                 read_warnings.append(
-                    f"{path.name}: {len(document.skipped_pages)} page(s) skipped — over the "
+                    f"{label}: {len(document.skipped_pages)} page(s) skipped — over the "
                     f"{settings.MAX_PAGES_PER_DOC}-page limit (pages "
                     f"{_summarise_pages(document.skipped_pages)}). Floor plans and price "
                     f"tables were kept in preference to marketing pages; raise "
@@ -207,7 +248,7 @@ def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -
         # Ask the extractor how it will actually split these, rather
         # than recomputing the arithmetic here — floor-plan pages get
         # their own calls, so a plain divide would under-count.
-        batches_total = sum(len(batch_pages(pages)) for _, pages in pages_by_file)
+        batches_total = sum(len(batch_pages(pages)) for _, _, pages in pages_by_file)
         _set_progress(job_id, status="processing", batches_done=0, batches_total=batches_total)
 
         progress_state = {"done": 0}
@@ -223,11 +264,11 @@ def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -
             )
 
         per_file_extractions = []
-        for path, pages in pages_by_file:
+        for path, label, pages in pages_by_file:
             if should_cancel():
                 break
             result = extract_from_pages(
-                pages, path.name, on_batch_done=on_batch_done, should_cancel=should_cancel
+                pages, label, on_batch_done=on_batch_done, should_cancel=should_cancel
             )
             result.image_candidates = [
                 ImageCandidate(
@@ -237,7 +278,7 @@ def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -
                     width=img.width,
                     height=img.height,
                 )
-                for img in extract_embedded_images(path, job_image_dir)
+                for img in extract_embedded_images(path, job_image_dir, display_name=label)
             ]
             per_file_extractions.append(result)
 
@@ -260,10 +301,36 @@ def _run_extraction(job_id: str, saved_paths: List[Path], job_image_dir: Path) -
         _set_progress(job_id, status="error", error=str(exc))
 
 
+def _copy_within_limit(upload: UploadFile, dest: Path) -> None:
+    """Stream one upload to disk, stopping the moment it exceeds the cap.
+
+    Checked while copying rather than afterwards: the point is to not write an
+    unbounded file, and Content-Length is the client's word for it."""
+    written = 0
+    with dest.open("wb") as handle:
+        while chunk := upload.file.read(1024 * 1024):
+            written += len(chunk)
+            if written > settings.MAX_UPLOAD_BYTES:
+                handle.close()
+                dest.unlink(missing_ok=True)
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Each brochure must be under {settings.MAX_UPLOAD_BYTES // (1024 * 1024)}MB",
+                )
+            handle.write(chunk)
+
+
 @app.post("/api/properties/extract", dependencies=[Depends(require_upload_auth)])
 async def extract_property(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
     if not files:
         raise HTTPException(status_code=400, detail="Upload at least one PDF file")
+    # The browser posts here directly, so the upload screen's own limit is a
+    # courtesy rather than a control. Every extra document is another fan-out
+    # into per-page vision-LLM calls, billed.
+    if len(files) > settings.MAX_FILES:
+        raise HTTPException(
+            status_code=400, detail=f"Upload at most {settings.MAX_FILES} brochures at once"
+        )
 
     job_id = uuid.uuid4().hex[:12]
     job_upload_dir = settings.UPLOAD_DIR / job_id
@@ -272,12 +339,17 @@ async def extract_property(background_tasks: BackgroundTasks, files: List[Upload
 
     saved_paths = []
     for upload in files:
-        if not upload.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail=f"{upload.filename} is not a PDF")
-        dest = job_upload_dir / upload.filename
-        with dest.open("wb") as f:
-            shutil.copyfileobj(upload.file, f)
-        saved_paths.append(dest)
+        # The multipart filename is attacker-controlled and was previously used
+        # as the path component verbatim, so a name like
+        # ../../../../app/app/config.pdf wrote straight out of the job
+        # directory. The stored name is now generated; the original is kept only
+        # as a label, and only after basename() has stripped any path in it.
+        original = Path(upload.filename or "").name
+        if not original.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail=f"{original or 'file'} is not a PDF")
+        dest = job_upload_dir / f"{uuid.uuid4().hex}.pdf"
+        _copy_within_limit(upload, dest)
+        saved_paths.append((dest, original))
 
     _set_progress(job_id, status="queued", batches_done=0, batches_total=0)
     background_tasks.add_task(_run_extraction, job_id, saved_paths, job_image_dir)
@@ -324,10 +396,36 @@ async def save_property(job_id: str, payload: SavePayload):
     return {"job_id": job_id, "status": "saved"}
 
 
-@app.get("/api/images/{job_id}/{filename}")
+IMAGE_TICKET_SCOPE = "img:"
+
+
+def require_image_auth(
+    x_service_key: str | None = Header(default=None),
+    t: str | None = Query(default=None),
+) -> None:
+    """Images are the one thing a browser loads directly, in an <img> tag that
+    cannot carry a header — so this route also accepts a scoped ticket in the
+    query string. The website mints it; the shared key stays server-side."""
+    if _auth_disabled():
+        return
+    if x_service_key and hmac.compare_digest(x_service_key, settings.SERVICE_API_KEY):
+        return
+    if t and _verify_signed_ticket(t, IMAGE_TICKET_SCOPE):
+        return
+    raise HTTPException(status_code=401, detail="Invalid or missing image credentials")
+
+
+@app.get("/api/images/{job_id}/{filename}", dependencies=[Depends(require_image_auth)])
 async def get_image(job_id: str, filename: str):
-    path = settings.IMAGE_DIR / job_id / filename
-    if not path.exists():
+    # This was the one route without an auth dependency, contradicting the
+    # module docstring above. Extracted brochure pages are a client's unreleased
+    # marketing material; anyone holding the URL could read them.
+    root = settings.IMAGE_DIR.resolve()
+    path = (root / job_id / filename).resolve()
+    # Starlette's route matching already rejects the obvious traversal, but the
+    # join is the thing actually reaching the filesystem, so it states its own
+    # invariant rather than relying on a caller two layers up.
+    if not path.is_relative_to(root) or not path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(path)
 

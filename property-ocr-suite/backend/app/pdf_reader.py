@@ -296,13 +296,20 @@ def read_pdf(path: Path) -> PdfDocument:
     return PdfDocument(pages=pages, skipped_pages=skipped)
 
 
-def extract_embedded_images(path: Path, out_dir: Path, min_side: int = 300) -> List[EmbeddedImage]:
+def extract_embedded_images(
+    path: Path, out_dir: Path, min_side: int = 300, display_name: str | None = None
+) -> List[EmbeddedImage]:
     """
     Pull real embedded images (not the whole rendered page) out of the
     PDF — these are candidates for Cover / Living room / Pool / etc.
     We deliberately do NOT try to guess which slot each one belongs
     to; that categorisation is left for a human to drag into place on
     the frontend. `min_side` filters out small icons/logos.
+
+    `display_name` is the brochure's original filename, shown to the reviewer.
+    It is kept apart from `path`, which is a generated name — the uploaded one
+    cannot be trusted on disk, and it used to be spliced into the image
+    filenames here and from there into a URL.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     doc = fitz.open(path)
@@ -327,7 +334,7 @@ def extract_embedded_images(path: Path, out_dir: Path, min_side: int = 300) -> L
                 fpath.write_bytes(base_image["image"])
                 found.append(
                     EmbeddedImage(
-                        file_name=path.name,
+                        file_name=display_name or path.name,
                         page_number=i + 1,
                         path=fpath,
                         width=width,
