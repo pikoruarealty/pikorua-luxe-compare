@@ -1,7 +1,0 @@
-.venv/
-__pycache__/
-*.pyc
-.env
-extracted_images/
-*.json
-!examples/*.json
