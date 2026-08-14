@@ -11,6 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "check": "bun run scripts/check-mapping.ts && bun run scripts/check-polling.ts && bun run scripts/check-brochures.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev:ocr": "cd property-ocr-suite/backend && .venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
     "dev:all": "concurrently -n web,ocr -c cyan,magenta \"bun run dev\" \"bun run dev:ocr\""
   },
