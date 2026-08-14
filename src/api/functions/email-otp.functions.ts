@@ -3,8 +3,6 @@ import { useSession } from "@tanstack/react-start/server";
 import type { EmailOtpSession } from "@/server/session.server";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
-const RESEND_COOLDOWN_MS = 30 * 1000;
-const MAX_ATTEMPTS = 5;
 
 // `useSession` is h3's request composable, not a React hook — react-hooks only
 // flags it because of the name.
@@ -112,17 +110,13 @@ export const sendEmailOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const session = await emailOtpSession();
 
-    // Throttle resends per browser session, so the button can't be used to
-    // hammer someone else's inbox.
-    const prev = session.data;
-    if (
-      prev?.sentAt &&
-      prev.email === data.email &&
-      Date.now() - prev.sentAt < RESEND_COOLDOWN_MS
-    ) {
-      const waitSeconds = Math.ceil((RESEND_COOLDOWN_MS - (Date.now() - prev.sentAt)) / 1000);
-      throw new Error(`Please wait ${waitSeconds}s before requesting another code.`);
-    }
+    // The old throttle read `sentAt` from the caller's own cookie, so throwing
+    // the cookie away bypassed it -- which made the stated purpose, "so the
+    // button can't be used to hammer someone else's inbox", the one thing it
+    // could not do. Keyed on the address and the caller now, in Redis.
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.EMAIL_SEND, data.email);
+    await enforce(POLICIES.EMAIL_SEND, `ip:${await clientIp()}`);
 
     const code = generateCode();
     const { hashOtp } = await import("@/server/verification-token.server");
@@ -133,7 +127,10 @@ export const sendEmailOtp = createServerFn({ method: "POST" })
       codeHash: await hashOtp(code),
       expiresAt: Date.now() + CODE_TTL_MS,
       sentAt: Date.now(),
-      attempts: 0,
+      // Server-chosen, and the only thing tying this cookie to its attempt
+      // count. A replayed cookie carries the same id, so it inherits the
+      // count rather than resetting it.
+      challengeId: crypto.randomUUID(),
     });
 
     return { sent: true };
@@ -151,35 +148,29 @@ export const verifyEmailOtp = createServerFn({ method: "POST" })
     // useSession types every field as optional, so pin the shape down once
     // rather than defending against undefined at each check below.
     const stored = session.data as Partial<EmailOtpSession> | undefined;
-    if (!stored?.codeHash || !stored.expiresAt || stored.email !== data.email) {
+    if (!stored?.codeHash || !stored.expiresAt || !stored.challengeId) {
       throw new Error("Request a new code to continue.");
     }
-    const pending: EmailOtpSession = {
-      email: stored.email,
-      codeHash: stored.codeHash,
-      expiresAt: stored.expiresAt,
-      sentAt: stored.sentAt ?? 0,
-      attempts: stored.attempts ?? 0,
-    };
+    if (stored.email !== data.email) {
+      throw new Error("Request a new code to continue.");
+    }
 
-    if (Date.now() > pending.expiresAt) {
+    if (Date.now() > stored.expiresAt) {
       await session.clear();
       throw new Error("That code expired. Request a new one.");
     }
-    if (pending.attempts >= MAX_ATTEMPTS) {
-      await session.clear();
-      throw new Error("Too many incorrect attempts. Request a new code.");
-    }
+
+    // Counted server-side against the challenge id, before the comparison
+    // rather than after it. The count used to live in this cookie next to the
+    // hash, where replaying an untouched copy reset it on every guess.
+    const { enforce, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.OTP_ATTEMPT, stored.challengeId);
 
     const { hashOtp, constantTimeStringEqual, signClaim } =
       await import("@/server/verification-token.server");
 
-    if (!constantTimeStringEqual(await hashOtp(data.otp), pending.codeHash)) {
-      await session.update({ ...pending, attempts: pending.attempts + 1 });
-      const left = MAX_ATTEMPTS - (pending.attempts + 1);
-      throw new Error(
-        left > 0 ? "That code didn't match. Try again." : "Too many incorrect attempts.",
-      );
+    if (!constantTimeStringEqual(await hashOtp(data.otp), stored.codeHash)) {
+      throw new Error("That code didn't match. Try again.");
     }
 
     await session.clear();

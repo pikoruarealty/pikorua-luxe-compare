@@ -193,6 +193,13 @@ export const checkAccountExists = createServerFn({ method: "POST" })
     return { channel: "phone" as const, identity: phone };
   })
   .handler(async ({ data }) => {
+    // Answers "is this person a customer" precisely, to anyone who asks. The
+    // reason for it is sound -- nobody should be mailed a code for an account
+    // that does not exist -- but unthrottled it also confirms membership for
+    // an arbitrary list of numbers or addresses.
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.ACCOUNT_LOOKUP, `ip:${await clientIp()}`);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const query = supabaseAdmin.from("profiles").select("id");
     const { data: rows, error } =
@@ -212,6 +219,9 @@ export const completeLogin = createServerFn({ method: "POST" })
     emailToken: typeof data?.emailToken === "string" ? data.emailToken : undefined,
   }))
   .handler(async ({ data }): Promise<ProfileDTO> => {
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.LOGIN, `ip:${await clientIp()}`);
+
     const phone = await verifyPhoneToken(data.verificationToken);
     const email = phone ? null : await verifyEmailToken(data.emailToken);
     if (!phone && !email) throw new Error("Verification expired. Please start again.");

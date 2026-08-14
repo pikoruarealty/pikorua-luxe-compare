@@ -38,15 +38,23 @@ export interface VisitorSession {
   phone: string;
 }
 
-/** The email sign-in handshake. `attempts` is deliberately still here; Phase 3
- *  moves the counter server-side, because a sealed cookie stops the client
- *  editing it but not replaying an older copy of it. */
+/** The email sign-in handshake.
+ *
+ *  The wrong-code counter used to live in this cookie. Sealing stopped the
+ *  client editing it but not *replaying* it: snapshot the cookie as issued, at
+ *  zero attempts, and resend that same snapshot with every guess, and the
+ *  counter never advances. Six digits is a million possibilities against a
+ *  ten-minute window with no limit on parallelism.
+ *
+ *  So the count moved to Redis and the cookie carries only `challengeId`, which
+ *  the server picked and which is what the count is keyed on. Replaying an old
+ *  cookie replays the same id, and the count keeps climbing. */
 export interface EmailOtpSession {
   email: string;
   codeHash: string;
   expiresAt: number;
   sentAt: number;
-  attempts: number;
+  challengeId: string;
 }
 
 // sameSite "none" is wrong for a first-party site and is being changed to "lax";

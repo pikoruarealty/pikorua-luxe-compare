@@ -32,6 +32,15 @@ vi.mock("@tanstack/react-start", () => ({
   },
 }));
 
+// Throttling is covered in rate-limit.server.test.ts. Stubbed out here so these
+// tests speak only about which number a code is bound to — and so the 1-per-60s
+// send limit does not fail a test that legitimately sends twice.
+vi.mock("@/server/rate-limit.server", () => ({
+  enforce: async () => {},
+  clientIp: async () => "test-ip",
+  POLICIES: { OTP_SEND: {}, OTP_ATTEMPT: {} },
+}));
+
 vi.mock("@tanstack/react-start/server", () => ({
   useSession: async () => ({
     get data() {

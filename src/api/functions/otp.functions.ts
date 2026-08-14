@@ -12,6 +12,17 @@ export const sendOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const apiKey = process.env.TWO_FACTOR_API_KEY;
     if (!apiKey) throw new Error("TWO_FACTOR_API_KEY missing");
+
+    // Public, unauthenticated, and every call sends a real SMS billed to the
+    // 2Factor account -- so without this it doubles as a way to flood any
+    // Indian mobile number with texts carrying this brand, and to empty the
+    // SMS balance. Keyed on the number *and* the caller: the number alone
+    // would let one attacker walk a list, the IP alone would let a botnet
+    // hammer one victim.
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.OTP_SEND, data.phone);
+    await enforce(POLICIES.OTP_SEND, `ip:${await clientIp()}`);
+
     const url = `https://2factor.in/API/V1/${encodeURIComponent(apiKey)}/SMS/${encodeURIComponent(data.phone)}/AUTOGEN`;
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     const json: { Status?: string; Details?: string } = await res.json();
@@ -67,6 +78,12 @@ export const verifyOtp = createServerFn({ method: "POST" })
     if (stored.sessionId !== data.sessionId) {
       throw new Error("That code has expired. Please use the most recent one.");
     }
+
+    // The phone path had no attempt counter at all -- a four-digit code and
+    // unlimited guesses. Keyed on the 2Factor session, which the server chose,
+    // so discarding the cookie starts a new send rather than a fresh budget.
+    const { enforce, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.OTP_ATTEMPT, stored.sessionId);
 
     const url = `https://2factor.in/API/V1/${encodeURIComponent(apiKey)}/SMS/VERIFY/${encodeURIComponent(stored.sessionId)}/${encodeURIComponent(data.otp)}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });

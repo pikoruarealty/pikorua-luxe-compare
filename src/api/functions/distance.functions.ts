@@ -77,6 +77,11 @@ export const suggestAddresses = createServerFn({ method: "GET" })
   })
   .handler(async ({ data }): Promise<{ suggestions: string[] }> => {
     if (data.query.length < 3) return { suggestions: [] };
+    // Fires on every keystroke past three characters, unauthenticated, against
+    // a free third-party service whose terms this was already straining.
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.GEOCODE, `ip:${await clientIp()}`);
+
     const address = normalizeAddress(data.query);
     const url = `${NOMINATIM_URL}?format=json&limit=5&countrycodes=in&q=${encodeURIComponent(address)}`;
     try {
@@ -99,7 +104,8 @@ interface DistanceInput {
  *  couldn't be geocoded; "unlocated" (not per-property, applied to all) means
  *  the visitor's own address couldn't be found. */
 export type DistanceResult =
-  { ok: true; distancesKm: Record<string, number | null> } | { ok: false; reason: "unlocated" };
+  | { ok: true; distancesKm: Record<string, number | null> }
+  | { ok: false; reason: "unlocated" };
 
 /** Server-only: geocodes the visitor's address and each compared property's
  *  address, then returns straight-line distances in km. Coordinates never
@@ -119,6 +125,11 @@ export const calculatePropertyDistances = createServerFn({ method: "POST" })
     };
   })
   .handler(async ({ data }): Promise<DistanceResult> => {
+    // Geocodes up to four addresses in sequence, each behind a 1.1s throttle,
+    // so one anonymous call holds a billed invocation open for seconds.
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.GEOCODE, `ip:${await clientIp()}`);
+
     const origin = await geocode(data.address);
     if (!origin) return { ok: false, reason: "unlocated" };
 

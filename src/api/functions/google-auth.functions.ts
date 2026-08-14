@@ -38,6 +38,9 @@ export const verifyGoogleCredential = createServerFn({ method: "POST" })
     return { credential };
   })
   .handler(async ({ data }): Promise<GoogleIdentity> => {
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.LOGIN, `ip:${await clientIp()}`);
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) throw new Error("Google sign-in isn't configured (GOOGLE_CLIENT_ID missing)");
 

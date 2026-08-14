@@ -47,6 +47,12 @@ export const logActivity = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
+      // Public by design, but that made it an anonymous unbounded write into
+      // the database. Keyed on the caller's address rather than the supplied
+      // sessionKey, which the caller invents and could vary per request.
+      const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+      await enforce(POLICIES.ACTIVITY, `ip:${await clientIp()}`);
+
       const { sessionConfig } = await import("@/server/session.server");
       const session = await useSession<VisitorSession>(sessionConfig());
       const profileId = session.data?.profileId ?? null;
