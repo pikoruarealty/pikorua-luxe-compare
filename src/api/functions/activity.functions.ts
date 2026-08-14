@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
+import type { VisitorSession } from "@/server/session.server";
 
 export type ActivityEvent =
   | "signup"
@@ -19,14 +20,6 @@ const EVENTS: ActivityEvent[] = [
   "favorite_add",
   "contact_click",
 ];
-
-const SESSION = "pikorua-session";
-const sessionConfig = () => ({
-  password: process.env.SESSION_SECRET!,
-  name: SESSION,
-  maxAge: 60 * 60 * 24 * 60,
-  cookie: { path: "/", httpOnly: true, sameSite: "none" as const, secure: true },
-});
 
 /**
  * Records one visitor interaction. Public (no auth) — anonymous browsing counts
@@ -54,7 +47,8 @@ export const logActivity = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
-      const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+      const { sessionConfig } = await import("@/server/session.server");
+      const session = await useSession<VisitorSession>(sessionConfig());
       const profileId = session.data?.profileId ?? null;
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

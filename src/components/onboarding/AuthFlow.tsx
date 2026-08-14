@@ -203,7 +203,7 @@ export function AuthFlow() {
               data: { email: email.trim().toLowerCase(), otp: code },
             }).then((r) => completeLoginFn({ data: { emailToken: r.emailToken } }))
           : await verifyOtpFn({
-              data: { sessionId: smsSessionId, otp: code, phone: fullPhoneDigits() },
+              data: { sessionId: smsSessionId, otp: code },
             }).then((r) => completeLoginFn({ data: { verificationToken: r.verificationToken } }));
       landAfterAuth(saved);
     } catch (e) {
@@ -313,7 +313,7 @@ export function AuthFlow() {
     setError("");
     try {
       const res = await verifyOtpFn({
-        data: { sessionId: smsSessionId, otp: code, phone: fullPhoneDigits() },
+        data: { sessionId: smsSessionId, otp: code },
       });
       setPhoneToken(res.verificationToken);
       go("signup-profession");

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
+import type { PendingSession, VisitorSession } from "@/server/session.server";
 
 export interface QuizAnswersDTO {
   state?: string;
@@ -25,29 +26,36 @@ interface VerifiedPhoneToken {
   verifiedAt: number;
 }
 
-const PENDING = "pikorua-pending";
-const SESSION = "pikorua-session";
+// Cookie options live in @/server/session.server so the sealing and scoping
+// rules have one home. Imported dynamically to keep SESSION_SECRET server-side.
+//
+// `useSession` is h3's request composable, not a React hook — react-hooks only
+// flags it because of the name.
+/* eslint-disable react-hooks/rules-of-hooks */
+async function visitorSession() {
+  const { sessionConfig } = await import("@/server/session.server");
+  return useSession<VisitorSession>(sessionConfig());
+}
 
-const cookieOpts = {
-  path: "/",
-  httpOnly: true,
-  sameSite: "none" as const,
-  secure: true,
-};
-const pendingConfig = () => ({
-  password: process.env.SESSION_SECRET!,
-  name: PENDING,
-  maxAge: 60 * 10,
-  cookie: cookieOpts,
-});
-const sessionConfig = () => ({
-  password: process.env.SESSION_SECRET!,
-  name: SESSION,
-  maxAge: 60 * 60 * 24 * 60, // 60 days
-  cookie: cookieOpts,
-});
+async function pendingSession() {
+  const { pendingConfig } = await import("@/server/session.server");
+  return useSession<PendingSession>(pendingConfig());
+}
+/* eslint-enable react-hooks/rules-of-hooks */
 
 const CLAIM_TTL_MS = 60 * 10 * 1000;
+
+/** The phone from the pending cookie, but only once verifyOtp has proven it.
+ *
+ *  sendOtp writes the number into that cookie so verifyOtp can bind against it,
+ *  which means the cookie's mere presence now says "a code went out" — not
+ *  "a code came back". Reading `phone` without checking `verifiedAt` would let a
+ *  caller request a code for any number and skip straight to owning it. */
+function provenPendingPhone(pending: { verifiedAt?: number; phone?: string } | undefined) {
+  if (!pending?.verifiedAt || !pending.phone) return null;
+  if (Date.now() - pending.verifiedAt > CLAIM_TTL_MS) return null;
+  return pending.phone;
+}
 
 async function verifyPhoneToken(token?: string | null) {
   const { readClaim } = await import("@/server/verification-token.server");
@@ -106,8 +114,9 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    const pending = await useSession<{ phone: string; verifiedAt: number }>(pendingConfig());
-    const phone = pending.data?.phone ?? (await verifyPhoneToken(data.verificationToken));
+    const pending = await pendingSession();
+    const phone =
+      provenPendingPhone(pending.data) ?? (await verifyPhoneToken(data.verificationToken));
     if (!phone) throw new Error("Phone not verified. Please verify OTP first.");
 
     // Both channels must be proven, and the proven address must be the one
@@ -147,7 +156,7 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
       .single();
     if (error || !row) throw new Error(error?.message ?? "Failed to save profile");
 
-    const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+    const session = await visitorSession();
     await session.update({ profileId: row.id, phone: row.phone });
     await pending.clear();
 
@@ -211,7 +220,10 @@ export const completeLogin = createServerFn({ method: "POST" })
     const columns = "id, phone, name, email, profession, business_name, quiz_answers";
     const { data: rows, error } = phone
       ? await supabaseAdmin.from("profiles").select(columns).eq("phone", phone)
-      : await supabaseAdmin.from("profiles").select(columns).ilike("email", email as string);
+      : await supabaseAdmin
+          .from("profiles")
+          .select(columns)
+          .ilike("email", email as string);
     if (error) throw new Error(error.message);
 
     const matches = rows ?? [];
@@ -227,17 +239,17 @@ export const completeLogin = createServerFn({ method: "POST" })
     }
 
     const row = matches[0];
-    const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+    const session = await visitorSession();
     await session.update({ profileId: row.id, phone: row.phone });
 
-    const pending = await useSession<{ phone: string; verifiedAt: number }>(pendingConfig());
+    const pending = await pendingSession();
     await pending.clear();
 
     return toDTO(row);
   });
 
 export const getSessionProfile = createServerFn({ method: "GET" }).handler(async () => {
-  const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+  const session = await visitorSession();
   const profileId = session.data?.profileId;
   if (!profileId) return null;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -259,7 +271,7 @@ export const saveQuizAnswers = createServerFn({ method: "POST" })
   })
 
   .handler(async ({ data }) => {
-    const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+    const session = await visitorSession();
     const profileId = session.data?.profileId;
     if (!profileId) throw new Error("Not signed in");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -277,19 +289,39 @@ export const updateProfile = createServerFn({ method: "POST" })
       if (!data?.name?.trim() || !data?.email?.trim() || !data?.profession?.trim()) {
         throw new Error("Missing fields");
       }
+      // Lowercased to match how every other write stores it — otherwise the
+      // same address saved here and at sign-up produces two rows that only a
+      // case-insensitive lookup can tell apart.
+      const email = data.email.trim().toLowerCase();
+      if (!EMAIL_RE.test(email)) throw new Error("Enter a valid email address");
       return {
         name: data.name.trim(),
-        email: data.email.trim(),
+        email,
         profession: data.profession.trim(),
         businessName: data.businessName?.trim() || null,
       };
     },
   )
   .handler(async ({ data }) => {
-    const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+    const session = await visitorSession();
     const profileId = session.data?.profileId;
     if (!profileId) throw new Error("Not signed in");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // One address, one profile. upsertProfileAfterOtp has enforced this since it
+    // was written; this path never got the same check, so a signed-in visitor
+    // could type in somebody else's address and take it. That locks the real
+    // owner out of email sign-in, because completeLogin refuses to guess
+    // between two matches.
+    const { data: emailOwners, error: ownersError } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("email", data.email);
+    if (ownersError) throw new Error("Couldn't check that email. Please try again.");
+    if ((emailOwners ?? []).some((r: { id: string }) => r.id !== profileId)) {
+      throw new Error("That email is already linked to another account.");
+    }
+
     const { data: row, error } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -306,7 +338,7 @@ export const updateProfile = createServerFn({ method: "POST" })
   });
 
 export const signOutProfile = createServerFn({ method: "POST" }).handler(async () => {
-  const session = await useSession<{ profileId: string; phone: string }>(sessionConfig());
+  const session = await visitorSession();
   await session.clear();
   return { ok: true };
 });

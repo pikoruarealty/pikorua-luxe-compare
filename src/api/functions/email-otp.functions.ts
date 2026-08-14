@@ -1,30 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
+import type { EmailOtpSession } from "@/server/session.server";
 
-const EMAIL_OTP_COOKIE = "pikorua-email-otp";
 const CODE_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 30 * 1000;
 const MAX_ATTEMPTS = 5;
 
-interface EmailOtpSession {
-  email: string;
-  codeHash: string;
-  expiresAt: number;
-  sentAt: number;
-  attempts: number;
+// `useSession` is h3's request composable, not a React hook — react-hooks only
+// flags it because of the name.
+/* eslint-disable react-hooks/rules-of-hooks */
+async function emailOtpSession() {
+  const { emailOtpConfig } = await import("@/server/session.server");
+  return useSession<EmailOtpSession>(emailOtpConfig());
 }
-
-const sessionConfig = () => ({
-  password: process.env.SESSION_SECRET!,
-  name: EMAIL_OTP_COOKIE,
-  maxAge: 60 * 15,
-  cookie: {
-    path: "/",
-    httpOnly: true,
-    sameSite: "none" as const,
-    secure: true,
-  },
-});
+/* eslint-enable react-hooks/rules-of-hooks */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -121,12 +110,16 @@ async function deliver(email: string, code: string): Promise<void> {
 export const sendEmailOtp = createServerFn({ method: "POST" })
   .inputValidator((data: { email: string }) => ({ email: normalizeEmail(data?.email) }))
   .handler(async ({ data }) => {
-    const session = await useSession<EmailOtpSession>(sessionConfig());
+    const session = await emailOtpSession();
 
     // Throttle resends per browser session, so the button can't be used to
     // hammer someone else's inbox.
     const prev = session.data;
-    if (prev?.sentAt && prev.email === data.email && Date.now() - prev.sentAt < RESEND_COOLDOWN_MS) {
+    if (
+      prev?.sentAt &&
+      prev.email === data.email &&
+      Date.now() - prev.sentAt < RESEND_COOLDOWN_MS
+    ) {
       const waitSeconds = Math.ceil((RESEND_COOLDOWN_MS - (Date.now() - prev.sentAt)) / 1000);
       throw new Error(`Please wait ${waitSeconds}s before requesting another code.`);
     }
@@ -154,7 +147,7 @@ export const verifyEmailOtp = createServerFn({ method: "POST" })
     return { email: normalizeEmail(data?.email), otp };
   })
   .handler(async ({ data }) => {
-    const session = await useSession<EmailOtpSession>(sessionConfig());
+    const session = await emailOtpSession();
     // useSession types every field as optional, so pin the shape down once
     // rather than defending against undefined at each check below.
     const stored = session.data as Partial<EmailOtpSession> | undefined;
@@ -178,9 +171,8 @@ export const verifyEmailOtp = createServerFn({ method: "POST" })
       throw new Error("Too many incorrect attempts. Request a new code.");
     }
 
-    const { hashOtp, constantTimeStringEqual, signClaim } = await import(
-      "@/server/verification-token.server"
-    );
+    const { hashOtp, constantTimeStringEqual, signClaim } =
+      await import("@/server/verification-token.server");
 
     if (!constantTimeStringEqual(await hashOtp(data.otp), pending.codeHash)) {
       await session.update({ ...pending, attempts: pending.attempts + 1 });
