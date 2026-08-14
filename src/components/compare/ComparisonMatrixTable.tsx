@@ -41,7 +41,13 @@ const TERM_INFO: Record<string, { title: string; body: string }> = {
 const DASH = "—";
 
 type RoomKey =
-  "livingArea" | "kitchen" | "bedroom1" | "bedroom2" | "bedroom3" | "bedroom4" | "bedroom5";
+  | "livingArea"
+  | "kitchen"
+  | "bedroom1"
+  | "bedroom2"
+  | "bedroom3"
+  | "bedroom4"
+  | "bedroom5";
 
 function roomFieldsFor(k: ConfigKey): { key: RoomKey; label: string }[] {
   const bedroomCount: Record<ConfigKey, number> = {
@@ -122,10 +128,7 @@ export function ComparisonMatrixTable({
     [items],
   );
 
-  const showPriceRow = useMemo(
-    () => items.some((p) => !isCityPriceHidden(p.city)),
-    [items],
-  );
+  const showPriceRow = useMemo(() => items.some((p) => !isCityPriceHidden(p.city)), [items]);
 
   return (
     <div className="overflow-hidden rounded-card border border-border-strong bg-card">
@@ -135,7 +138,10 @@ export function ComparisonMatrixTable({
           {/* ─── Mobile-only property name header (sticky so column identity is preserved on scroll) ── */}
           <div className="sticky top-0 z-20 flex gap-2 border-b-2 border-border-strong bg-card/95 px-3 py-2.5 backdrop-blur-md shadow-sm md:hidden">
             {items.map((p, i) => (
-              <div key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-center">
+              <div
+                key={p.id}
+                className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-center"
+              >
                 <span
                   className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-foreground font-semibold text-background"
                   style={{ fontSize: "9px", lineHeight: 0 }}
@@ -230,7 +236,9 @@ export function ComparisonMatrixTable({
             label="Units per Floor"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.unitsPerFloor != null ? String(p.unitsPerFloor) : null} />}
+            render={(p) => (
+              <Plain value={p.unitsPerFloor != null ? String(p.unitsPerFloor) : null} />
+            )}
           />
           <Row
             label="Total Units"
@@ -280,7 +288,9 @@ export function ComparisonMatrixTable({
                 if (!areaStr) return <Plain value={null} />;
                 const sqft = parseBareSqFt(areaStr);
                 if (sqft === null) return <Plain value={areaStr} />;
-                return <Numeric primary={formatAreaNumber(sqft, areaUnit)} unit={unitLabel(areaUnit)} />;
+                return (
+                  <Numeric primary={formatAreaNumber(sqft, areaUnit)} unit={unitLabel(areaUnit)} />
+                );
               }}
             />
           ))}
@@ -308,7 +318,9 @@ export function ComparisonMatrixTable({
             label="Parking Levels"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.parkingLevels != null ? String(p.parkingLevels) : null} />}
+            render={(p) => (
+              <Plain value={p.parkingLevels != null ? String(p.parkingLevels) : null} />
+            )}
           />
           <Row
             label="Podium Structure"
@@ -320,7 +332,9 @@ export function ComparisonMatrixTable({
             label="Lifts per Tower"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.liftsPerTower != null ? String(p.liftsPerTower) : null} />}
+            render={(p) => (
+              <Plain value={p.liftsPerTower != null ? String(p.liftsPerTower) : null} />
+            )}
           />
           <Row
             label="Open Space"
@@ -429,19 +443,31 @@ export function ComparisonMatrixTable({
             label="Experience (Years)"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.developerExperienceYears != null ? String(p.developerExperienceYears) : null} />}
+            render={(p) => (
+              <Plain
+                value={
+                  p.developerExperienceYears != null ? String(p.developerExperienceYears) : null
+                }
+              />
+            )}
           />
           <Row
             label="Total Delivered Projects"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.totalDeliveredProjects != null ? String(p.totalDeliveredProjects) : null} />}
+            render={(p) => (
+              <Plain
+                value={p.totalDeliveredProjects != null ? String(p.totalDeliveredProjects) : null}
+              />
+            )}
           />
           <Row
             label="Ongoing Projects"
             items={items}
             gridTpl={gridTpl}
-            render={(p) => <Plain value={p.ongoingProjects != null ? String(p.ongoingProjects) : null} />}
+            render={(p) => (
+              <Plain value={p.ongoingProjects != null ? String(p.ongoingProjects) : null} />
+            )}
           />
           <Row
             label="Notable Delivered Projects"
@@ -821,10 +847,7 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
       const result = await calculatePropertyDistances({
         data: {
           address,
-          properties: items.map((p) => ({
-            id: p.id,
-            address: [p.location, p.city, p.state].filter(Boolean).join(", "),
-          })),
+          propertyIds: items.map((p) => p.id),
         },
       });
       if (result.ok) {
@@ -841,7 +864,10 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
   return (
     <>
       <div className="border-b border-border bg-muted/10 px-3 py-2.5 sm:px-4 sm:py-3">
-        <p className="mb-2 text-muted-foreground text-xs sm:text-sm" style={{ fontSize: "var(--step--1)" }}>
+        <p
+          className="mb-2 text-muted-foreground text-xs sm:text-sm"
+          style={{ fontSize: "var(--step--1)" }}
+        >
           Enter a landmark or neighbourhood — we'll show you how far each residence is. No exact
           location or map is used.
         </p>

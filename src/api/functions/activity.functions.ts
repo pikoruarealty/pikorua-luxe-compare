@@ -21,6 +21,53 @@ const EVENTS: ActivityEvent[] = [
   "contact_click",
 ];
 
+const MAX_METADATA_BYTES = 8_192;
+const MAX_METADATA_DEPTH = 5;
+const MAX_CONTAINER_ITEMS = 50;
+const MAX_METADATA_STRING = 500;
+
+function validateMetadataValue(value: unknown, depth: number): void {
+  if (depth > MAX_METADATA_DEPTH) throw new Error("Activity metadata is too deeply nested");
+  if (value === null || typeof value === "boolean") return;
+  if (typeof value === "number" && Number.isFinite(value)) return;
+  if (typeof value === "string") {
+    if (value.length > MAX_METADATA_STRING) throw new Error("Activity metadata string is too long");
+    return;
+  }
+  if (Array.isArray(value)) {
+    if (value.length > MAX_CONTAINER_ITEMS) throw new Error("Activity metadata array is too large");
+    value.forEach((item) => validateMetadataValue(item, depth + 1));
+    return;
+  }
+  if (typeof value === "object") {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new Error("Invalid activity metadata object");
+    }
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length > MAX_CONTAINER_ITEMS)
+      throw new Error("Activity metadata object is too large");
+    for (const [key, item] of entries) {
+      if (key.length > 100) throw new Error("Activity metadata key is too long");
+      validateMetadataValue(item, depth + 1);
+    }
+    return;
+  }
+  throw new Error("Invalid activity metadata value");
+}
+
+function validatedMetadata(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) return {};
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Activity metadata must be an object");
+  }
+  validateMetadataValue(value, 1);
+  if (new TextEncoder().encode(JSON.stringify(value)).byteLength > MAX_METADATA_BYTES) {
+    throw new Error("Activity metadata is too large");
+  }
+  return value as Record<string, unknown>;
+}
+
 /**
  * Records one visitor interaction. Public (no auth) — anonymous browsing counts
  * too; the event links to a profile automatically when the visitor is signed in.
@@ -40,8 +87,7 @@ export const logActivity = createServerFn({ method: "POST" })
         propertySlug:
           typeof data.propertySlug === "string" ? data.propertySlug.slice(0, 200) : null,
         sessionKey: typeof data.sessionKey === "string" ? data.sessionKey.slice(0, 100) : null,
-        metadata:
-          data.metadata && typeof data.metadata === "object" ? data.metadata : ({} as const),
+        metadata: validatedMetadata(data.metadata),
       };
     },
   )

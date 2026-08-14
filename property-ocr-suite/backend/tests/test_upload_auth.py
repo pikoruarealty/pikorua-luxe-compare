@@ -13,6 +13,7 @@ from app import main
 from app.config import settings
 
 SECRET = "test-shared-secret-0123456789"
+JOB_ID = "a1b2c3d4e5f6a7b8"
 
 
 @pytest.fixture(autouse=True)
@@ -29,19 +30,19 @@ def _scoped_token(expiry: int, scope: str = "", secret: str = SECRET) -> str:
 
 
 def _token(expiry: int, secret: str = SECRET) -> str:
-    return _scoped_token(expiry, "", secret)
+    return _scoped_token(expiry, f"upload:{JOB_ID}:", secret)
 
 
 def test_valid_token_is_accepted():
-    assert main._verify_upload_token(_token(int(time.time()) + 600)) is True
+    assert main._verify_upload_token(_token(int(time.time()) + 600), JOB_ID) is True
 
 
 def test_expired_token_is_rejected():
-    assert main._verify_upload_token(_token(int(time.time()) - 1)) is False
+    assert main._verify_upload_token(_token(int(time.time()) - 1), JOB_ID) is False
 
 
 def test_token_signed_with_another_key_is_rejected():
-    assert main._verify_upload_token(_token(int(time.time()) + 600, "wrong-key")) is False
+    assert main._verify_upload_token(_token(int(time.time()) + 600, "wrong-key"), JOB_ID) is False
 
 
 @pytest.mark.parametrize(
@@ -49,19 +50,24 @@ def test_token_signed_with_another_key_is_rejected():
     ["", "not-a-token", "abc.def", "1800000000", "1800000000.", ".deadbeef"],
 )
 def test_malformed_tokens_are_rejected(token):
-    assert main._verify_upload_token(token) is False
+    assert main._verify_upload_token(token, JOB_ID) is False
 
 
 def test_tampered_signature_is_rejected():
     good = _token(int(time.time()) + 600)
     tampered = good[:-1] + ("0" if good[-1] != "0" else "1")
-    assert main._verify_upload_token(tampered) is False
+    assert main._verify_upload_token(tampered, JOB_ID) is False
 
 
 def test_expiry_cannot_be_extended_without_resigning():
     """The expiry is what's signed, so moving it invalidates the token."""
     expiry, signature = _token(int(time.time()) - 1).split(".")
-    assert main._verify_upload_token(f"{int(expiry) + 10_000}.{signature}") is False
+    assert main._verify_upload_token(f"{int(expiry) + 10_000}.{signature}", JOB_ID) is False
+
+
+def test_upload_ticket_is_bound_to_one_job():
+    token = _token(int(time.time()) + 600)
+    assert main._verify_upload_token(token, "ffffffffffffffff") is False
 
 
 def test_upload_accepts_the_shared_key_directly():
@@ -70,7 +76,9 @@ def test_upload_accepts_the_shared_key_directly():
 
 def test_upload_accepts_a_bearer_ticket():
     main.require_upload_auth(
-        x_service_key=None, authorization=f"Bearer {_token(int(time.time()) + 600)}"
+        job_id=JOB_ID,
+        x_service_key=None,
+        authorization=f"Bearer {_token(int(time.time()) + 600)}",
     )
 
 
@@ -132,7 +140,9 @@ def test_an_image_ticket_does_not_start_an_extraction(monkeypatch):
     monkeypatch.setattr(settings, "ALLOW_INSECURE_LOCAL", False)
     image_ticket = _scoped_token(int(time.time()) + 600, main.IMAGE_TICKET_SCOPE)
     with pytest.raises(HTTPException):
-        main.require_upload_auth(x_service_key=None, authorization=f"Bearer {image_ticket}")
+        main.require_upload_auth(
+            job_id=JOB_ID, x_service_key=None, authorization=f"Bearer {image_ticket}"
+        )
 
 
 def test_a_valid_image_ticket_is_accepted():

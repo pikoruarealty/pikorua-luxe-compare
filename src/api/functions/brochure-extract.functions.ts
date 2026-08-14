@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafeError } from "@/lib/safe-error";
 import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
 import type { ExtractionResponse, PropertyExtraction } from "@/lib/brochure-field-mapping";
 
@@ -6,6 +7,47 @@ import type { ExtractionResponse, PropertyExtraction } from "@/lib/brochure-fiel
  *  enough to pick up a slow connection, short enough that a token scraped from
  *  a request log is worthless by the time anyone reads it. */
 const UPLOAD_TICKET_TTL_SECONDS = 900;
+const UPLOAD_TICKET_SCOPE = "upload:";
+
+interface BrochureJobsClient {
+  from: (table: "brochure_jobs") => {
+    insert: (row: { job_id: string; admin_profile_id: string }) => Promise<{
+      error: { message: string } | null;
+    }>;
+    select: (columns: "job_id") => {
+      eq: (
+        column: "job_id",
+        value: string,
+      ) => {
+        eq: (
+          column: "admin_profile_id",
+          value: string,
+        ) => {
+          maybeSingle: () => Promise<{
+            data: { job_id: string } | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  };
+}
+
+async function brochureJobsClient(): Promise<BrochureJobsClient> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin as unknown as BrochureJobsClient;
+}
+
+async function assertBrochureJobOwner(jobId: string, adminProfileId: string): Promise<void> {
+  const client = await brochureJobsClient();
+  const { data, error } = await client
+    .from("brochure_jobs")
+    .select("job_id")
+    .eq("job_id", jobId)
+    .eq("admin_profile_id", adminProfileId)
+    .maybeSingle();
+  if (error || !data) throw new Error("This brochure job doesn't belong to your account");
+}
 
 /** Statuses the service reports back from GET /api/properties/{id}/progress. */
 export interface ExtractionProgress {
@@ -86,11 +128,19 @@ async function signTicket(secret: string, ttlSeconds: number, scope = ""): Promi
  *  service key stays server-side. */
 export const createBrochureUploadTicket = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
-  .handler(async (): Promise<{ uploadUrl: string; token: string }> => {
+  .handler(async ({ context }): Promise<{ uploadUrl: string; token: string; jobId: string }> => {
     const { baseUrl, apiKey } = serviceConfig();
+    const jobId = crypto.randomUUID().replaceAll("-", "").slice(0, 24);
+    const client = await brochureJobsClient();
+    const { error } = await client.from("brochure_jobs").insert({
+      job_id: jobId,
+      admin_profile_id: context.adminProfile.id,
+    });
+    if (error) throw new Error("Couldn't start a brochure extraction job");
     return {
-      uploadUrl: `${baseUrl}/api/properties/extract`,
-      token: await signTicket(apiKey, UPLOAD_TICKET_TTL_SECONDS),
+      uploadUrl: `${baseUrl}/api/properties/extract?job_id=${encodeURIComponent(jobId)}`,
+      token: await signTicket(apiKey, UPLOAD_TICKET_TTL_SECONDS, `${UPLOAD_TICKET_SCOPE}${jobId}:`),
+      jobId,
     };
   });
 
@@ -108,7 +158,8 @@ export const cancelBrochureExtraction = createServerFn({ method: "POST" })
     }
     return { jobId: data.jobId };
   })
-  .handler(async ({ data }): Promise<{ cancelled: boolean }> => {
+  .handler(async ({ data, context }): Promise<{ cancelled: boolean }> => {
+    await assertBrochureJobOwner(data.jobId, context.adminProfile.id);
     const { baseUrl, headers } = serviceConfig();
     try {
       const res = await fetch(
@@ -132,7 +183,8 @@ export const getBrochureExtractionProgress = createServerFn({ method: "POST" })
     }
     return { jobId: data.jobId };
   })
-  .handler(async ({ data }): Promise<ExtractionProgress> => {
+  .handler(async ({ data, context }): Promise<ExtractionProgress> => {
+    await assertBrochureJobOwner(data.jobId, context.adminProfile.id);
     const { baseUrl, headers } = serviceConfig();
 
     let res: Response;
@@ -173,7 +225,8 @@ export const getBrochureExtraction = createServerFn({ method: "POST" })
     }
     return { jobId: data.jobId };
   })
-  .handler(async ({ data }): Promise<ExtractionResponse> => {
+  .handler(async ({ data, context }): Promise<ExtractionResponse> => {
+    await assertBrochureJobOwner(data.jobId, context.adminProfile.id);
     const { baseUrl, apiKey, headers } = serviceConfig();
 
     let res: Response;
@@ -228,9 +281,24 @@ export const importBrochureImage = createServerFn({ method: "POST" })
     if (!IMAGE_SLOTS.includes(data.slot as (typeof IMAGE_SLOTS)[number])) {
       throw new Error("Unknown image slot");
     }
-    return { imageUrl: data.imageUrl, slot: data.slot, folder: data.folder || "brochure" };
+    let jobId = "";
+    try {
+      const segments = new URL(data.imageUrl).pathname.split("/").filter(Boolean);
+      const imagesIndex = segments.findIndex((segment) => segment === "images");
+      jobId = imagesIndex >= 0 ? (segments[imagesIndex + 1] ?? "") : "";
+    } catch {
+      jobId = "";
+    }
+    if (!/^[A-Za-z0-9-]{4,64}$/.test(jobId)) throw new Error("Invalid brochure image job");
+    return {
+      imageUrl: data.imageUrl,
+      slot: data.slot,
+      folder: data.folder || "brochure",
+      jobId,
+    };
   })
-  .handler(async ({ data }): Promise<{ url: string }> => {
+  .handler(async ({ data, context }): Promise<{ url: string }> => {
+    await assertBrochureJobOwner(data.jobId, context.adminProfile.id);
     const { headers } = serviceConfig();
 
     // Only ever fetch from the extractor we configured — never an arbitrary
@@ -276,7 +344,7 @@ export const importBrochureImage = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.storage
       .from("property-images")
       .upload(objectPath, buffer, { contentType, upsert: true });
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("createBrochureUploadTicket", error, "Could not start extraction");
 
     const { data: pub } = supabaseAdmin.storage.from("property-images").getPublicUrl(objectPath);
     return { url: pub.publicUrl };

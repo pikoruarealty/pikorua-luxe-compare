@@ -63,7 +63,7 @@ export function BrochureUploadStep({
    *  serverless request body is capped in single digits. The ticket is what
    *  makes that safe — the browser never sees the service key. */
   const upload = async (): Promise<string> => {
-    const { uploadUrl, token } = await ticketFn();
+    const { uploadUrl, token, jobId } = await ticketFn();
 
     const form = new FormData();
     for (const file of files) {
@@ -87,8 +87,8 @@ export function BrochureUploadStep({
       throw new Error(body?.detail ?? body?.error ?? `OCR service error (${res.status})`);
     }
     const body = (await res.json()) as { job_id?: string };
-    if (!body?.job_id) throw new Error("OCR service didn't return a job id");
-    return body.job_id;
+    if (body?.job_id !== jobId) throw new Error("OCR service returned an unexpected job id");
+    return jobId;
   };
 
   const extract = async () => {

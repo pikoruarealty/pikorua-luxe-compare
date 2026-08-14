@@ -53,6 +53,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import shutil
 import threading
 import time
@@ -135,11 +136,17 @@ def _verify_signed_ticket(token: str, scope: str = "") -> bool:
     return hmac.compare_digest(expected, signature)
 
 
-def _verify_upload_token(token: str) -> bool:
-    return _verify_signed_ticket(token, "")
+JOB_ID_RE = re.compile(r"^[a-f0-9]{12,32}$")
+
+
+def _verify_upload_token(token: str, job_id: str) -> bool:
+    return bool(JOB_ID_RE.fullmatch(job_id)) and _verify_signed_ticket(
+        token, f"upload:{job_id}:"
+    )
 
 
 def require_upload_auth(
+    job_id: str | None = Query(default=None),
     x_service_key: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ) -> None:
@@ -149,8 +156,8 @@ def require_upload_auth(
         return
     if x_service_key and hmac.compare_digest(x_service_key, settings.SERVICE_API_KEY):
         return
-    if authorization and authorization.startswith("Bearer "):
-        if _verify_upload_token(authorization[7:]):
+    if job_id and authorization and authorization.startswith("Bearer "):
+        if _verify_upload_token(authorization[7:], job_id):
             return
     raise HTTPException(status_code=401, detail="Invalid or missing upload credentials")
 
@@ -321,7 +328,11 @@ def _copy_within_limit(upload: UploadFile, dest: Path) -> None:
 
 
 @app.post("/api/properties/extract", dependencies=[Depends(require_upload_auth)])
-async def extract_property(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
+async def extract_property(
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    job_id: str | None = None,
+):
     if not files:
         raise HTTPException(status_code=400, detail="Upload at least one PDF file")
     # The browser posts here directly, so the upload screen's own limit is a
@@ -332,7 +343,10 @@ async def extract_property(background_tasks: BackgroundTasks, files: List[Upload
             status_code=400, detail=f"Upload at most {settings.MAX_FILES} brochures at once"
         )
 
-    job_id = uuid.uuid4().hex[:12]
+    if job_id is None:
+        job_id = uuid.uuid4().hex[:12]
+    elif not JOB_ID_RE.fullmatch(job_id):
+        raise HTTPException(status_code=400, detail="Invalid job id")
     job_upload_dir = settings.UPLOAD_DIR / job_id
     job_image_dir = settings.IMAGE_DIR / job_id
     job_upload_dir.mkdir(parents=True, exist_ok=True)

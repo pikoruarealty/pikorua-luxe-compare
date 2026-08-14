@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafeError } from "@/lib/safe-error";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 import type { QuizAnswersDTO } from "./profile.functions";
 import type { ActivityEvent } from "./activity.functions";
@@ -59,23 +60,27 @@ export const getCustomers = createServerFn({ method: "GET" })
       .from("profiles")
       .select("id, phone, name, email, profession, business_name, quiz_answers, created_at")
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("getCustomers", error, "Could not load customers");
 
-    // One pass over activity to build per-profile counts, rather than N queries.
-    const { data: activity } = await supabaseAdmin
-      .from("customer_activity")
-      .select("profile_id, created_at")
-      .not("profile_id", "is", null);
-
-    const counts = new Map<string, { count: number; last: string }>();
-    for (const a of (activity ?? []) as { profile_id: string; created_at: string }[]) {
-      const prev = counts.get(a.profile_id);
-      if (!prev) counts.set(a.profile_id, { count: 1, last: a.created_at });
-      else {
-        prev.count += 1;
-        if (a.created_at > prev.last) prev.last = a.created_at;
-      }
+    type ActivitySummaryRow = {
+      profile_id: string;
+      activity_count: number;
+      last_active_at: string;
+    };
+    type ActivitySummaryClient = {
+      from: (table: string) => {
+        select: (columns: string) => Promise<{ data: ActivitySummaryRow[] | null; error: unknown }>;
+      };
+    };
+    const { data: summaries, error: summaryError } = await (
+      supabaseAdmin as unknown as ActivitySummaryClient
+    )
+      .from("customer_activity_summary")
+      .select("profile_id, activity_count, last_active_at");
+    if (summaryError) {
+      throwSafeError("getCustomers.activity", summaryError, "Could not load customer activity");
     }
+    const counts = new Map((summaries ?? []).map((row) => [row.profile_id, row]));
 
     return (profiles as ProfileRow[]).map((p) => {
       const c = counts.get(p.id);
@@ -88,8 +93,8 @@ export const getCustomers = createServerFn({ method: "GET" })
         businessName: p.business_name,
         quizAnswers: (p.quiz_answers as QuizAnswersDTO | null) ?? null,
         createdAt: p.created_at,
-        activityCount: c?.count ?? 0,
-        lastActiveAt: c?.last ?? null,
+        activityCount: Number(c?.activity_count ?? 0),
+        lastActiveAt: c?.last_active_at ?? null,
       };
     });
   });
@@ -109,7 +114,8 @@ export const getCustomerDetail = createServerFn({ method: "GET" })
       .select("id, phone, name, email, profession, business_name, quiz_answers, created_at")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !p) throw new Error(error?.message ?? "Customer not found");
+    if (error) throwSafeError("getCustomerDetail", error, "Could not load customer");
+    if (!p) throw new Error("Customer not found");
 
     const { data: rows } = await supabaseAdmin
       .from("customer_activity")

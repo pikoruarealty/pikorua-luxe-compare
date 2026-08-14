@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafeError } from "@/lib/safe-error";
 import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
-import { propertyFormSchema, type PropertyFormValues } from "@/lib/property-schema";
+import {
+  parsePropertySubmission,
+  propertyFormSchema,
+  type PropertyFormValues,
+} from "@/lib/property-schema";
 
 export interface DeveloperProperty {
   id: string; // properties.id
@@ -49,8 +54,10 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
             .eq("developer_id", developerId)
             .order("created_at", { ascending: false }),
         ]);
-      if (propsError) throw new Error(propsError.message);
-      if (subsError) throw new Error(subsError.message);
+      if (propsError)
+        throwSafeError("getDeveloperProperties", propsError, "Could not load properties");
+      if (subsError)
+        throwSafeError("getDeveloperSubmissions", subsError, "Could not load submissions");
 
       const pendingUpdateIds = new Set(
         (subs ?? [])
@@ -100,7 +107,8 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
       .eq("id", data.id)
       .eq("created_by", context.adminProfile.id)
       .maybeSingle();
-    if (error || !row) throw new Error(error?.message ?? "Property not found");
+    if (error) throwSafeError("getDeveloperProperty", error, "Could not load property");
+    if (!row) throw new Error("Property not found");
 
     const gallery = (row.gallery ?? {}) as Record<string, string>;
     const isPlot = row.category === "Plots" || row.category === "Bungalow";
@@ -194,7 +202,7 @@ export const updateMyPendingSubmission = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
   .inputValidator((data: { id: string; values: PropertyFormValues }) => {
     if (!data?.id) throw new Error("Missing submission id");
-    return { id: data.id, values: propertyFormSchema.parse(data.values) };
+    return { id: data.id, values: parsePropertySubmission(data.values) };
   })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -206,7 +214,7 @@ export const updateMyPendingSubmission = createServerFn({ method: "POST" })
       .eq("status", "pending")
       .select("id")
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("submitProperty", error, "Could not submit property");
     if (!updated) throw new Error("That submission is no longer editable — it has been reviewed.");
     return { ok: true };
   });
@@ -227,7 +235,7 @@ export const submitPropertyForReview = createServerFn({ method: "POST" })
       return {
         action: data.action,
         propertyId: data.propertyId,
-        values: propertyFormSchema.parse(data.values),
+        values: parsePropertySubmission(data.values),
       };
     },
   )
@@ -252,6 +260,7 @@ export const submitPropertyForReview = createServerFn({ method: "POST" })
       payload: data.values as never,
       status: "pending",
     });
-    if (insertError) throw new Error(insertError.message);
+    if (insertError)
+      throwSafeError("updatePendingSubmission", insertError, "Could not update submission");
     return { ok: true };
   });

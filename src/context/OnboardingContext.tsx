@@ -17,7 +17,13 @@ import {
 import { useActivityLog } from "@/hooks/use-activity-log";
 
 export type OnboardingPhase =
-  "idle" | "auth" | "welcome" | "review-preferences" | "site-preview" | "quiz" | "complete";
+  | "idle"
+  | "auth"
+  | "welcome"
+  | "review-preferences"
+  | "site-preview"
+  | "quiz"
+  | "complete";
 
 export interface UserProfile {
   name: string;

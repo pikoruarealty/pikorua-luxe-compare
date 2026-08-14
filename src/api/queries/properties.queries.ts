@@ -1,6 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { Property } from "@/types/property";
-import { getProperties, getAllPropertiesForAdmin } from "@/api/functions/properties.functions";
+import {
+  getAllPropertiesForAdmin,
+  getDetailedProperties,
+  getProperties,
+} from "@/api/functions/properties.functions";
 
 export const PROPERTIES_KEY = ["properties"] as const;
 
@@ -10,6 +14,13 @@ export const propertiesQueryOptions = () =>
   queryOptions({
     queryKey: PROPERTIES_KEY,
     queryFn: () => getProperties(),
+    staleTime: 60_000,
+  });
+
+export const detailedPropertiesQueryOptions = () =>
+  queryOptions({
+    queryKey: ["properties", "detailed"],
+    queryFn: () => getDetailedProperties(),
     staleTime: 60_000,
   });
 

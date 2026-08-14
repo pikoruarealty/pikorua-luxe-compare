@@ -35,10 +35,7 @@ export function ExtractedFieldsReview({
   onCancel: () => void;
 }) {
   const [overrides, setOverrides] = useState<VariantOverrides>({});
-  const sections = useMemo(
-    () => buildApprovalSections(response, overrides),
-    [response, overrides],
-  );
+  const sections = useMemo(() => buildApprovalSections(response, overrides), [response, overrides]);
   const allItems = useMemo(
     () => sections.flatMap((s) => s.groups.flatMap((g) => g.items)),
     [sections],
@@ -106,7 +103,10 @@ export function ExtractedFieldsReview({
           </h3>
 
           {sec.groups.map((group, gi) => (
-            <div key={`${group.title ?? "g"}-${group.configIndex ?? gi}`} className={gi > 0 ? "mt-5" : ""}>
+            <div
+              key={`${group.title ?? "g"}-${group.configIndex ?? gi}`}
+              className={gi > 0 ? "mt-5" : ""}
+            >
               {group.configIndex === undefined
                 ? group.title && (
                     <p className="mb-2 text-sm font-medium text-foreground">{group.title}</p>

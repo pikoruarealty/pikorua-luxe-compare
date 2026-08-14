@@ -1,24 +1,45 @@
 import { z } from "zod";
+import { safeHttpUrl } from "./utils";
+
+const MAX_SHORT_TEXT = 200;
+const MAX_LONG_TEXT = 5_000;
+const MAX_URL_LENGTH = 2_048;
+const MAX_LIST_ITEMS = 100;
+const MAX_CONFIGS_PER_BUCKET = 20;
+const MAX_SUBMISSION_PAYLOAD_BYTES = 256_000;
+
+const shortText = () => z.string().trim().max(MAX_SHORT_TEXT);
+const optionalShortText = () => shortText().optional().default("");
+const nullableShortText = () => shortText().nullable().optional().default(null);
+const longText = () => z.string().trim().max(MAX_LONG_TEXT).optional().default("");
+const publicUrl = () =>
+  z
+    .string()
+    .trim()
+    .max(MAX_URL_LENGTH)
+    .refine((value) => value === "" || safeHttpUrl(value) !== null, "Enter a valid http(s) URL")
+    .optional()
+    .default("");
 
 // Mirrors ConfigDetail from src/types/property.ts — the admin-editable shape of
 // one layout variant within a BHK bucket.
 export const configDetailSchema = z.object({
-  type: z.string().optional(),
-  area: z.string().nullable().optional().default(null),
-  carpet: z.string().nullable().optional().default(null),
-  builtUpArea: z.string().nullable().optional().default(null),
-  price: z.string().nullable().optional().default(null),
-  rate: z.string().nullable().optional().default(null),
-  bathrooms: z.string().nullable().optional().default(null),
-  balconies: z.string().nullable().optional().default(null),
-  servantRoom: z.string().nullable().optional().default(null),
-  livingArea: z.string().nullable().optional().default(null),
-  kitchen: z.string().nullable().optional().default(null),
-  bedroom1: z.string().nullable().optional().default(null),
-  bedroom2: z.string().nullable().optional().default(null),
-  bedroom3: z.string().nullable().optional().default(null),
-  bedroom4: z.string().nullable().optional().default(null),
-  bedroom5: z.string().nullable().optional().default(null),
+  type: shortText().optional(),
+  area: nullableShortText(),
+  carpet: nullableShortText(),
+  builtUpArea: nullableShortText(),
+  price: nullableShortText(),
+  rate: nullableShortText(),
+  bathrooms: nullableShortText(),
+  balconies: nullableShortText(),
+  servantRoom: nullableShortText(),
+  livingArea: nullableShortText(),
+  kitchen: nullableShortText(),
+  bedroom1: nullableShortText(),
+  bedroom2: nullableShortText(),
+  bedroom3: nullableShortText(),
+  bedroom4: nullableShortText(),
+  bedroom5: nullableShortText(),
 });
 
 export type ConfigDetailInput = z.infer<typeof configDetailSchema>;
@@ -55,76 +76,84 @@ export const CONFIG_BUCKETS = [
 ] as const;
 
 export const propertyFormSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-  developer: z.string().trim().optional().default(""),
+  name: shortText().min(1, "Name is required"),
+  developer: optionalShortText(),
   category: z.enum(["Apartment", "Bungalow", "Plots"]),
-  tagline: z.string().trim().optional().default(""),
-  location: z.string().trim().optional().default(""),
-  state: z.string().trim().optional().default(""),
-  city: z.string().trim().optional().default(""),
-  status: z.string().trim().optional().default(""),
-  possession: z.string().trim().optional().default(""),
-  expertNote: z.string().trim().optional().default(""),
-  imageUrl: z.string().trim().optional().default(""),
+  tagline: optionalShortText(),
+  location: optionalShortText(),
+  state: optionalShortText(),
+  city: optionalShortText(),
+  status: optionalShortText(),
+  possession: optionalShortText(),
+  expertNote: longText(),
+  imageUrl: publicUrl(),
   gallery: z
     .object({
-      livingRoom: z.string().trim().optional().default(""),
-      pool: z.string().trim().optional().default(""),
-      clubhouse: z.string().trim().optional().default(""),
-      masterBedroom: z.string().trim().optional().default(""),
+      livingRoom: publicUrl(),
+      pool: publicUrl(),
+      clubhouse: publicUrl(),
+      masterBedroom: publicUrl(),
     })
     .optional()
     .default({}),
   // Only meaningful for Bungalow / Plots categories.
-  plotSuperArea: z.string().trim().optional().default(""),
-  plotCarpetArea: z.string().trim().optional().default(""),
-  amenities: z.array(z.string().trim().min(1)).default([]),
-  advantages: z.array(z.string().trim().min(1)).default([]),
+  plotSuperArea: optionalShortText(),
+  plotCarpetArea: optionalShortText(),
+  amenities: z.array(shortText().min(1)).max(MAX_LIST_ITEMS).default([]),
+  advantages: z.array(shortText().min(1)).max(MAX_LIST_ITEMS).default([]),
   // Date the `possession` duration was last confirmed accurate — lets the
   // public site count it down live instead of it staying frozen.
-  possessionAsOf: z.string().trim().optional().default(""),
+  possessionAsOf: optionalShortText(),
   // Project structure
-  plotSize: z.string().trim().optional().default(""),
-  totalTowers: z.string().trim().optional().default(""),
-  totalFloors: z.string().trim().optional().default(""),
-  unitsPerFloor: z.string().trim().optional().default(""),
-  totalUnits: z.string().trim().optional().default(""),
-  availableBhkTypes: z.string().trim().optional().default(""),
+  plotSize: optionalShortText(),
+  totalTowers: optionalShortText(),
+  totalFloors: optionalShortText(),
+  unitsPerFloor: optionalShortText(),
+  totalUnits: optionalShortText(),
+  availableBhkTypes: optionalShortText(),
   // RERA registration
-  reraId: z.string().trim().optional().default(""),
-  reraUrl: z.string().trim().optional().default(""),
-  proposedStartDateRera: z.string().trim().optional().default(""),
+  reraId: optionalShortText(),
+  reraUrl: publicUrl(),
+  proposedStartDateRera: optionalShortText(),
   // Construction & amenities
-  parkingLevels: z.string().trim().optional().default(""),
-  podiumStructure: z.string().trim().optional().default(""),
-  liftsPerTower: z.string().trim().optional().default(""),
-  openSpace: z.string().trim().optional().default(""),
-  geyserHeatPumpProvided: z.string().trim().optional().default(""),
-  vrvAcProvided: z.string().trim().optional().default(""),
-  windowGlazing: z.string().trim().optional().default(""),
-  bathSanitaryFittings: z.string().trim().optional().default(""),
-  flooringType: z.string().trim().optional().default(""),
-  unitsPerAcre: z.string().trim().optional().default(""),
-  constructionQuality: z.string().trim().optional().default(""),
-  internalCeilingHeight: z.string().trim().optional().default(""),
-  clubhouseSize: z.string().trim().optional().default(""),
+  parkingLevels: optionalShortText(),
+  podiumStructure: optionalShortText(),
+  liftsPerTower: optionalShortText(),
+  openSpace: optionalShortText(),
+  geyserHeatPumpProvided: optionalShortText(),
+  vrvAcProvided: optionalShortText(),
+  windowGlazing: optionalShortText(),
+  bathSanitaryFittings: optionalShortText(),
+  flooringType: optionalShortText(),
+  unitsPerAcre: optionalShortText(),
+  constructionQuality: optionalShortText(),
+  internalCeilingHeight: optionalShortText(),
+  clubhouseSize: optionalShortText(),
   // Developer track record
-  developerBackground: z.string().trim().optional().default(""),
-  developerExperienceYears: z.string().trim().optional().default(""),
-  totalDeliveredProjects: z.string().trim().optional().default(""),
-  ongoingProjects: z.string().trim().optional().default(""),
-  notableDeliveredProjects: z.array(z.string().trim().min(1)).default([]),
+  developerBackground: longText(),
+  developerExperienceYears: optionalShortText(),
+  totalDeliveredProjects: optionalShortText(),
+  ongoingProjects: optionalShortText(),
+  notableDeliveredProjects: z.array(shortText().min(1)).max(MAX_LIST_ITEMS).default([]),
   configs: z.object({
-    bhk3: z.array(configDetailSchema).default([]),
-    bhk4: z.array(configDetailSchema).default([]),
-    bhk5: z.array(configDetailSchema).default([]),
-    penthouse: z.array(configDetailSchema).default([]),
-    duplex: z.array(configDetailSchema).default([]),
+    bhk3: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
+    bhk4: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
+    bhk5: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
+    penthouse: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
+    duplex: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
   }),
   isPublished: z.boolean().default(true),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
+
+export function parsePropertySubmission(values: PropertyFormValues): PropertyFormValues {
+  const parsed = propertyFormSchema.parse(values);
+  if (new TextEncoder().encode(JSON.stringify(parsed)).byteLength > MAX_SUBMISSION_PAYLOAD_BYTES) {
+    throw new Error("Property submission is too large");
+  }
+  return parsed;
+}
 
 export function emptyConfigDetail(): ConfigDetailInput {
   return {

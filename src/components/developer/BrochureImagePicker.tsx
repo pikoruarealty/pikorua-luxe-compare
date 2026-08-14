@@ -134,7 +134,8 @@ export function BrochureImagePicker({
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Choosing for: <span className="text-foreground">{SLOTS.find((s) => s.key === activeSlot)?.label}</span>
+        Choosing for:{" "}
+        <span className="text-foreground">{SLOTS.find((s) => s.key === activeSlot)?.label}</span>
       </p>
 
       <div className="mt-4 grid max-h-[28rem] grid-cols-2 gap-3 overflow-y-auto rounded-xl border border-(--rule) p-3 sm:grid-cols-3 md:grid-cols-4">

@@ -148,6 +148,29 @@ export interface PropertyRowInsert {
   ongoing_projects: number | null;
   notable_delivered_projects: string[];
   possession_as_of: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** Property coordinates are derived from trusted form fields at write time.
+ * A geocoder outage must not prevent an owner from saving a property. */
+export async function addPropertyCoordinates(
+  row: PropertyRowInsert,
+  input: PropertyFormValues,
+): Promise<PropertyRowInsert> {
+  const address = [input.location, input.city, input.state]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
+  if (address.length < 3) return { ...row, latitude: null, longitude: null };
+
+  const { geocodeAddress } = await import("@/server/geocode.server");
+  const point = await geocodeAddress(address);
+  return {
+    ...row,
+    latitude: point?.lat ?? null,
+    longitude: point?.lon ?? null,
+  };
 }
 
 /**
@@ -232,5 +255,7 @@ export function buildPropertyRow(
     ongoing_projects: nzInt(input.ongoingProjects),
     notable_delivered_projects: input.notableDeliveredProjects.map((s) => s.trim()).filter(Boolean),
     possession_as_of: nz(input.possessionAsOf),
+    latitude: null,
+    longitude: null,
   };
 }

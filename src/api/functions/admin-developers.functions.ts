@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafeError } from "@/lib/safe-error";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 
 export interface DeveloperAccount {
@@ -22,22 +23,36 @@ export const listDevelopers = createServerFn({ method: "GET" })
       .select("id, email, full_name, is_active, created_at")
       .eq("role", "developer")
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("listDevelopers", error, "Could not load developers");
 
-    const { data: submissions } = await supabaseAdmin
-      .from("property_submissions")
-      .select("developer_id, status");
+    type CountRow = {
+      developer_id: string;
+      pending_submissions: number;
+      total_submissions: number;
+    };
+    type CountClient = {
+      from: (table: string) => {
+        select: (columns: string) => Promise<{ data: CountRow[] | null; error: unknown }>;
+      };
+    };
+    const { data: counts, error: countsError } = await (supabaseAdmin as unknown as CountClient)
+      .from("developer_submission_counts")
+      .select("developer_id, pending_submissions, total_submissions");
+    if (countsError) {
+      throwSafeError("listDevelopers.counts", countsError, "Could not load developer activity");
+    }
+    const countsByDeveloper = new Map((counts ?? []).map((row) => [row.developer_id, row]));
 
     return (devs ?? []).map((d) => {
-      const mine = (submissions ?? []).filter((s) => s.developer_id === d.id);
+      const counts = countsByDeveloper.get(d.id);
       return {
         id: d.id,
         email: d.email,
         fullName: d.full_name,
         isActive: d.is_active,
         createdAt: d.created_at,
-        pendingSubmissions: mine.filter((s) => s.status === "pending").length,
-        totalSubmissions: mine.length,
+        pendingSubmissions: Number(counts?.pending_submissions ?? 0),
+        totalSubmissions: Number(counts?.total_submissions ?? 0),
       };
     });
   });
@@ -67,7 +82,7 @@ export const createDeveloper = createServerFn({ method: "POST" })
       email_confirm: true,
     });
     if (authError || !created?.user) {
-      throw new Error(authError?.message ?? "Could not create the developer's login");
+      throwSafeError("createDeveloper.auth", authError, "Could not create the developer's login");
     }
 
     const { error: profileError } = await supabaseAdmin.from("admin_profiles").insert({
@@ -81,7 +96,7 @@ export const createDeveloper = createServerFn({ method: "POST" })
     if (profileError) {
       // Don't leave an orphaned auth user behind if the profile insert failed.
       await supabaseAdmin.auth.admin.deleteUser(created.user.id).catch(() => {});
-      throw new Error(profileError.message);
+      throwSafeError("createDeveloper.profile", profileError, "Could not create developer profile");
     }
 
     return { id: created.user.id, email: data.email };
@@ -102,6 +117,6 @@ export const setDeveloperActive = createServerFn({ method: "POST" })
       .update({ is_active: data.isActive })
       .eq("id", data.id)
       .eq("role", "developer");
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("setDeveloperActive", error, "Could not update developer");
     return { ok: true };
   });

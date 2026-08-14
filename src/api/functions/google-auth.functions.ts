@@ -11,6 +11,7 @@ export interface GoogleIdentity {
 
 interface TokenInfo {
   aud?: string;
+  azp?: string;
   iss?: string;
   email?: string;
   email_verified?: string | boolean;
@@ -58,6 +59,9 @@ export const verifyGoogleCredential = createServerFn({ method: "POST" })
     const info = (await res.json()) as TokenInfo;
 
     if (info.aud !== clientId) throw new Error("That Google sign-in wasn't issued for this app.");
+    if (info.azp && info.azp !== clientId) {
+      throw new Error("That Google sign-in wasn't issued for this app.");
+    }
     if (!info.iss || !VALID_ISSUERS.has(info.iss)) {
       throw new Error("That Google sign-in couldn't be verified.");
     }

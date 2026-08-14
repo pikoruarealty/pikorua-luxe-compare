@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
+import { z } from "zod";
+import { throwSafeError } from "@/lib/safe-error";
 import type { PendingSession, VisitorSession } from "@/server/session.server";
 
 export interface QuizAnswersDTO {
@@ -10,6 +12,17 @@ export interface QuizAnswersDTO {
   budgetRange: string;
   budgetSub: string;
 }
+
+const quizAnswersSchema = z
+  .object({
+    state: z.string().trim().max(100).optional(),
+    city: z.string().trim().max(100).optional(),
+    bhk: z.array(z.string().trim().min(1).max(20)).max(2),
+    propertyType: z.array(z.string().trim().min(1).max(50)).max(5),
+    budgetRange: z.string().trim().max(100),
+    budgetSub: z.string().trim().max(100),
+  })
+  .strict();
 
 export interface ProfileDTO {
   id: string;
@@ -136,10 +149,11 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
 
     // Phone is the unique key, so an address already tied to a different
     // number would leave two accounts sharing one login identity.
-    const { data: emailOwners } = await supabaseAdmin
+    const { data: emailOwners, error: emailOwnersError } = await supabaseAdmin
       .from("profiles")
       .select("phone")
-      .ilike("email", data.email);
+      .eq("email", data.email);
+    if (emailOwnersError) throw new Error("Couldn't check email availability");
     if ((emailOwners ?? []).some((r) => r.phone !== phone)) {
       throw new Error("That email is already linked to another account. Try signing in instead.");
     }
@@ -158,7 +172,8 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
       )
       .select("id, phone, name, email, profession, business_name, quiz_answers")
       .single();
-    if (error || !row) throw new Error(error?.message ?? "Failed to save profile");
+    if (error) throwSafeError("upsertProfileAfterOtp", error, "Failed to save profile");
+    if (!row) throw new Error("Failed to save profile");
 
     const session = await visitorSession();
     await session.update({ profileId: row.id, phone: row.phone });
@@ -176,7 +191,7 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
     return toDTO(row);
   });
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^[^\s@%_]+@[^\s@%_]+\.[^\s@%_]+$/;
 
 /** Sign-in step 1: does an account exist for this email / phone? Checked
  *  before any OTP is sent, so we never mail or SMS a stranger — and so a
@@ -208,9 +223,9 @@ export const checkAccountExists = createServerFn({ method: "POST" })
     const query = supabaseAdmin.from("profiles").select("id");
     const { data: rows, error } =
       data.channel === "email"
-        ? await query.ilike("email", data.identity)
+        ? await query.eq("email", data.identity)
         : await query.eq("phone", data.identity);
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("checkAccountExists", error, "Could not check account");
     return { exists: (rows ?? []).length > 0 };
   });
 
@@ -237,8 +252,8 @@ export const completeLogin = createServerFn({ method: "POST" })
       : await supabaseAdmin
           .from("profiles")
           .select(columns)
-          .ilike("email", email as string);
-    if (error) throw new Error(error.message);
+          .eq("email", email as string);
+    if (error) throwSafeError("completeLogin", error, "Could not complete sign-in");
 
     const matches = rows ?? [];
     if (matches.length === 0) {
@@ -281,7 +296,7 @@ export const saveQuizAnswers = createServerFn({ method: "POST" })
     if (!data || typeof data !== "object" || !("answers" in data)) {
       throw new Error("Invalid input");
     }
-    return { answers: data.answers ?? null };
+    return { answers: data.answers === null ? null : quizAnswersSchema.parse(data.answers) };
   })
 
   .handler(async ({ data }) => {
@@ -293,7 +308,7 @@ export const saveQuizAnswers = createServerFn({ method: "POST" })
       .from("profiles")
       .update({ quiz_answers: data.answers as never })
       .eq("id", profileId);
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("saveQuizAnswers", error, "Could not save preferences");
     return { ok: true };
   });
 
@@ -330,7 +345,7 @@ export const updateProfile = createServerFn({ method: "POST" })
     const { data: emailOwners, error: ownersError } = await supabaseAdmin
       .from("profiles")
       .select("id")
-      .ilike("email", data.email);
+      .eq("email", data.email);
     if (ownersError) throw new Error("Couldn't check that email. Please try again.");
     if ((emailOwners ?? []).some((r: { id: string }) => r.id !== profileId)) {
       throw new Error("That email is already linked to another account.");
@@ -347,7 +362,8 @@ export const updateProfile = createServerFn({ method: "POST" })
       .eq("id", profileId)
       .select("id, phone, name, email, profession, business_name, quiz_answers")
       .single();
-    if (error || !row) throw new Error(error?.message ?? "Failed to update profile");
+    if (error) throwSafeError("updateProfile", error, "Failed to update profile");
+    if (!row) throw new Error("Failed to update profile");
     return toDTO(row);
   });
 

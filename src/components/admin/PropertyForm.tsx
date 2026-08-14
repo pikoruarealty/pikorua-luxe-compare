@@ -131,7 +131,9 @@ export function PropertyForm({
     return (
       <div
         data-na-field={name}
-        className={missed ? "rounded-lg ring-2 ring-red-500/60 ring-offset-2 ring-offset-background" : ""}
+        className={
+          missed ? "rounded-lg ring-2 ring-red-500/60 ring-offset-2 ring-offset-background" : ""
+        }
       >
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <span className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
@@ -151,7 +153,9 @@ export function PropertyForm({
         </div>
         {children}
         {hint && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
-        {error && <span className="mt-1 block text-xs text-red-600 dark:text-red-400">{error}</span>}
+        {error && (
+          <span className="mt-1 block text-xs text-red-600 dark:text-red-400">{error}</span>
+        )}
         {missed && (
           <span className="mt-1 block text-xs text-red-600 dark:text-red-400">
             Fill this in, or tick N/A.

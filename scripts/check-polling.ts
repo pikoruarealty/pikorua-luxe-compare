@@ -66,10 +66,7 @@ await assert.rejects(
   /ECONNREFUSED/,
   "an unbroken run of failures must eventually surface",
 );
-assert.ok(
-  dead.clockNow() > GIVE_UP_AFTER_UNREACHABLE_MS,
-  "must not give up before the deadline",
-);
+assert.ok(dead.clockNow() > GIVE_UP_AFTER_UNREACHABLE_MS, "must not give up before the deadline");
 console.log(`permanently down  -> gave up after ${dead.clockNow() / 1000}s, error surfaced`);
 
 // The failure clock resets on success, so intermittent flakiness never

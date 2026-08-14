@@ -4,6 +4,7 @@ import type { Json } from "@/integrations/supabase/types";
 import type { PropertyConfigurations } from "@/types/property";
 import { propertyFormSchema, type PropertyFormValues } from "@/lib/property-schema";
 import { slug as slugify } from "@/lib/slug";
+import { throwSafeError } from "@/lib/safe-error";
 import type { PropertyRowInsert } from "@/server/property-write.server";
 
 /** JSONB columns are typed as Json; our richer shapes serialise cleanly into them.
@@ -48,18 +49,20 @@ export const createProperty = createServerFn({ method: "POST" })
   .inputValidator((data: PropertyFormValues) => propertyFormSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { buildPropertyRow } = await import("@/server/property-write.server");
+    const { addPropertyCoordinates, buildPropertyRow } =
+      await import("@/server/property-write.server");
 
     const desired = slugify(data.name);
     const finalSlug = await uniqueSlug(supabaseAdmin as never, desired);
-    const row = buildPropertyRow(data, finalSlug);
+    const row = await addPropertyCoordinates(buildPropertyRow(data, finalSlug), data);
 
     const { data: inserted, error } = await supabaseAdmin
       .from("properties")
-      .insert({ ...toDbRow(row), created_by: context.adminProfile.id })
+      // Coordinates are added by the pending migration, ahead of regenerated DB types.
+      .insert({ ...toDbRow(row), created_by: context.adminProfile.id } as never)
       .select("id, slug")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("createProperty", error, "Could not create property");
     return { id: inserted.id, slug: inserted.slug };
   });
 
@@ -71,14 +74,18 @@ export const updateProperty = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { buildPropertyRow } = await import("@/server/property-write.server");
+    const { addPropertyCoordinates, buildPropertyRow } =
+      await import("@/server/property-write.server");
 
     const desired = slugify(data.values.name);
     const finalSlug = await uniqueSlug(supabaseAdmin as never, desired, data.id);
-    const row = buildPropertyRow(data.values, finalSlug);
+    const row = await addPropertyCoordinates(buildPropertyRow(data.values, finalSlug), data.values);
 
-    const { error } = await supabaseAdmin.from("properties").update(toDbRow(row)).eq("id", data.id);
-    if (error) throw new Error(error.message);
+    const { error } = await supabaseAdmin
+      .from("properties")
+      .update(toDbRow(row) as never)
+      .eq("id", data.id);
+    if (error) throwSafeError("updateProperty", error, "Could not update property");
     return { id: data.id, slug: finalSlug };
   });
 
@@ -91,7 +98,7 @@ export const deleteProperty = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("properties").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("deleteProperty", error, "Could not delete property");
     return { ok: true };
   });
 
@@ -107,7 +114,7 @@ export const setPropertyPublished = createServerFn({ method: "POST" })
       .from("properties")
       .update({ is_published: data.isPublished })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("setPropertyPublished", error, "Could not update property");
     return { ok: true };
   });
 
@@ -127,7 +134,8 @@ export const getPropertyForEdit = createServerFn({ method: "GET" })
       .select("*")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !row) throw new Error(error?.message ?? "Property not found");
+    if (error) throwSafeError("getPropertyForEdit", error, "Could not load property");
+    if (!row) throw new Error("Property not found");
 
     const gallery = (row.gallery ?? {}) as Record<string, string>;
     const isPlot = row.category === "Plots" || row.category === "Bungalow";

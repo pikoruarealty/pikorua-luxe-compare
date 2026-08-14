@@ -1,7 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
-import { uploadPropertyImage } from "@/api/functions/property-images.functions";
+import {
+  DEFAULT_MAX_IMAGE_UPLOAD_BYTES,
+  getPropertyImageUploadLimit,
+  uploadPropertyImage,
+} from "@/api/functions/property-images.functions";
 
 export function ImageSlotInput({
   label,
@@ -15,9 +20,21 @@ export function ImageSlotInput({
   folder?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [maxUploadBytes, setMaxUploadBytes] = useState(DEFAULT_MAX_IMAGE_UPLOAD_BYTES);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const getUploadLimit = useServerFn(getPropertyImageUploadLimit);
+
+  useEffect(() => {
+    getUploadLimit()
+      .then(setMaxUploadBytes)
+      .catch(() => {});
+  }, [getUploadLimit]);
 
   const handleFile = async (file: File) => {
+    if (file.size > maxUploadBytes) {
+      toast.error(`Image is too large (max ${(maxUploadBytes / 1_000_000).toFixed(1)}MB)`);
+      return;
+    }
     setUploading(true);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -85,7 +102,7 @@ export function ImageSlotInput({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/avif"
             hidden
             onChange={(e) => {
               const f = e.target.files?.[0];

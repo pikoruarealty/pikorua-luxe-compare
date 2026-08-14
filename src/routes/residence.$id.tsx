@@ -95,7 +95,8 @@ function getAmenityMeta(name: string): { Icon: typeof Sparkles; subtitle: string
   return { Icon: Sparkles, subtitle: "Premium Residence Amenity" };
 }
 import { toast } from "sonner";
-import { useProperties, usePropertyLookup } from "@/context/PropertiesContext";
+import { useProperties } from "@/context/PropertiesContext";
+import { getPropertyBySlug } from "@/api/functions/properties.functions";
 import type { Property } from "@/types/property";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -112,6 +113,7 @@ const WHATSAPP_NUMBER = "916354359222";
 const PHONE_NUMBER = "+916354359222";
 
 export const Route = createFileRoute("/residence/$id")({
+  loader: ({ params }) => getPropertyBySlug({ data: { slug: params.id } }),
   head: () => ({
     meta: [
       { title: "Residence — PropCompare" },
@@ -134,9 +136,7 @@ function residenceImages(p: Property): string[] {
 }
 
 function ResidencePage() {
-  const { id } = Route.useParams();
-  const getPropertyById = usePropertyLookup();
-  const property = getPropertyById(id);
+  const property = Route.useLoaderData();
 
   if (!property) {
     return (

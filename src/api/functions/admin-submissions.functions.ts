@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 import type { PropertyFormValues } from "@/lib/property-schema";
 import { slug as slugify } from "@/lib/slug";
+import { throwSafeError } from "@/lib/safe-error";
 import { toDbRow, uniqueSlug } from "./property-crud.functions";
 
 export interface SubmissionListItem {
@@ -30,7 +31,7 @@ export const listSubmissions = createServerFn({ method: "GET" })
         "id, action, status, property_id, developer_id, payload, reviewer_note, created_at, reviewed_at",
       )
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("listSubmissions", error, "Could not load submissions");
 
     const developerIds = Array.from(new Set((subs ?? []).map((s) => s.developer_id)));
     const { data: developers } = developerIds.length
@@ -73,7 +74,8 @@ export const getSubmission = createServerFn({ method: "GET" })
       .select("id, action, status, property_id, developer_id, payload, reviewer_note, created_at")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !sub) throw new Error(error?.message ?? "Submission not found");
+    if (error) throwSafeError("getSubmission", error, "Could not load submission");
+    if (!sub) throw new Error("Submission not found");
     return {
       id: sub.id,
       action: sub.action as "create" | "update",
@@ -98,14 +100,16 @@ export const approveSubmission = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { buildPropertyRow } = await import("@/server/property-write.server");
+    const { addPropertyCoordinates, buildPropertyRow } =
+      await import("@/server/property-write.server");
 
     const { data: sub, error } = await supabaseAdmin
       .from("property_submissions")
       .select("id, action, property_id, developer_id, payload, status")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !sub) throw new Error(error?.message ?? "Submission not found");
+    if (error) throwSafeError("approveSubmission.load", error, "Could not load submission");
+    if (!sub) throw new Error("Submission not found");
     if (sub.status !== "pending") throw new Error("This submission has already been reviewed");
 
     const values = { ...(sub.payload as PropertyFormValues), isPublished: true };
@@ -114,24 +118,29 @@ export const approveSubmission = createServerFn({ method: "POST" })
     if (sub.action === "create") {
       const desired = slugify(values.name);
       const finalSlug = await uniqueSlug(supabaseAdmin as never, desired);
-      const row = buildPropertyRow(values, finalSlug);
+      const row = await addPropertyCoordinates(buildPropertyRow(values, finalSlug), values);
       const { data: inserted, error: insertError } = await supabaseAdmin
         .from("properties")
-        .insert({ ...toDbRow(row), created_by: sub.developer_id })
+        // Coordinates are added by the pending migration, ahead of regenerated DB types.
+        .insert({ ...toDbRow(row), created_by: sub.developer_id } as never)
         .select("id")
         .single();
-      if (insertError) throw new Error(insertError.message);
+      if (insertError) {
+        throwSafeError("approveSubmission.create", insertError, "Could not approve submission");
+      }
       propertyId = inserted.id;
     } else {
       if (!propertyId) throw new Error("Update submission is missing its property id");
       const desired = slugify(values.name);
       const finalSlug = await uniqueSlug(supabaseAdmin as never, desired, propertyId);
-      const row = buildPropertyRow(values, finalSlug);
+      const row = await addPropertyCoordinates(buildPropertyRow(values, finalSlug), values);
       const { error: updateError } = await supabaseAdmin
         .from("properties")
-        .update(toDbRow(row))
+        .update(toDbRow(row) as never)
         .eq("id", propertyId);
-      if (updateError) throw new Error(updateError.message);
+      if (updateError) {
+        throwSafeError("approveSubmission.update", updateError, "Could not approve submission");
+      }
     }
 
     const { error: reviewError } = await supabaseAdmin
@@ -143,7 +152,9 @@ export const approveSubmission = createServerFn({ method: "POST" })
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", data.id);
-    if (reviewError) throw new Error(reviewError.message);
+    if (reviewError) {
+      throwSafeError("approveSubmission.review", reviewError, "Could not approve submission");
+    }
 
     return { ok: true, propertyId };
   });
@@ -163,7 +174,8 @@ export const rejectSubmission = createServerFn({ method: "POST" })
       .select("status")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !sub) throw new Error(error?.message ?? "Submission not found");
+    if (error) throwSafeError("rejectSubmission.load", error, "Could not load submission");
+    if (!sub) throw new Error("Submission not found");
     if (sub.status !== "pending") throw new Error("This submission has already been reviewed");
 
     const { error: updateError } = await supabaseAdmin
@@ -175,6 +187,8 @@ export const rejectSubmission = createServerFn({ method: "POST" })
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", data.id);
-    if (updateError) throw new Error(updateError.message);
+    if (updateError) {
+      throwSafeError("rejectSubmission", updateError, "Could not reject submission");
+    }
     return { ok: true };
   });

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafeError } from "@/lib/safe-error";
 import type {
   Property,
   PropertyCategory,
@@ -13,8 +14,12 @@ import maruti360Bedroom from "@/assets/maruti-360-bedroom.png";
 import maruti360Pool from "@/assets/maruti-360-pool.png";
 import maruti360PlayArea from "@/assets/maruti-360-play-area.png";
 
-// Columns needed to build a Property. Kept in one place so the public and admin
-// readers can't drift apart.
+// Root-route consumers only need catalogue and preference fields. Keeping the
+// long narratives out of this projection stops every route, including admin
+// pages, from serialising the complete portfolio into its document payload.
+const PROPERTY_LIST_COLUMNS =
+  "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, carpet_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, gallery, is_published, possession_as_of";
+
 const PROPERTY_COLUMNS =
   "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, carpet_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, amenities, advantages, gallery, expert_note, is_published, plot_size, total_towers, total_floors, units_per_floor, total_units, available_bhk_types, rera_id, rera_url, proposed_start_date_rera, parking_levels, podium_structure, lifts_per_tower, open_space, geyser_heat_pump_provided, vrv_ac_provided, window_glazing, bath_sanitary_fittings, flooring_type, units_per_acre, construction_quality, internal_ceiling_height, clubhouse_size, developer_background, developer_experience_years, total_delivered_projects, ongoing_projects, notable_delivered_projects, possession_as_of";
 
@@ -22,55 +27,55 @@ interface PropertyRow {
   id: string;
   slug: string;
   name: string;
-  developer: string | null;
+  developer?: string | null;
   category: string;
-  tagline: string | null;
-  image_url: string | null;
-  size: string | null;
-  size_numeric: number | null;
-  super_built_up_area: string | null;
-  carpet_area: string | null;
-  location: string | null;
-  state: string | null;
-  city: string | null;
-  status: string | null;
-  configuration_summary: string | null;
-  configurations: unknown;
-  price_summary: string | null;
-  possession: string | null;
-  amenities: string[] | null;
-  advantages: string[] | null;
-  gallery: unknown;
-  expert_note: string | null;
-  is_published: boolean;
-  plot_size: string | null;
-  total_towers: number | null;
-  total_floors: number | null;
-  units_per_floor: number | null;
-  total_units: number | null;
-  available_bhk_types: string | null;
-  rera_id: string | null;
-  rera_url: string | null;
-  proposed_start_date_rera: string | null;
-  parking_levels: number | null;
-  podium_structure: string | null;
-  lifts_per_tower: number | null;
-  open_space: string | null;
-  geyser_heat_pump_provided: string | null;
-  vrv_ac_provided: string | null;
-  window_glazing: string | null;
-  bath_sanitary_fittings: string | null;
-  flooring_type: string | null;
-  units_per_acre: string | null;
-  construction_quality: string | null;
-  internal_ceiling_height: string | null;
-  clubhouse_size: string | null;
-  developer_background: string | null;
-  developer_experience_years: number | null;
-  total_delivered_projects: number | null;
-  ongoing_projects: number | null;
-  notable_delivered_projects: string[] | null;
-  possession_as_of: string | null;
+  tagline?: string | null;
+  image_url?: string | null;
+  size?: string | null;
+  size_numeric?: number | null;
+  super_built_up_area?: string | null;
+  carpet_area?: string | null;
+  location?: string | null;
+  state?: string | null;
+  city?: string | null;
+  status?: string | null;
+  configuration_summary?: string | null;
+  configurations?: unknown;
+  price_summary?: string | null;
+  possession?: string | null;
+  amenities?: string[] | null;
+  advantages?: string[] | null;
+  gallery?: unknown;
+  expert_note?: string | null;
+  is_published?: boolean;
+  plot_size?: string | null;
+  total_towers?: number | null;
+  total_floors?: number | null;
+  units_per_floor?: number | null;
+  total_units?: number | null;
+  available_bhk_types?: string | null;
+  rera_id?: string | null;
+  rera_url?: string | null;
+  proposed_start_date_rera?: string | null;
+  parking_levels?: number | null;
+  podium_structure?: string | null;
+  lifts_per_tower?: number | null;
+  open_space?: string | null;
+  geyser_heat_pump_provided?: string | null;
+  vrv_ac_provided?: string | null;
+  window_glazing?: string | null;
+  bath_sanitary_fittings?: string | null;
+  flooring_type?: string | null;
+  units_per_acre?: string | null;
+  construction_quality?: string | null;
+  internal_ceiling_height?: string | null;
+  clubhouse_size?: string | null;
+  developer_background?: string | null;
+  developer_experience_years?: number | null;
+  total_delivered_projects?: number | null;
+  ongoing_projects?: number | null;
+  notable_delivered_projects?: string[] | null;
+  possession_as_of?: string | null;
 }
 
 /** Admin-facing shape: the public Property plus row metadata the admin list needs. */
@@ -178,7 +183,7 @@ function toProperty(row: PropertyRow): Property {
 }
 
 function toAdminProperty(row: PropertyRow): AdminProperty {
-  return { ...toProperty(row), rowId: row.id, isPublished: row.is_published };
+  return { ...toProperty(row), rowId: row.id, isPublished: Boolean(row.is_published) };
 }
 
 /** Public: every published property, ordered for stable rendering. */
@@ -187,13 +192,69 @@ export const getProperties = createServerFn({ method: "GET" }).handler(
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("properties")
-      .select(PROPERTY_COLUMNS)
+      .select(PROPERTY_LIST_COLUMNS)
       .eq("is_published", true)
       .order("created_at", { ascending: true });
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("getProperties", error, "Could not load properties");
     return (data as PropertyRow[]).map(toProperty);
   },
 );
+
+/** Public: the full published catalogue for the home comparison workspace. */
+export const getDetailedProperties = createServerFn({ method: "GET" }).handler(
+  async (): Promise<Property[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("properties")
+      .select(PROPERTY_COLUMNS)
+      .eq("is_published", true)
+      .order("created_at", { ascending: true });
+    if (error) throwSafeError("getDetailedProperties", error, "Could not load properties");
+    return (data as PropertyRow[]).map(toProperty);
+  },
+);
+
+function parseSlugs(data: { slugs: string[] }, maximum: number): string[] {
+  if (!Array.isArray(data?.slugs)) throw new Error("Invalid property ids");
+  const slugs = Array.from(new Set(data.slugs.map((slug) => slug.trim())));
+  if (slugs.length === 0 || slugs.length > maximum) throw new Error("Invalid property ids");
+  if (slugs.some((slug) => !/^[a-z0-9-]{1,200}$/.test(slug))) {
+    throw new Error("Invalid property id");
+  }
+  return slugs;
+}
+
+/** Public: one complete row for a residence detail route. */
+export const getPropertyBySlug = createServerFn({ method: "GET" })
+  .inputValidator((data: { slug: string }) => ({ slug: parseSlugs({ slugs: [data?.slug] }, 1)[0] }))
+  .handler(async ({ data }): Promise<Property | null> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
+      .from("properties")
+      .select(PROPERTY_COLUMNS)
+      .eq("slug", data.slug)
+      .eq("is_published", true)
+      .maybeSingle();
+    if (error) throwSafeError("getPropertyBySlug", error, "Could not load property");
+    return row ? toProperty(row as PropertyRow) : null;
+  });
+
+/** Public: complete rows for a shareable comparison, capped by the UI's slots. */
+export const getPropertiesBySlugs = createServerFn({ method: "GET" })
+  .inputValidator((data: { slugs: string[] }) => ({ slugs: parseSlugs(data, 3) }))
+  .handler(async ({ data }): Promise<Property[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("properties")
+      .select(PROPERTY_COLUMNS)
+      .in("slug", data.slugs)
+      .eq("is_published", true);
+    if (error) throwSafeError("getPropertiesBySlugs", error, "Could not load properties");
+    const bySlug = new Map((rows as PropertyRow[]).map((row) => [row.slug, toProperty(row)]));
+    return data.slugs
+      .map((slug) => bySlug.get(slug))
+      .filter((row): row is Property => Boolean(row));
+  });
 
 /** Owner-only: all properties including unpublished, for the admin list. */
 export const getAllPropertiesForAdmin = createServerFn({ method: "GET" })
@@ -204,6 +265,6 @@ export const getAllPropertiesForAdmin = createServerFn({ method: "GET" })
       .from("properties")
       .select(PROPERTY_COLUMNS)
       .order("created_at", { ascending: true });
-    if (error) throw new Error(error.message);
+    if (error) throwSafeError("getAllPropertiesForAdmin", error, "Could not load properties");
     return (data as PropertyRow[]).map(toAdminProperty);
   });

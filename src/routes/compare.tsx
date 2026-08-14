@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo } from "react";
-import { usePropertyLookup } from "@/context/PropertiesContext";
+import { useEffect } from "react";
 import { useOnboarding } from "@/context/OnboardingContext";
-import type { Property } from "@/types/property";
+import { getPropertiesBySlugs } from "@/api/functions/properties.functions";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ComparisonHero } from "@/components/compare/ComparisonHero";
@@ -27,6 +26,15 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/compare")({
   validateSearch: searchSchema,
+  loaderDeps: ({ search }) => ({ ids: search.ids }),
+  loader: ({ deps }) => {
+    const slugs = deps.ids
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    return slugs.length > 0 ? getPropertiesBySlugs({ data: { slugs } }) : [];
+  },
   head: () => ({
     meta: [
       { title: "Comparison Suite — PropCompare" },
@@ -45,8 +53,8 @@ export const Route = createFileRoute("/compare")({
 });
 
 function ComparePage() {
-  const { ids, shared } = Route.useSearch();
-  const getPropertyById = usePropertyLookup();
+  const { shared } = Route.useSearch();
+  const properties = Route.useLoaderData();
   const { userProfile, hydrated, requestGatedAuth } = useOnboarding();
 
   // A shared link is gated: the recipient identifies themselves before the
@@ -56,17 +64,6 @@ function ComparePage() {
   useEffect(() => {
     if (gated) requestGatedAuth();
   }, [gated, requestGatedAuth]);
-  const properties = useMemo(() => {
-    const idList: string[] = (ids ?? "")
-      .split(",")
-      .map((id: string) => id.trim())
-      .filter((id: string) => id.length > 0);
-    return idList
-      .map((id) => getPropertyById(id))
-      .filter((p): p is Property => Boolean(p))
-      .slice(0, 3);
-  }, [ids, getPropertyById]);
-
   // Hold the comparison back entirely rather than rendering it behind the
   // overlay — the content must not be readable before the visitor signs in.
   if (shared && (!hydrated || !userProfile)) {

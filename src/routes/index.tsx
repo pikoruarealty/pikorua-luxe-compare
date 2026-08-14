@@ -13,7 +13,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useProperties } from "@/context/PropertiesContext";
+import { PropertiesProvider, useProperties } from "@/context/PropertiesContext";
+import { detailedPropertiesQueryOptions } from "@/api/queries/properties.queries";
 import { PropertyListRow } from "@/components/property/PropertyListRow";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -47,6 +48,9 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  loader: async ({ context }) => ({
+    properties: await context.queryClient.ensureQueryData(detailedPropertiesQueryOptions()),
+  }),
   component: Index,
 });
 
@@ -61,6 +65,15 @@ function matchesQuery(p: Property, q: string): boolean {
 }
 
 function Index() {
+  const { properties } = Route.useLoaderData();
+  return (
+    <PropertiesProvider properties={properties}>
+      <IndexContent />
+    </PropertiesProvider>
+  );
+}
+
+function IndexContent() {
   const heroRef = useRef<HTMLElement | null>(null);
   const slotsRef = useRef<HTMLDivElement | null>(null);
   const collectionRef = useRef<HTMLElement | null>(null);
