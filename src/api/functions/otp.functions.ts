@@ -96,6 +96,6 @@ export const verifyOtp = createServerFn({ method: "POST" })
     const verifiedAt = Date.now();
     await session.update({ ...stored, verifiedAt });
     const { signClaim } = await import("@/server/verification-token.server");
-    const verificationToken = await signClaim({ phone: stored.phone, verifiedAt });
+    const verificationToken = await signClaim("phone", { phone: stored.phone, verifiedAt });
     return { verified: true, verificationToken };
   });

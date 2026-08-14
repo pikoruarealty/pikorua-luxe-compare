@@ -57,12 +57,20 @@ export interface EmailOtpSession {
   challengeId: string;
 }
 
-// sameSite "none" is wrong for a first-party site and is being changed to "lax";
-// it lives here now so that is a one-line change rather than a four-file hunt.
+// "none" tells the browser to attach these cookies to cross-site requests,
+// which throws away the default CSRF protection — and there was no token, no
+// double-submit and no Origin check standing behind it. It looks like a
+// leftover from an embedded-preview environment; this site is never framed by
+// another origin, so "lax" is what it should always have been.
+//
+// "lax" still sends the cookie on top-level navigations *into* the site, so
+// following a link from an email or a search result stays signed in. It is
+// only cross-site POSTs and subrequests that lose it — exactly the shape of a
+// CSRF attempt.
 const cookieOpts = {
   path: "/",
   httpOnly: true,
-  sameSite: "none" as const,
+  sameSite: "lax" as const,
   secure: true,
 };
 

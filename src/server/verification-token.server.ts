@@ -4,10 +4,15 @@
 // profile" call can prove both channels were confirmed, without keeping
 // server-side state alive across the whole multi-step sign-up.
 //
-// Payload shape is caller-defined on purpose: the phone claim has always been
-// `{ phone, verifiedAt }` and JSON key order is part of the signed bytes, so
-// keeping the shape with the caller preserves compatibility with tokens the
-// old inline implementation issued.
+// Claims carry `typ`, and readers must say which type they expect. Before that,
+// a phone claim and an email claim were the same envelope, told apart only by
+// which key the reader happened to look at — and Google sign-in minted a claim
+// interchangeable with an email-OTP one. Nothing exploitable fell out of that,
+// because each reader only ever looked for its own field, but it held by the
+// shape of the JSON rather than by anything checking.
+//
+// This does invalidate claims issued by the previous build. They live ten
+// minutes, so the blast radius is one sign-up flow having to start again.
 
 const encoder = new TextEncoder();
 
@@ -58,14 +63,19 @@ async function hmac(payload: string): Promise<Uint8Array> {
   return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(payload)));
 }
 
+/** Which channel a claim attests to. Part of the signed bytes. */
+export type ClaimType = "phone" | "email";
+
 /** `<base64url(json)>.<base64url(hmac)>` */
-export async function signClaim(payload: Record<string, unknown>): Promise<string> {
-  const json = JSON.stringify(payload);
+export async function signClaim(typ: ClaimType, payload: Record<string, unknown>): Promise<string> {
+  const json = JSON.stringify({ typ, ...payload });
   return `${base64UrlEncode(json)}.${base64UrlEncode(await hmac(json))}`;
 }
 
-/** Returns the payload only if the signature checks out and it is still fresh. */
+/** Returns the payload only if the signature checks out, the type is the one
+ *  asked for, and it is still fresh. */
 export async function readClaim<T extends { verifiedAt: number }>(
+  typ: ClaimType,
   token: string | null | undefined,
   maxAgeMs: number,
 ): Promise<T | null> {
@@ -74,17 +84,22 @@ export async function readClaim<T extends { verifiedAt: number }>(
   if (!payloadPart || !signaturePart) return null;
 
   let json: string;
+  let provided: Uint8Array;
   try {
     json = new TextDecoder().decode(base64UrlToBytes(payloadPart));
+    // Decoded inside the guard too: atob throws on a malformed signature
+    // segment, and that used to escape this function as a 500 rather than
+    // returning null like every other rejection here.
+    provided = base64UrlToBytes(signaturePart);
   } catch {
     return null;
   }
 
-  const provided = base64UrlToBytes(signaturePart);
   if (!timingSafeEqual(provided, await hmac(json))) return null;
 
   try {
-    const parsed = JSON.parse(json) as T;
+    const parsed = JSON.parse(json) as T & { typ?: string };
+    if (parsed?.typ !== typ) return null;
     if (typeof parsed?.verifiedAt !== "number") return null;
     if (Date.now() - parsed.verifiedAt > maxAgeMs) return null;
     return parsed;

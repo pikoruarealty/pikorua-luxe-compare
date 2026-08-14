@@ -59,13 +59,17 @@ function provenPendingPhone(pending: { verifiedAt?: number; phone?: string } | u
 
 async function verifyPhoneToken(token?: string | null) {
   const { readClaim } = await import("@/server/verification-token.server");
-  const claim = await readClaim<VerifiedPhoneToken>(token, CLAIM_TTL_MS);
+  const claim = await readClaim<VerifiedPhoneToken>("phone", token, CLAIM_TTL_MS);
   return claim?.phone ? claim.phone.replace(/[^0-9]/g, "") : null;
 }
 
 async function verifyEmailToken(token?: string | null) {
   const { readClaim } = await import("@/server/verification-token.server");
-  const claim = await readClaim<{ email: string; verifiedAt: number }>(token, CLAIM_TTL_MS);
+  const claim = await readClaim<{ email: string; verifiedAt: number }>(
+    "email",
+    token,
+    CLAIM_TTL_MS,
+  );
   return claim?.email ? claim.email.trim().toLowerCase() : null;
 }
 

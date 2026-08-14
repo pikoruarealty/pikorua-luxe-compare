@@ -76,6 +76,6 @@ export const verifyGoogleCredential = createServerFn({ method: "POST" })
     return {
       email,
       name: info.name?.trim() || null,
-      emailToken: await signClaim({ email, verifiedAt: Date.now() }),
+      emailToken: await signClaim("email", { email, verifiedAt: Date.now() }),
     };
   });

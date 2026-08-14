@@ -176,6 +176,6 @@ export const verifyEmailOtp = createServerFn({ method: "POST" })
     await session.clear();
     return {
       verified: true,
-      emailToken: await signClaim({ email: data.email, verifiedAt: Date.now() }),
+      emailToken: await signClaim("email", { email: data.email, verifiedAt: Date.now() }),
     };
   });

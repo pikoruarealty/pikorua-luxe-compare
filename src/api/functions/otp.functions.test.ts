@@ -76,7 +76,7 @@ function stub2Factor(body: unknown) {
 
 async function claimFor(token: string) {
   const { readClaim } = await import("@/server/verification-token.server");
-  return readClaim<{ phone: string; verifiedAt: number }>(token, 10 * 60 * 1000);
+  return readClaim<{ phone: string; verifiedAt: number }>("phone", token, 10 * 60 * 1000);
 }
 
 describe("phone OTP verification", () => {
