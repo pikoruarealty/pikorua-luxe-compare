@@ -45,7 +45,5 @@ pnpm-lock.yaml
 *.sln
 *.sw?
 
-# The OCR service lives on the `ocr-service` branch and is deployed to its own
-# host (Render/Railway) — it is Python and cannot run on Vercel. It stays here
-# on disk so it can be run locally, but must not be committed to main.
-/property-ocr-suite/
+# The OCR service under property-ocr-suite/ keeps its own .gitignore for the
+# Python-specific entries (venv, __pycache__, runtime storage).
