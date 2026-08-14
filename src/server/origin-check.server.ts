@@ -23,7 +23,10 @@ function configuredOrigins(): string[] {
 function requestOrigin(request: Request): string | null {
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   if (!host) return null;
-  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",", 1)[0].trim();
+  const requestProto = new URL(request.url).protocol.replace(/:$/, "");
+  const proto = forwardedProto || requestProto;
+  if (proto !== "http" && proto !== "https") return null;
   return `${proto}://${host}`;
 }
 

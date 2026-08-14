@@ -13,6 +13,7 @@ import maruti360View from "@/assets/maruti-360-view.jpg";
 import maruti360Bedroom from "@/assets/maruti-360-bedroom.png";
 import maruti360Pool from "@/assets/maruti-360-pool.png";
 import maruti360PlayArea from "@/assets/maruti-360-play-area.png";
+import fallbackPropertyImage from "@/assets/property-1.jpg";
 
 // Root-route consumers only need catalogue and preference fields. Keeping the
 // long narratives out of this projection stops every route, including admin
@@ -96,7 +97,7 @@ const EMPTY_GALLERY: PropertyGallery = {
 function toProperty(row: PropertyRow): Property {
   const isMaruti =
     row.slug === "maruti-360" || (row.name && row.name.toLowerCase().includes("maruti 360"));
-  let coverImg = row.image_url ?? "";
+  let coverImg = row.image_url?.trim() || fallbackPropertyImage;
   if (isMaruti || coverImg.includes("maruti-360-exterior")) {
     coverImg = maruti360View;
   }

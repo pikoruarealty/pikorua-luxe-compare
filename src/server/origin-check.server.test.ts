@@ -27,6 +27,18 @@ describe("assertSameOrigin", () => {
     ).not.toThrow();
   });
 
+  it("allows local HTTP when no proxy protocol header is present", () => {
+    expect(() =>
+      assertSameOrigin(
+        request(
+          "POST",
+          { host: "localhost:5173", origin: "http://localhost:5173" },
+          "http://localhost:5173/_serverFn/x",
+        ),
+      ),
+    ).not.toThrow();
+  });
+
   it("refuses a POST from another origin", () => {
     expect(() =>
       assertSameOrigin(
