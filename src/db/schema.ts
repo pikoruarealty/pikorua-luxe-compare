@@ -192,6 +192,28 @@ export const configurationVariants = pgTable("configuration_variants", {
   createdAt: createdAt(),
 });
 
+export const propertyAmenities = pgTable("property_amenities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  publicationVersionId: uuid("publication_version_id")
+    .notNull()
+    .references(() => propertyPublicationVersions.id, { onDelete: "cascade" }),
+  amenityCode: text("amenity_code").notNull(),
+  displayName: text("display_name").notNull(),
+  valueState: fieldState("value_state").notNull().default("stated"),
+  details: text("details"),
+});
+
+export const propertySpecifications = pgTable("property_specifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  publicationVersionId: uuid("publication_version_id")
+    .notNull()
+    .references(() => propertyPublicationVersions.id, { onDelete: "cascade" }),
+  specificationCode: text("specification_code").notNull(),
+  displayName: text("display_name").notNull(),
+  valueText: text("value_text"),
+  valueState: fieldState("value_state").notNull().default("not_stated"),
+});
+
 export const privateSchema = pgSchema("private");
 export const commercialTerms = privateSchema.table(
   "commercial_terms",

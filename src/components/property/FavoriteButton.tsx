@@ -25,7 +25,7 @@ interface FlyState {
 export function FavoriteButton({ propertyId, propertyName, propertyImage, className = "" }: Props) {
   const hydrated = useHydrated();
   const { isFavorite, toggle } = useFavoritesStore();
-  const { requestAuth } = useOnboarding();
+  const { requestAuth, userProfile } = useOnboarding();
   const logActivity = useActivityLog();
   const favorited = hydrated && isFavorite(propertyId);
   const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -42,6 +42,10 @@ export function FavoriteButton({ propertyId, propertyName, propertyImage, classN
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!userProfile) {
+      requestAuth();
+      return;
+    }
     const wasFav = favorited;
     const nowFav = toggle(propertyId);
     if (!wasFav && nowFav) logActivity("favorite_add", propertyId);

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import { requireVisitorAuth } from "@/server/visitor-auth.server";
+import { requireVisitorAuth } from "@/middleware/visitor-auth";
 
 const comparisonRequestSchema = z
   .object({

@@ -25,6 +25,7 @@ export const publicPropertySummarySchema = z
     propertyType: propertyTypeSchema,
     locality: z.string().nullable(),
     cityName: z.string(),
+    possessionDate: z.string().date().nullable(),
     heroImageUrl: z.string().url().nullable(),
     ratingAverage: z.number().min(1).max(5).nullable(),
     publishedReviewCount: z.number().int().nonnegative(),
@@ -43,6 +44,8 @@ export const publicConfigurationSchema = z
     areaValue: z.number().nonnegative().nullable(),
     areaBasis: z.string().nullable(),
     areaUnit: z.string().nullable(),
+    fit: budgetFitSchema.optional(),
+    commercialDataStale: z.boolean().optional(),
   })
   .strict();
 

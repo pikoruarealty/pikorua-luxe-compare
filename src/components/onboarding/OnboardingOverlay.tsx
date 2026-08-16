@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouterState } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { AuthFlow } from "./AuthFlow";
+import { PhoneAuthFlow } from "./PhoneAuthFlow";
 import { WelcomeCard } from "./WelcomeCard";
 import { PropertyQuiz } from "./PropertyQuiz";
 import { ReviewPreferences } from "./ReviewPreferences";
@@ -18,61 +18,9 @@ export function OnboardingOverlay() {
       s.location.pathname.startsWith("/admin") || s.location.pathname.startsWith("/developer"),
   });
 
-  // An account is required to use the site at all, so identity is asked for
-  // ahead of any browsing. Because this keys off "no profile + idle", it also
-  // re-arms after a sign-out rather than only firing once per visit.
-  useEffect(() => {
-    if (!hydrated || isPortalRoute || userProfile) return;
-    if (phase === "idle") setPhase("auth");
-  }, [hydrated, isPortalRoute, userProfile, phase, setPhase]);
-
-  // welcome -> site-preview lands the visitor straight on the property
-  // picker (the "suite" section, 3 comparison slots) instead of the top of
-  // the homepage, then opens the quiz the moment they scroll or tap.
-  // Site-wide CSS sets `scroll-behavior: smooth`, which makes
-  // scrollIntoView({behavior:"auto"}) animate instead of jumping instantly —
-  // so the listener below would arm while that animation was still in flight
-  // and mistake its tail end for the visitor's first scroll. Forcing the html
-  // element's scroll-behavior to "auto" for the jump makes it truly instant,
-  // so the listener can arm on the very next frame with nothing left to fire.
-  useEffect(() => {
-    if (isPortalRoute || phase !== "site-preview") return;
-    const suite = document.getElementById("suite");
-    if (suite) {
-      const html = document.documentElement;
-      const prevScrollBehavior = html.style.scrollBehavior;
-      html.style.scrollBehavior = "auto";
-      suite.scrollIntoView({ behavior: "auto", block: "start" });
-      html.style.scrollBehavior = prevScrollBehavior;
-    }
-
-    let armed = false;
-    let baseline = window.scrollY;
-    const armFrame = requestAnimationFrame(() => {
-      baseline = window.scrollY;
-      armed = true;
-    });
-
-    const triggerQuiz = () => setPhase("quiz");
-    const onScroll = () => {
-      if (armed && Math.abs(window.scrollY - baseline) > 40) triggerQuiz();
-    };
-    const onInteract = () => {
-      if (armed) triggerQuiz();
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("pointerdown", onInteract);
-    return () => {
-      cancelAnimationFrame(armFrame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pointerdown", onInteract);
-    };
-  }, [isPortalRoute, phase, setPhase]);
-
-  // Signing in is compulsory: no close button, no backdrop click, no Escape,
-  // because there is nothing to fall back to. Every later phase stays
-  // dismissable — by then the visitor already has an account.
-  const locked = phase === "auth";
+  // Authentication is action-gated. Anonymous visitors can browse public
+  // details, and dismissing auth must preserve their current selection.
+  const locked = false;
 
   const dismiss = useCallback(() => {
     if (locked) return;
@@ -154,7 +102,7 @@ export function OnboardingOverlay() {
               </button>
             )}
             <div className="relative flex flex-1 flex-col" style={{ zIndex: 1 }}>
-              {phase === "auth" && <AuthFlow />}
+              {phase === "auth" && <PhoneAuthFlow />}
               {phase === "welcome" && <WelcomeCard />}
               {phase === "review-preferences" && <ReviewPreferences />}
               {phase === "quiz" && (

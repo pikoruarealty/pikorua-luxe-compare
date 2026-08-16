@@ -4,7 +4,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -58,7 +57,7 @@ interface OnboardingContextValue {
   quizEditMode: boolean;
   openQuizForEdit: () => void;
   cancelQuizEdit: () => void;
-  /** Open the auth flow after a high-intent action (save, full report). Once per session. */
+  /** Open the auth flow after an action that requires an account. */
   requestAuth: () => void;
   /** Auth-only gate for shared links: identify, then skip the preference quiz. */
   requestGatedAuth: () => void;
@@ -204,12 +203,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setPhase("quiz");
   }, []);
 
-  // Auth is invited after a high-intent action rather than forced on scroll —
-  // and only once per session, so a dismissal is respected.
-  const authPrompted = useRef(false);
+  // Authentication is opened only by an explicit gated action. A visitor may
+  // dismiss it without losing context and can reopen it from a later action.
   const requestAuth = useCallback(() => {
-    if (authPrompted.current || userProfile) return;
-    authPrompted.current = true;
+    if (userProfile) return;
     setPhase((p) => (p === "idle" || p === "complete" ? "auth" : p));
   }, [userProfile]);
 

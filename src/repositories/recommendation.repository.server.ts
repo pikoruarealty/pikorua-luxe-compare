@@ -18,6 +18,7 @@ import {
 } from "@/db/schema";
 import { getBudgetBand } from "@/domain/budget";
 import {
+  classifyBudgetFit,
   rankRecommendationProjects,
   type PrivateRecommendationProject,
 } from "@/domain/recommendation";
@@ -29,6 +30,7 @@ interface PublicSnapshot {
   propertyType?: unknown;
   locality?: unknown;
   cityName?: unknown;
+  possessionDate?: unknown;
   heroImageUrl?: unknown;
   verifiedDataCompleteness?: unknown;
 }
@@ -158,11 +160,8 @@ export async function findRecommendations(
     const parsed = propertyTypeSchema.safeParse(project.snapshot.propertyType);
     return parsed.success && propertyTypeFilter.has(parsed.data);
   });
-  const ranked = rankRecommendationProjects(
-    projects,
-    request.configurationOptionIds,
-    getBudgetBand(request.budgetBandId),
-  );
+  const budget = getBudgetBand(request.budgetBandId);
+  const ranked = rankRecommendationProjects(projects, request.configurationOptionIds, budget);
 
   const now = Date.now();
   const response = ranked.map((project) => {
@@ -179,15 +178,24 @@ export async function findRecommendations(
         propertyType: parsedType.success ? parsedType.data : "apartment",
         locality: nullableString(project.snapshot.locality),
         cityName: nullableString(project.snapshot.cityName) ?? project.cityName,
+        possessionDate: nullableString(project.snapshot.possessionDate),
         heroImageUrl: nullableString(project.snapshot.heroImageUrl),
         ratingAverage: project.ratingAverage,
         publishedReviewCount: project.reviewCount,
       },
       primaryConfigurationId: project.primaryConfigurationId,
       availableConfigurationIds: project.availableConfigurationIds,
-      configurations: [...project.publicVariants.values()].map(
-        ({ staleAfter: _, ...variant }) => variant,
-      ),
+      configurations: [...project.publicVariants.values()].map(({ staleAfter, ...variant }) => {
+        const privateVariant = project.variants.find((candidate) => candidate.id === variant.id);
+        return {
+          ...variant,
+          fit: classifyBudgetFit(
+            privateVariant?.privateUpperBoundRupees ?? null,
+            budget.maximumRupees,
+          ),
+          commercialDataStale: Boolean(staleAfter && staleAfter.getTime() < now),
+        };
+      }),
       fit: project.fit,
       commercialDataStale: Boolean(primary?.staleAfter && primary.staleAfter.getTime() < now),
       verificationDate: project.verifiedAt.toISOString(),

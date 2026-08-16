@@ -108,12 +108,23 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useActivityLog } from "@/hooks/use-activity-log";
 import { recordView } from "@/lib/recently-viewed";
 import { hasPrice, priceLabel } from "@/lib/price-format";
+import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
+import { getV2PublicPropertyDetail } from "@/api/functions/public-detail.functions";
+import { V2ResidenceDetail } from "@/components/residence/V2ResidenceDetail";
 
 const WHATSAPP_NUMBER = "916354359222";
 const PHONE_NUMBER = "+916354359222";
 
 export const Route = createFileRoute("/residence/$id")({
-  loader: ({ params }) => getPropertyBySlug({ data: { slug: params.id } }),
+  loader: async ({ params }) => {
+    const v2 = await getCatalogueBootstrap();
+    return v2.enabled
+      ? {
+          mode: "v2" as const,
+          detail: await getV2PublicPropertyDetail({ data: { slug: params.id } }),
+        }
+      : { mode: "legacy" as const, detail: await getPropertyBySlug({ data: { slug: params.id } }) };
+  },
   head: () => ({
     meta: [
       { title: "Residence — PropCompare" },
@@ -136,7 +147,11 @@ function residenceImages(p: Property): string[] {
 }
 
 function ResidencePage() {
-  const property = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  if (loaderData.mode === "v2" && loaderData.detail) {
+    return <V2ResidenceDetail detail={loaderData.detail} />;
+  }
+  const property = loaderData.mode === "legacy" ? loaderData.detail : null;
 
   if (!property) {
     return (

@@ -26,6 +26,7 @@ interface Snapshot {
   propertyType?: unknown;
   locality?: unknown;
   cityName?: unknown;
+  possessionDate?: unknown;
   heroImageUrl?: unknown;
 }
 
@@ -131,6 +132,7 @@ export async function findConsumerComparison(
           propertyType: parsedType.success ? parsedType.data : "apartment",
           locality: nullableString(snapshot.locality),
           cityName: nullableString(snapshot.cityName) ?? row.cityName,
+          possessionDate: nullableString(snapshot.possessionDate),
           heroImageUrl: nullableString(snapshot.heroImageUrl),
           ratingAverage: row.ratingAverage ? Number(row.ratingAverage) : null,
           publishedReviewCount: row.reviewCount ?? 0,
@@ -159,6 +161,7 @@ export async function findConsumerComparison(
       const recommendation = recommendationBySlug.get(slug);
       return {
         ...item,
+        configurations: recommendation?.configurations ?? item.configurations,
         selectedConfigurationId: recommendation?.primaryConfigurationId ?? null,
         ...(recommendation
           ? {

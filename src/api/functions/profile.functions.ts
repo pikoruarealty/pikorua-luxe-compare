@@ -191,6 +191,69 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
     return toDTO(row);
   });
 
+/** Phone-backed account creation used by the v2 action gate. Email and
+ * profession are optional; when Google supplies an email token it is still
+ * verified and bound to the new phone-backed profile. */
+export const upsertPhoneProfileAfterOtp = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { name: string; verificationToken?: string; email?: string; emailToken?: string }) => ({
+      name: z.string().trim().min(1).max(100).parse(data?.name),
+      verificationToken:
+        typeof data?.verificationToken === "string" ? data.verificationToken : undefined,
+      email: data?.email ? z.string().trim().toLowerCase().email().parse(data.email) : null,
+      emailToken: typeof data?.emailToken === "string" ? data.emailToken : undefined,
+    }),
+  )
+  .handler(async ({ data }): Promise<ProfileDTO> => {
+    const phone = await verifyPhoneToken(data.verificationToken);
+    if (!phone) throw new Error("Phone verification expired. Please request a new code.");
+
+    let email: string | null = null;
+    if (data.email) {
+      const verifiedEmail = await verifyEmailToken(data.emailToken);
+      if (!verifiedEmail || verifiedEmail !== data.email) {
+        throw new Error("Google email verification expired. Please try again.");
+      }
+      email = verifiedEmail;
+    }
+
+    const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
+    await enforce(POLICIES.LOGIN, `ip:${await clientIp()}`);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (existingError)
+      throwSafeError("upsertPhoneProfile.lookup", existingError, "Could not create account");
+    if (existing) throw new Error("This phone already has an account. Sign in instead.");
+
+    if (email) {
+      const { data: emailOwner, error: emailError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      if (emailError)
+        throwSafeError("upsertPhoneProfile.email", emailError, "Could not create account");
+      if (emailOwner) throw new Error("That Google account is already linked. Sign in instead.");
+    }
+
+    const { data: row, error } = await supabaseAdmin
+      .from("profiles")
+      .insert({ phone, name: data.name, email, profession: null })
+      .select("id, phone, name, email, profession, business_name, quiz_answers")
+      .single();
+    if (error || !row) throwSafeError("upsertPhoneProfile", error, "Could not create account");
+
+    const session = await visitorSession();
+    await session.update({ profileId: row.id, phone: row.phone });
+    const pending = await pendingSession();
+    await pending.clear();
+    return toDTO(row);
+  });
+
 const EMAIL_RE = /^[^\s@%_]+@[^\s@%_]+\.[^\s@%_]+$/;
 
 /** Sign-in step 1: does an account exist for this email / phone? Checked

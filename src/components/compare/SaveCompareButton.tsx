@@ -39,7 +39,7 @@ function findSavedTarget(): Element | null {
 export function SaveCompareButton({ properties, className = "", onSaved, saveLabel }: Props) {
   const hydrated = useHydrated();
   const { save, isSaved } = useSavedComparesStore();
-  const { requestAuth } = useOnboarding();
+  const { requestAuth, userProfile } = useOnboarding();
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const [fly, setFly] = useState<FlyState | null>(null);
 
@@ -48,6 +48,10 @@ export function SaveCompareButton({ properties, className = "", onSaved, saveLab
   const label = properties.map((p) => p.name).join(" vs ");
 
   const handleClick = () => {
+    if (!userProfile) {
+      requestAuth();
+      return;
+    }
     if (saved) {
       toast.info("This comparison is already saved.");
       return;

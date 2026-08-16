@@ -92,7 +92,7 @@ export const pendingConfig = () => ({
 export const sessionConfig = () => ({
   password: password(),
   name: SESSION_COOKIE,
-  maxAge: 60 * 60 * 24 * 60, // 60 days
+  maxAge: 60 * 60 * 24 * 30,
   cookie: cookieOpts,
 });
 

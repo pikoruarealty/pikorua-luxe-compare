@@ -17,6 +17,9 @@ import { DifferenceHighlights } from "@/components/compare/DifferenceHighlights"
 import { GalleryComparison } from "@/components/compare/GalleryComparison";
 import { ExpertVerdict } from "@/components/compare/ExpertVerdict";
 import { PreferenceBanner } from "@/components/marketing/PreferenceBanner";
+import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
+import { getV2ComparisonPage } from "@/api/functions/comparison-page.functions";
+import { V2Comparison } from "@/components/compare/V2Comparison";
 
 const searchSchema = z.object({
   ids: z.string().optional().default(""),
@@ -27,15 +30,32 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/compare")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ ids: search.ids }),
-  loader: ({ deps }) => {
+  loader: async ({ deps }) => {
     const slugs = deps.ids
       .split(",")
       .map((id) => id.trim())
       .filter(Boolean)
       .slice(0, 3);
-    return slugs.length > 0
-      ? getComparisonBootstrap({ data: { slugs } })
-      : { authRequired: false as const, properties: [] };
+    const v2 = await getCatalogueBootstrap();
+    if (v2.enabled) {
+      if (!v2.comparisonEnabled) {
+        return { mode: "disabled" as const };
+      }
+      return {
+        mode: "v2" as const,
+        bootstrap:
+          slugs.length > 0
+            ? await getV2ComparisonPage({ data: { slugs } })
+            : { authRequired: false as const, comparison: null },
+      };
+    }
+    return {
+      mode: "legacy" as const,
+      bootstrap:
+        slugs.length > 0
+          ? await getComparisonBootstrap({ data: { slugs } })
+          : { authRequired: false as const, properties: [] },
+    };
   },
   head: () => ({
     meta: [
@@ -56,24 +76,36 @@ export const Route = createFileRoute("/compare")({
 
 function ComparePage() {
   const { shared } = Route.useSearch();
-  const bootstrap = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
   const { userProfile, hydrated, requestGatedAuth } = useOnboarding();
   const router = useRouter();
-  const properties = bootstrap.authRequired ? [] : bootstrap.properties;
-  const projectNames = bootstrap.authRequired
-    ? bootstrap.projects.map((project) => project.name)
-    : properties.map((property) => property.name);
+  const bootstrap = loaderData.mode === "disabled" ? null : loaderData.bootstrap;
+  const properties =
+    loaderData.mode === "legacy" && !loaderData.bootstrap.authRequired
+      ? loaderData.bootstrap.properties
+      : [];
+  const projectNames =
+    loaderData.mode === "disabled"
+      ? []
+      : loaderData.bootstrap.authRequired
+        ? loaderData.bootstrap.projects.map((property) => property.name)
+        : loaderData.mode === "legacy"
+          ? loaderData.bootstrap.properties.map((property) => property.name)
+          : (loaderData.bootstrap.comparison?.properties.map(
+              (property) => property.property.name,
+            ) ?? []);
 
   // A shared link is gated: the recipient identifies themselves before the
   // comparison renders. Wait for `hydrated` so a returning signed-in visitor
   // never sees the gate flash while the session check resolves.
-  const gated = bootstrap.authRequired && hydrated && !userProfile;
+  const gated = Boolean(bootstrap?.authRequired && hydrated && !userProfile);
   useEffect(() => {
     if (gated) requestGatedAuth();
   }, [gated, requestGatedAuth]);
   useEffect(() => {
-    if (bootstrap.authRequired && userProfile) void router.invalidate();
-  }, [bootstrap.authRequired, router, userProfile]);
+    if (bootstrap?.authRequired && userProfile) void router.invalidate();
+  }, [bootstrap?.authRequired, router, userProfile]);
+  if (!bootstrap) return <ComparisonDisabled />;
   // Hold the comparison back entirely rather than rendering it behind the
   // overlay — the content must not be readable before the visitor signs in.
   if (bootstrap.authRequired) {
@@ -108,6 +140,19 @@ function ComparePage() {
               Continue to view
             </button>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (loaderData.mode === "v2") {
+    return loaderData.bootstrap.comparison ? (
+      <V2Comparison comparison={loaderData.bootstrap.comparison} />
+    ) : (
+      <div className="min-h-screen">
+        <SiteHeader />
+        <div className="container-lux pt-40 text-center">
+          Select at least two projects to compare.
         </div>
       </div>
     );
@@ -168,6 +213,26 @@ function ComparePage() {
       </div>
 
       <SiteFooter />
+    </div>
+  );
+}
+
+function ComparisonDisabled() {
+  return (
+    <div className="min-h-screen">
+      <SiteHeader />
+      <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center">
+        <p className="text-[11px] tracking-luxury text-champagne">Comparison unavailable</p>
+        <h1 className="mt-4 font-display text-4xl text-ivory sm:text-5xl">
+          This feature is not currently enabled.
+        </h1>
+        <Link
+          to="/"
+          className="mt-8 inline-flex items-center gap-2 rounded-full gold-border px-6 py-3 text-xs tracking-luxury text-champagne"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to residences
+        </Link>
+      </main>
     </div>
   );
 }

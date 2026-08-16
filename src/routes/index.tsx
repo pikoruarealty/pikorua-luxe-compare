@@ -31,6 +31,8 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { hasActiveFilters, matchesPreferences } from "@/lib/preference-filter";
 import type { Property } from "@/types/property";
+import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
+import { V2CataloguePage } from "@/components/catalogue/V2CataloguePage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,9 +50,14 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  loader: async ({ context }) => ({
-    properties: await context.queryClient.ensureQueryData(detailedPropertiesQueryOptions()),
-  }),
+  loader: async ({ context }) => {
+    const v2 = await getCatalogueBootstrap();
+    if (v2.enabled) return { v2, properties: [] };
+    return {
+      v2,
+      properties: await context.queryClient.ensureQueryData(detailedPropertiesQueryOptions()),
+    };
+  },
   component: Index,
 });
 
@@ -65,7 +72,8 @@ function matchesQuery(p: Property, q: string): boolean {
 }
 
 function Index() {
-  const { properties } = Route.useLoaderData();
+  const { properties, v2 } = Route.useLoaderData();
+  if (v2.enabled) return <V2CataloguePage markets={v2.markets} />;
   return (
     <PropertiesProvider properties={properties}>
       <IndexContent />
