@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://propcompare.in/schemas/property.v1.json",
+  "title": "PropCompare canonical property contract",
+  "version": 1,
+  "fieldStates": [
+    "stated",
+    "not_stated",
+    "explicitly_not_offered",
+    "not_applicable",
+    "pending_review"
+  ],
+  "configurationKinds": [
+    "2_bhk",
+    "3_bhk",
+    "4_bhk",
+    "5_bhk",
+    "6_bhk",
+    "7_bhk",
+    "penthouse",
+    "duplex",
+    "villa",
+    "bungalow",
+    "plot"
+  ],
+  "propertyTypes": ["apartment", "villa", "bungalow", "plot"],
+  "areaBases": ["carpet", "rera_carpet", "built_up", "super_built_up", "plot", "not_stated"],
+  "units": ["sq_ft", "sq_m", "sq_yd"],
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "visibility": "public",
+      "label": "Project name",
+      "maxLength": 200
+    },
+    {
+      "name": "developerName",
+      "type": "string",
+      "required": false,
+      "visibility": "public",
+      "label": "Developer",
+      "maxLength": 200
+    },
+    {
+      "name": "propertyType",
+      "type": "propertyType",
+      "required": true,
+      "visibility": "public",
+      "label": "Property type"
+    },
+    {
+      "name": "addressLine",
+      "type": "string",
+      "required": false,
+      "visibility": "public",
+      "label": "Address",
+      "maxLength": 500
+    },
+    {
+      "name": "locality",
+      "type": "string",
+      "required": false,
+      "visibility": "public",
+      "label": "Locality",
+      "maxLength": 200
+    },
+    {
+      "name": "stateCode",
+      "type": "string",
+      "required": true,
+      "visibility": "public",
+      "label": "State code",
+      "maxLength": 10
+    },
+    {
+      "name": "cityCode",
+      "type": "string",
+      "required": true,
+      "visibility": "public",
+      "label": "City code",
+      "maxLength": 50
+    },
+    {
+      "name": "reraRegistration",
+      "type": "string",
+      "required": false,
+      "visibility": "public",
+      "label": "RERA registration",
+      "maxLength": 100
+    },
+    {
+      "name": "possessionDate",
+      "type": "date",
+      "required": false,
+      "visibility": "public",
+      "label": "Verified possession date"
+    },
+    {
+      "name": "configurationKind",
+      "type": "configurationKind",
+      "required": true,
+      "visibility": "public",
+      "label": "Configuration"
+    },
+    {
+      "name": "areaValue",
+      "type": "decimal",
+      "required": false,
+      "visibility": "public",
+      "label": "Area",
+      "minimum": 0
+    },
+    {
+      "name": "areaBasis",
+      "type": "areaBasis",
+      "required": false,
+      "visibility": "public",
+      "label": "Area basis"
+    },
+    {
+      "name": "areaUnit",
+      "type": "unit",
+      "required": false,
+      "visibility": "public",
+      "label": "Area unit"
+    },
+    {
+      "name": "baseSalePriceRupees",
+      "type": "integer",
+      "required": false,
+      "visibility": "private_commercial",
+      "label": "Base sale price",
+      "minimum": 0
+    },
+    {
+      "name": "rateRupeesPerSqFt",
+      "type": "decimal",
+      "required": false,
+      "visibility": "private_commercial",
+      "label": "Rate per square foot",
+      "minimum": 0
+    },
+    {
+      "name": "rateAreaBasis",
+      "type": "areaBasis",
+      "required": false,
+      "visibility": "private_commercial",
+      "label": "Rate area basis"
+    }
+  ]
+}

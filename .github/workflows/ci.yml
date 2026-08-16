@@ -23,6 +23,8 @@ jobs:
       - run: bun x tsc --noEmit
       - run: bun run test
       - run: bun run check
+      - run: bun run schema:check
+      - run: bun run db:drift
       - run: bun run build
 
   ocr:
