@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
@@ -15,6 +15,8 @@ import {
   Pencil,
   Phone,
   Sparkles,
+  ShieldCheck,
+  Trash2,
   User,
   X,
 } from "lucide-react";
@@ -25,6 +27,14 @@ import { useOnboarding, type UserProfile } from "@/context/OnboardingContext";
 import { useFavoritesStore } from "@/stores/favorites-store";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { updateProfile as updateProfileFn } from "@/api/functions/profile.functions";
+import {
+  deleteMyAccount,
+  getPrivacyPreferences,
+  updateAnalyticsPreference,
+} from "@/api/functions/privacy.functions";
+import { ANALYTICS_OPT_OUT_STORAGE } from "@/hooks/use-activity-log";
+import { useSavedComparesStore } from "@/stores/saved-compares-store";
+import { useCompareStore } from "@/stores/compare-store";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -109,10 +119,18 @@ function AccountContent({ profile }: { profile: UserProfile }) {
   const navigate = useNavigate();
   const hydrated = useHydrated();
   const favCount = useFavoritesStore((s) => s.favorites.length);
+  const clearFavorites = useFavoritesStore((s) => s.clear);
+  const clearSavedComparisons = useSavedComparesStore((s) => s.clear);
+  const clearComparison = useCompareStore((s) => s.clear);
   const updateProfile = useServerFn(updateProfileFn);
+  const updateAnalytics = useServerFn(updateAnalyticsPreference);
+  const deleteAccount = useServerFn(deleteMyAccount);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [analyticsOptOut, setAnalyticsOptOut] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({
     name: profile.name,
     email: profile.email,
@@ -121,6 +139,11 @@ function AccountContent({ profile }: { profile: UserProfile }) {
     city: profile.city ?? "",
     notes: profile.notes ?? "",
   });
+  useEffect(() => {
+    getPrivacyPreferences()
+      .then((preference) => setAnalyticsOptOut(preference.analyticsOptOut))
+      .catch(() => undefined);
+  }, []);
 
   const startEdit = () => {
     setForm({
@@ -135,8 +158,8 @@ function AccountContent({ profile }: { profile: UserProfile }) {
   };
 
   const save = async () => {
-    if (!form.name.trim() || !form.email.trim()) {
-      toast.error("Name and email are required.");
+    if (!form.name.trim()) {
+      toast.error("Name is required.");
       return;
     }
     setSaving(true);
@@ -149,10 +172,8 @@ function AccountContent({ profile }: { profile: UserProfile }) {
       city: form.city.trim() || undefined,
       notes: form.notes.trim() || undefined,
     };
-    // Local first — instant; server best-effort behind it.
-    setUserProfile(next);
     try {
-      await updateProfile({
+      const saved = await updateProfile({
         data: {
           name: next.name,
           email: next.email,
@@ -160,12 +181,19 @@ function AccountContent({ profile }: { profile: UserProfile }) {
           businessName: next.businessName ?? null,
         },
       });
+      setUserProfile({
+        ...next,
+        name: saved.name ?? next.name,
+        email: saved.email ?? "",
+        profession: (saved.profession as UserProfile["profession"]) ?? "other",
+        businessName: saved.businessName ?? undefined,
+      });
       toast.success("Profile updated");
-    } catch {
-      toast.success("Profile saved on this device");
+      setEditing(false);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Profile update failed");
     }
     setSaving(false);
-    setEditing(false);
   };
 
   const handleSignOut = async () => {
@@ -316,7 +344,7 @@ function AccountContent({ profile }: { profile: UserProfile }) {
                     placeholder="Your name"
                   />
                 </Field>
-                <Field label="Email *">
+                <Field label="Email (optional)">
                   <input
                     className={inputCls}
                     type="email"
@@ -444,6 +472,91 @@ function AccountContent({ profile }: { profile: UserProfile }) {
             </p>
           )}
         </motion.section>
+
+        <section className="mt-6 rounded-3xl border border-border bg-card p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <ShieldCheck className="mt-1 h-5 w-5 text-champagne" />
+            <div className="flex-1">
+              <h2 className="font-display text-2xl text-ivory">Privacy controls</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Optional product analytics helps improve preference and comparison flows. Security
+                and publication audit logs remain active regardless of this choice.
+              </p>
+              <label className="mt-5 flex items-center justify-between gap-5 rounded-xl border border-border p-4">
+                <span>
+                  <span className="block text-sm font-semibold">Opt out of product analytics</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Existing identifiable activity is removed when you opt out.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={analyticsOptOut}
+                  onChange={async (event) => {
+                    const optedOut = event.target.checked;
+                    try {
+                      await updateAnalytics({ data: { optedOut } });
+                      setAnalyticsOptOut(optedOut);
+                      localStorage.setItem(ANALYTICS_OPT_OUT_STORAGE, String(optedOut));
+                      toast.success("Analytics preference updated");
+                    } catch (cause) {
+                      toast.error(cause instanceof Error ? cause.message : "Update failed");
+                    }
+                  }}
+                  className="h-5 w-5"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-red-500/25 bg-card p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <Trash2 className="mt-1 h-5 w-5 text-red-500" />
+            <div className="flex-1">
+              <h2 className="font-display text-2xl text-ivory">Delete account</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                This removes profile data, preferences, saved items, locations and enquiry contact
+                details. Reviews remain public as “Former user.” This cannot be undone.
+              </p>
+              <label htmlFor="delete-confirmation" className="mt-5 block text-sm font-medium">
+                Type DELETE to confirm
+              </label>
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+                <input
+                  id="delete-confirmation"
+                  value={deleteConfirmation}
+                  onChange={(event) => setDeleteConfirmation(event.target.value)}
+                  className={inputCls}
+                />
+                <button
+                  type="button"
+                  disabled={deleting || deleteConfirmation !== "DELETE"}
+                  onClick={async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteAccount({ data: { confirmation: "DELETE" } });
+                      clearFavorites();
+                      clearSavedComparisons();
+                      clearComparison();
+                      localStorage.removeItem("propcompare:v2-preferences");
+                      await signOut();
+                      toast.success("Account deleted");
+                      navigate({ to: "/" });
+                    } catch (cause) {
+                      toast.error(cause instanceof Error ? cause.message : "Deletion failed");
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                  className="h-12 shrink-0 rounded-full bg-red-600 px-6 text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  {deleting ? "Deleting…" : "Delete permanently"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Actions */}
         <div className="mt-8 flex flex-wrap items-center gap-3">

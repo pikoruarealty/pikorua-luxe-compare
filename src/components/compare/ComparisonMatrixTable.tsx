@@ -890,6 +890,7 @@ function DistanceCalculator({ items, gridTpl }: { items: Property[]; gridTpl: st
             {status === "loading" ? "Calculating…" : "Calculate distance"}
           </button>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">Location lookup powered by Google</p>
         {status === "error" && (
           <p className="mt-2 text-red-600 dark:text-red-400" style={{ fontSize: "var(--step--1)" }}>
             Couldn&apos;t locate that address. Try adding more detail (area, city).

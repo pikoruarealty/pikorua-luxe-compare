@@ -33,8 +33,8 @@ export function SiteFooter() {
               className="mt-5 max-w-sm leading-relaxed text-muted-foreground"
               style={{ fontSize: "var(--step--1)" }}
             >
-              An editorial suite for comparing ultra-luxury residences. Curated by PropCompare's
-              private-client advisory to help you decide with clarity.
+              Compare approved property facts, configuration choices and qualitative budget fit
+              without exposing private commercial data.
             </p>
           </div>
 
@@ -89,8 +89,8 @@ export function SiteFooter() {
               className="mt-4 leading-relaxed text-muted-foreground"
               style={{ fontSize: "var(--step--1)" }}
             >
-              Questions about a residence, pricing, or possession? Our advisors reply within the
-              hour.
+              Questions about a residence, pricing, possession or your privacy choices? Contact the
+              PropCompare internal team.
             </p>
             <a
               href={WHATSAPP_URL}
@@ -109,12 +109,20 @@ export function SiteFooter() {
           <p className="text-muted-foreground" style={{ fontSize: "var(--step--2)" }}>
             © {new Date().getFullYear()} PropCompare Realty. All rights reserved.
           </p>
-          <p
-            className="font-label tracking-luxury text-muted-foreground"
-            style={{ fontSize: "var(--step--2)" }}
+          <nav
+            aria-label="Legal"
+            className="flex flex-wrap justify-center gap-4 text-muted-foreground"
           >
-            Compare · Decide · Reside
-          </p>
+            <Link to="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-foreground">
+              Terms
+            </Link>
+            <Link to="/community-guidelines" className="hover:text-foreground">
+              Review guidelines
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

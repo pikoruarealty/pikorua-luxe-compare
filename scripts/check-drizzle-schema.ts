@@ -7,6 +7,7 @@ const migrationFiles = [
   "20260816130000_atomic_publication.sql",
   "20260816140000_durable_ocr_uploads.sql",
   "20260816150000_reviews_enquiries_runtime.sql",
+  "20260816170000_saved_google_locations.sql",
 ];
 const migration = (
   await Promise.all(
@@ -25,6 +26,7 @@ const mirroredTables = [
   "property_submission_workflows",
   "property_submission_revisions",
   "customer_preferences",
+  "saved_locations",
   "property_reviews",
   "property_review_versions",
   "developer_review_responses",

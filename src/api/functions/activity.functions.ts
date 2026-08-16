@@ -104,6 +104,16 @@ export const logActivity = createServerFn({ method: "POST" })
       const profileId = session.data?.profileId ?? null;
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      if (profileId) {
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("analytics_opt_out")
+          .eq("id", profileId)
+          .maybeSingle();
+        if ((profile as { analytics_opt_out?: boolean } | null)?.analytics_opt_out) {
+          return { ok: false };
+        }
+      }
       await supabaseAdmin.from("customer_activity").insert({
         profile_id: profileId,
         session_key: data.sessionKey,

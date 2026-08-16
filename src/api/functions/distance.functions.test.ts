@@ -45,11 +45,14 @@ async function call(fn: unknown, data: unknown) {
 
 describe("property distance inputs", () => {
   beforeEach(() => {
+    vi.stubEnv("GOOGLE_MAPS_SERVER_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
-        json: async () => [{ lat: "19.1136", lon: "72.8697" }],
+        json: async () => ({
+          results: [{ geometry: { location: { lat: 19.1136, lng: 72.8697 } } }],
+        }),
       })),
     );
   });

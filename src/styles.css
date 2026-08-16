@@ -4,6 +4,39 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 9999;
+  transform: translateY(-160%);
+  border-radius: 999px;
+  background: var(--champagne-gold);
+  color: var(--lux-black);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -350,12 +383,20 @@ html.theme-anim * {
 }
 
 @keyframes theme-fade-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes theme-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Respect users who prefer reduced motion */
@@ -468,7 +509,9 @@ html.theme-anim * {
   color: #121212 !important;
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
-  transition: filter 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition:
+    filter 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 .foil:hover {
   filter: brightness(1.08) saturate(1.05);
@@ -734,8 +777,12 @@ body,
    a colour break. The keyframe is registered in @theme as
    animate-marquee-continuous; duration comes from useMarqueeSpeed inline. */
 @keyframes marquee-continuous {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 .partner-strip {
   position: relative;
@@ -841,9 +888,15 @@ body,
 }
 /* Flash + sustained focus ring when a row is opened from a suggestion */
 @keyframes row-flash-pulse {
-  0%   { outline-color: color-mix(in oklab, var(--foreground) 55%, transparent); }
-  60%  { outline-color: color-mix(in oklab, var(--foreground) 15%, transparent); }
-  100% { outline-color: transparent; }
+  0% {
+    outline-color: color-mix(in oklab, var(--foreground) 55%, transparent);
+  }
+  60% {
+    outline-color: color-mix(in oklab, var(--foreground) 15%, transparent);
+  }
+  100% {
+    outline-color: transparent;
+  }
 }
 .row-flash {
   border-radius: 24px;

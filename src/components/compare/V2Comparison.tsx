@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Star } from "lucide-react";
 import type { ConsumerComparison } from "@/contracts/consumer";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { LocationDistances } from "./LocationDistances";
 
 export function V2Comparison({ comparison }: { comparison: ConsumerComparison }) {
   const [selected, setSelected] = useState<Record<string, string | null>>(() =>
@@ -132,6 +133,12 @@ export function V2Comparison({ comparison }: { comparison: ConsumerComparison })
             );
           })}
         </div>
+        <LocationDistances
+          properties={chosen.map((item) => ({
+            slug: item.property.slug,
+            name: item.property.name,
+          }))}
+        />
         <div className="mt-10 rounded-2xl border border-border p-5">
           <h2 className="font-display text-xl font-bold">Why some values are not compared</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">

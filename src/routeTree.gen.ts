@@ -9,8 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as CompareRouteImport } from './routes/compare'
+import { Route as CommunityGuidelinesRouteImport } from './routes/community-guidelines'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
@@ -20,6 +23,7 @@ import { Route as DeveloperReviewsRouteImport } from './routes/developer.reviews
 import { Route as DeveloperEnquiriesRouteImport } from './routes/developer.enquiries'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
+import { Route as AdminMfaRouteImport } from './routes/admin.mfa'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
@@ -30,6 +34,16 @@ import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.pr
 import { Route as AdminPropertiesNewRouteImport } from './routes/admin.properties.new'
 import { Route as AdminPropertiesPropertyIdRouteImport } from './routes/admin.properties.$propertyId'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FavoritesRoute = FavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
@@ -38,6 +52,11 @@ const FavoritesRoute = FavoritesRouteImport.update({
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityGuidelinesRoute = CommunityGuidelinesRouteImport.update({
+  id: '/community-guidelines',
+  path: '/community-guidelines',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -83,6 +102,11 @@ const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
 const AdminModerationRoute = AdminModerationRouteImport.update({
   id: '/admin/moderation',
   path: '/admin/moderation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMfaRoute = AdminMfaRouteImport.update({
+  id: '/admin/mfa',
+  path: '/admin/mfa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -135,11 +159,15 @@ const AdminPropertiesPropertyIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/compare': typeof CompareRoute
   '/favorites': typeof FavoritesRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
@@ -157,11 +185,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/compare': typeof CompareRoute
   '/favorites': typeof FavoritesRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
@@ -180,11 +212,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/compare': typeof CompareRoute
   '/favorites': typeof FavoritesRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
@@ -204,11 +240,15 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
+    | '/community-guidelines'
     | '/compare'
     | '/favorites'
+    | '/privacy'
+    | '/terms'
     | '/admin/customers'
     | '/admin/developers'
     | '/admin/login'
+    | '/admin/mfa'
     | '/admin/moderation'
     | '/admin/submissions'
     | '/developer/enquiries'
@@ -226,11 +266,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/account'
+    | '/community-guidelines'
     | '/compare'
     | '/favorites'
+    | '/privacy'
+    | '/terms'
     | '/admin/customers'
     | '/admin/developers'
     | '/admin/login'
+    | '/admin/mfa'
     | '/admin/moderation'
     | '/admin/submissions'
     | '/developer/enquiries'
@@ -248,11 +292,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/account'
+    | '/community-guidelines'
     | '/compare'
     | '/favorites'
+    | '/privacy'
+    | '/terms'
     | '/admin/customers'
     | '/admin/developers'
     | '/admin/login'
+    | '/admin/mfa'
     | '/admin/moderation'
     | '/admin/submissions'
     | '/developer/enquiries'
@@ -271,11 +319,15 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
+  CommunityGuidelinesRoute: typeof CommunityGuidelinesRoute
   CompareRoute: typeof CompareRoute
   FavoritesRoute: typeof FavoritesRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDevelopersRoute: typeof AdminDevelopersRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminMfaRoute: typeof AdminMfaRoute
   AdminModerationRoute: typeof AdminModerationRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
   DeveloperEnquiriesRoute: typeof DeveloperEnquiriesRoute
@@ -293,6 +345,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/favorites': {
       id: '/favorites'
       path: '/favorites'
@@ -305,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/compare'
       fullPath: '/compare'
       preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community-guidelines': {
+      id: '/community-guidelines'
+      path: '/community-guidelines'
+      fullPath: '/community-guidelines'
+      preLoaderRoute: typeof CommunityGuidelinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -368,6 +441,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/moderation'
       fullPath: '/admin/moderation'
       preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/mfa': {
+      id: '/admin/mfa'
+      path: '/admin/mfa'
+      fullPath: '/admin/mfa'
+      preLoaderRoute: typeof AdminMfaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -439,11 +519,15 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
+  CommunityGuidelinesRoute: CommunityGuidelinesRoute,
   CompareRoute: CompareRoute,
   FavoritesRoute: FavoritesRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDevelopersRoute: AdminDevelopersRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminMfaRoute: AdminMfaRoute,
   AdminModerationRoute: AdminModerationRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
   DeveloperEnquiriesRoute: DeveloperEnquiriesRoute,

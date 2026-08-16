@@ -19,6 +19,7 @@ import { ScrollProgress } from "@/components/layout/ScrollProgress";
 import { AdvisorPill } from "@/components/layout/AdvisorPill";
 import { PageFade } from "@/components/layout/PageFade";
 import { ThemeProvider } from "../context/ThemeContext";
+import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
 
 function NotFoundComponent() {
   return (
@@ -105,9 +106,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   // The property catalog now lives in the database. Loading it here (once per
   // document request) keeps every consumer synchronous via PropertiesProvider
   // and puts the data in the SSR payload, so there's no first-paint flash.
-  loader: async ({ context }) => ({
-    properties: await context.queryClient.ensureQueryData(propertiesQueryOptions()),
-  }),
+  loader: async ({ context }) => {
+    const v2 = await getCatalogueBootstrap();
+    return {
+      properties: v2.enabled
+        ? []
+        : await context.queryClient.ensureQueryData(propertiesQueryOptions()),
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -123,6 +129,9 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
         {children}
         <Scripts />
       </body>
@@ -139,9 +148,11 @@ function RootComponent() {
         <ThemeProvider>
           <OnboardingProvider>
             <ScrollProgress />
-            <PageFade>
-              <Outlet />
-            </PageFade>
+            <div id="main-content" tabIndex={-1}>
+              <PageFade>
+                <Outlet />
+              </PageFade>
+            </div>
             <AdvisorPill />
             <OnboardingOverlay />
             <Toaster

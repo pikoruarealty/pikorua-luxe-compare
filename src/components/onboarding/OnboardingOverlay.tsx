@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouterState } from "@tanstack/react-router";
 import { X } from "lucide-react";
@@ -9,6 +9,8 @@ import { PropertyQuiz } from "./PropertyQuiz";
 import { ReviewPreferences } from "./ReviewPreferences";
 
 export function OnboardingOverlay() {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const { phase, setPhase, quizAnswers, quizEditMode, cancelQuizEdit, hydrated, userProfile } =
     useOnboarding();
   // The public sign-in / quiz gate must never appear on the admin or developer
@@ -53,6 +55,41 @@ export function OnboardingOverlay() {
     !isPortalRoute &&
     (phase === "auth" || phase === "welcome" || phase === "review-preferences" || phase === "quiz");
 
+  useEffect(() => {
+    if (!active) return;
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    const frame = requestAnimationFrame(() => {
+      const focusable = dialogRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    });
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const items = [
+        ...dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ),
+      ];
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", trap);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", trap);
+      restoreFocusRef.current?.focus();
+    };
+  }, [active]);
+
   return (
     <AnimatePresence>
       {active && (
@@ -68,12 +105,14 @@ export function OnboardingOverlay() {
             backdropFilter: "blur(4px)",
           }}
           aria-modal="true"
+          aria-label="PropCompare account authentication"
           role="dialog"
           onClick={(e) => {
             if (e.target === e.currentTarget) dismiss();
           }}
         >
           <motion.div
+            ref={dialogRef}
             initial={{ y: 24, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0 }}

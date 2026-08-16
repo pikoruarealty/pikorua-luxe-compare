@@ -377,20 +377,27 @@ export const saveQuizAnswers = createServerFn({ method: "POST" })
 
 export const updateProfile = createServerFn({ method: "POST" })
   .inputValidator(
-    (data: { name: string; email: string; profession: string; businessName?: string | null }) => {
-      if (!data?.name?.trim() || !data?.email?.trim() || !data?.profession?.trim()) {
+    (data: {
+      name: string;
+      email?: string | null;
+      emailToken?: string;
+      profession: string;
+      businessName?: string | null;
+    }) => {
+      if (!data?.name?.trim() || !data?.profession?.trim()) {
         throw new Error("Missing fields");
       }
       // Lowercased to match how every other write stores it — otherwise the
       // same address saved here and at sign-up produces two rows that only a
       // case-insensitive lookup can tell apart.
-      const email = data.email.trim().toLowerCase();
-      if (!EMAIL_RE.test(email)) throw new Error("Enter a valid email address");
+      const email = data.email?.trim().toLowerCase() || null;
+      if (email && !EMAIL_RE.test(email)) throw new Error("Enter a valid email address");
       return {
         name: data.name.trim(),
         email,
         profession: data.profession.trim(),
         businessName: data.businessName?.trim() || null,
+        emailToken: typeof data.emailToken === "string" ? data.emailToken : undefined,
       };
     },
   )
@@ -399,16 +406,28 @@ export const updateProfile = createServerFn({ method: "POST" })
     const profileId = session.data?.profileId;
     if (!profileId) throw new Error("Not signed in");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: current, error: currentError } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", profileId)
+      .single();
+    if (currentError || !current) throw new Error("Profile not found");
+    if (data.email && data.email !== current.email) {
+      const verifiedEmail = await verifyEmailToken(data.emailToken);
+      if (verifiedEmail !== data.email) {
+        throw new Error("Verify the new email before replacing your profile email.");
+      }
+    }
 
     // One address, one profile. upsertProfileAfterOtp has enforced this since it
     // was written; this path never got the same check, so a signed-in visitor
     // could type in somebody else's address and take it. That locks the real
     // owner out of email sign-in, because completeLogin refuses to guess
     // between two matches.
-    const { data: emailOwners, error: ownersError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("email", data.email);
+    const emailOwnersResult = data.email
+      ? await supabaseAdmin.from("profiles").select("id").eq("email", data.email)
+      : { data: [], error: null };
+    const { data: emailOwners, error: ownersError } = emailOwnersResult;
     if (ownersError) throw new Error("Couldn't check that email. Please try again.");
     if ((emailOwners ?? []).some((r: { id: string }) => r.id !== profileId)) {
       throw new Error("That email is already linked to another account.");

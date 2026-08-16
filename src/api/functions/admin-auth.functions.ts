@@ -3,7 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 
 export interface AdminProfileDTO {
   id: string;
-  role: "owner" | "developer";
+  role: "owner" | "reviewer" | "support" | "developer";
   email: string;
   fullName: string | null;
   isActive: boolean;

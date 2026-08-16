@@ -58,7 +58,7 @@ function supabaseOrigin(): string | null {
  *  blocked, and the policy can be tightened against real traffic before it
  *  starts refusing anything. */
 export function securityHeaders(): Record<string, string> {
-  const enforce = process.env.CSP_ENFORCE === "1";
+  const enforce = process.env.CSP_ENFORCE === "1" || process.env.NODE_ENV === "production";
   const policy = contentSecurityPolicy(supabaseOrigin());
 
   return {

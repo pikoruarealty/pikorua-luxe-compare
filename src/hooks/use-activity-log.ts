@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { logActivity, type ActivityEvent } from "@/api/functions/activity.functions";
 
 const SESSION_KEY_STORAGE = "pikorua:session-key";
+export const ANALYTICS_OPT_OUT_STORAGE = "propcompare:analytics-opt-out";
 
 /** Stable per-browser id so anonymous (pre-signup) activity can still be grouped. */
 function getSessionKey(): string | null {
@@ -26,6 +27,7 @@ export function useActivityLog() {
   return useCallback(
     (event: ActivityEvent, propertySlug?: string | null, metadata?: Record<string, unknown>) => {
       try {
+        if (window.localStorage.getItem(ANALYTICS_OPT_OUT_STORAGE) === "true") return;
         void logActivity({
           data: {
             event,

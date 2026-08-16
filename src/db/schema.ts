@@ -105,6 +105,7 @@ export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   phone: text("phone").notNull(),
   name: text("name"),
+  analyticsOptOut: boolean("analytics_opt_out").notNull().default(false),
 });
 
 export const markets = pgTable(
@@ -288,6 +289,22 @@ export const customerPreferences = pgTable("customer_preferences", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+export const savedLocations = pgTable(
+  "saved_locations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    googlePlaceId: text("google_place_id").notNull(),
+    placeIdRefreshedAt: timestamp("place_id_refreshed_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [unique().on(table.profileId, table.googlePlaceId)],
+);
 
 export const propertyReviews = pgTable("property_reviews", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -48,6 +48,10 @@ export function AdminLayout({
       navigate({ to: "/admin/login" });
     } else if (profile.role === "developer") {
       navigate({ to: "/developer" });
+    } else if (import.meta.env.PROD || import.meta.env.VITE_STAFF_MFA_ENFORCE === "true") {
+      void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+        if (data?.currentLevel !== "aal2") navigate({ to: "/admin/mfa" });
+      });
     }
   }, [isPending, profile, navigate]);
 
