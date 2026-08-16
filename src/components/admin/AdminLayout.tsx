@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, Inbox, LayoutDashboard, UserRound, Users } from "lucide-react";
+import { Building2, Inbox, LayoutDashboard, ShieldCheck, UserRound, Users } from "lucide-react";
 import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/api/queries/admin.queries";
 import { supabase } from "@/integrations/supabase/client";
 import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { to: "/admin/properties", label: "Properties", icon: Building2 },
   { to: "/admin/customers", label: "Customers", icon: UserRound, ownerOnly: true },
   { to: "/admin/submissions", label: "Submissions", icon: Inbox, ownerOnly: true },
+  { to: "/admin/moderation", label: "Moderation", icon: ShieldCheck },
   { to: "/admin/developers", label: "Developers", icon: Users, ownerOnly: true },
 ];
 

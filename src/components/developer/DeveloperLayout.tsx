@@ -1,13 +1,15 @@
 import { type ReactNode, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Plus } from "lucide-react";
+import { Inbox, LayoutDashboard, MessageSquareText, Plus } from "lucide-react";
 import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/api/queries/admin.queries";
 import { supabase } from "@/integrations/supabase/client";
 import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
 
 const NAV: PortalNavItem[] = [
   { to: "/developer", label: "My Properties", icon: LayoutDashboard },
+  { to: "/developer/enquiries", label: "Enquiries", icon: Inbox },
+  { to: "/developer/reviews", label: "Reviews", icon: MessageSquareText },
   { to: "/developer/properties/new", label: "Add Property", icon: Plus },
 ];
 

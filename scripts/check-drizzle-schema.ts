@@ -6,6 +6,7 @@ const migrationFiles = [
   "20260816120000_v2_canonical_foundation.sql",
   "20260816130000_atomic_publication.sql",
   "20260816140000_durable_ocr_uploads.sql",
+  "20260816150000_reviews_enquiries_runtime.sql",
 ];
 const migration = (
   await Promise.all(
@@ -25,6 +26,9 @@ const mirroredTables = [
   "property_submission_revisions",
   "customer_preferences",
   "property_reviews",
+  "property_review_versions",
+  "developer_review_responses",
+  "review_reports",
   "property_enquiries",
   "ocr_jobs",
   "property_assets",

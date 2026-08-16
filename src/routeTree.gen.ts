@@ -16,7 +16,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ResidenceIdRouteImport } from './routes/residence.$id'
+import { Route as DeveloperReviewsRouteImport } from './routes/developer.reviews'
+import { Route as DeveloperEnquiriesRouteImport } from './routes/developer.enquiries'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
+import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
@@ -62,9 +65,24 @@ const ResidenceIdRoute = ResidenceIdRouteImport.update({
   path: '/residence/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeveloperReviewsRoute = DeveloperReviewsRouteImport.update({
+  id: '/developer/reviews',
+  path: '/developer/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperEnquiriesRoute = DeveloperEnquiriesRouteImport.update({
+  id: '/developer/enquiries',
+  path: '/developer/enquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
   id: '/admin/submissions',
   path: '/admin/submissions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminModerationRoute = AdminModerationRouteImport.update({
+  id: '/admin/moderation',
+  path: '/admin/moderation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -122,7 +140,10 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/developer/enquiries': typeof DeveloperEnquiriesRoute
+  '/developer/reviews': typeof DeveloperReviewsRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
   '/developer/': typeof DeveloperIndexRoute
@@ -141,7 +162,10 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/developer/enquiries': typeof DeveloperEnquiriesRoute
+  '/developer/reviews': typeof DeveloperReviewsRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin': typeof AdminIndexRoute
   '/developer': typeof DeveloperIndexRoute
@@ -161,7 +185,10 @@ export interface FileRoutesById {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/developer/enquiries': typeof DeveloperEnquiriesRoute
+  '/developer/reviews': typeof DeveloperReviewsRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
   '/developer/': typeof DeveloperIndexRoute
@@ -182,7 +209,10 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/developers'
     | '/admin/login'
+    | '/admin/moderation'
     | '/admin/submissions'
+    | '/developer/enquiries'
+    | '/developer/reviews'
     | '/residence/$id'
     | '/admin/'
     | '/developer/'
@@ -201,7 +231,10 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/developers'
     | '/admin/login'
+    | '/admin/moderation'
     | '/admin/submissions'
+    | '/developer/enquiries'
+    | '/developer/reviews'
     | '/residence/$id'
     | '/admin'
     | '/developer'
@@ -220,7 +253,10 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/developers'
     | '/admin/login'
+    | '/admin/moderation'
     | '/admin/submissions'
+    | '/developer/enquiries'
+    | '/developer/reviews'
     | '/residence/$id'
     | '/admin/'
     | '/developer/'
@@ -240,7 +276,10 @@ export interface RootRouteChildren {
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDevelopersRoute: typeof AdminDevelopersRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminModerationRoute: typeof AdminModerationRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
+  DeveloperEnquiriesRoute: typeof DeveloperEnquiriesRoute
+  DeveloperReviewsRoute: typeof DeveloperReviewsRoute
   ResidenceIdRoute: typeof ResidenceIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DeveloperIndexRoute: typeof DeveloperIndexRoute
@@ -303,11 +342,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidenceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/developer/reviews': {
+      id: '/developer/reviews'
+      path: '/developer/reviews'
+      fullPath: '/developer/reviews'
+      preLoaderRoute: typeof DeveloperReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer/enquiries': {
+      id: '/developer/enquiries'
+      path: '/developer/enquiries'
+      fullPath: '/developer/enquiries'
+      preLoaderRoute: typeof DeveloperEnquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/submissions': {
       id: '/admin/submissions'
       path: '/admin/submissions'
       fullPath: '/admin/submissions'
       preLoaderRoute: typeof AdminSubmissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/moderation': {
+      id: '/admin/moderation'
+      path: '/admin/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AdminModerationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -384,7 +444,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDevelopersRoute: AdminDevelopersRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminModerationRoute: AdminModerationRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
+  DeveloperEnquiriesRoute: DeveloperEnquiriesRoute,
+  DeveloperReviewsRoute: DeveloperReviewsRoute,
   ResidenceIdRoute: ResidenceIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   DeveloperIndexRoute: DeveloperIndexRoute,

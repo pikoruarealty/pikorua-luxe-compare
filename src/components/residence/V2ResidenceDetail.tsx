@@ -4,6 +4,7 @@ import { ArrowLeft, GitCompareArrows, MapPin, ShieldCheck, Star } from "lucide-r
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { useCompareStore } from "@/stores/compare-store";
+import { PropertyEngagement } from "./PropertyEngagement";
 
 type Detail = NonNullable<
   Awaited<
@@ -108,6 +109,12 @@ export function V2ResidenceDetail({ detail }: { detail: Detail }) {
               }))}
             />
           </div>
+          <PropertyEngagement
+            slug={detail.property.slug}
+            configurations={detail.configurations}
+            reviewsEnabled={detail.reviewsEnabled}
+            enquiriesEnabled={detail.enquiriesEnabled}
+          />
           <Link
             to="/"
             className="mt-12 inline-flex items-center gap-2 text-sm text-muted-foreground"

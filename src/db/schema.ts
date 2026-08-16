@@ -104,6 +104,7 @@ export const adminProfiles = pgTable("admin_profiles", {
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   phone: text("phone").notNull(),
+  name: text("name"),
 });
 
 export const markets = pgTable(
@@ -302,6 +303,58 @@ export const propertyReviews = pgTable("property_reviews", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+export const propertyReviewVersions = pgTable(
+  "property_review_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => propertyReviews.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    rating: smallint("rating").notNull(),
+    reviewText: text("review_text"),
+    moderationResult: jsonb("moderation_result").notNull().default({}),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.reviewId, table.version)],
+);
+
+export const developerReviewResponses = pgTable("developer_review_responses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reviewId: uuid("review_id")
+    .notNull()
+    .references(() => propertyReviews.id, { onDelete: "cascade" })
+    .unique(),
+  developerId: uuid("developer_id")
+    .notNull()
+    .references(() => adminProfiles.id, { onDelete: "restrict" }),
+  responseText: text("response_text").notNull(),
+  visibility: reviewVisibility("visibility").notNull().default("published"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const reviewReports = pgTable(
+  "review_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => propertyReviews.id, { onDelete: "cascade" }),
+    reporterProfileId: uuid("reporter_profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    reasonCode: text("reason_code").notNull(),
+    status: text("status").notNull().default("open"),
+    adjudicatedBy: uuid("adjudicated_by").references(() => adminProfiles.id, {
+      onDelete: "restrict",
+    }),
+    adjudicationReason: text("adjudication_reason"),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.reviewId, table.reporterProfileId, table.reasonCode)],
+);
 
 export const propertyRatingAggregates = pgTable("property_rating_aggregates", {
   propertyId: uuid("property_id")

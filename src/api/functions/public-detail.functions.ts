@@ -9,9 +9,16 @@ export const getV2PublicPropertyDetail = createServerFn({ method: "GET" })
       .parse(data?.slug),
   }))
   .handler(async ({ data }) => {
-    const { requireFeature } = await import("@/server/feature-flags.server");
+    const { isFeatureEnabled, requireFeature } = await import("@/server/feature-flags.server");
     requireFeature("V2_CATALOGUE");
     const { findPublicPropertyDetail } =
       await import("@/repositories/public-detail.repository.server");
-    return findPublicPropertyDetail(data.slug);
+    const detail = await findPublicPropertyDetail(data.slug);
+    return detail
+      ? {
+          ...detail,
+          reviewsEnabled: isFeatureEnabled("V2_REVIEWS"),
+          enquiriesEnabled: isFeatureEnabled("V2_ENQUIRIES"),
+        }
+      : null;
   });
