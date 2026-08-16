@@ -25,8 +25,7 @@ function EditPendingSubmission() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (values: PropertyFormValues) =>
-      updateMyPendingSubmission({ data: { id, values } }),
+    mutationFn: (values: PropertyFormValues) => updateMyPendingSubmission({ data: { id, values } }),
     onSuccess: () => {
       toast.success("Submission updated — it's still waiting for your admin to review it.");
       navigate({ to: "/developer" });
@@ -45,7 +44,9 @@ function EditPendingSubmission() {
       </button>
 
       {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{(error as Error).message}</p>}
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">{(error as Error).message}</p>
+      )}
 
       {data && (
         <>

@@ -558,7 +558,12 @@ export function AuthFlow() {
             </p>
 
             <div className="mt-8 space-y-4">
-              <FieldInput label="Full name" value={name} onChange={setName} placeholder="Your name" />
+              <FieldInput
+                label="Full name"
+                value={name}
+                onChange={setName}
+                placeholder="Your name"
+              />
               <FieldInput
                 label="Email address"
                 value={email}
@@ -595,7 +600,11 @@ export function AuthFlow() {
         {/* --------------------------------------------- signup: email otp --- */}
         {screen === "signup-email-otp" && (
           <Pane key="signup-email-otp">
-            <OtpHeading target={email.trim().toLowerCase()} onChange={goBack} label="Check your inbox" />
+            <OtpHeading
+              target={email.trim().toLowerCase()}
+              onChange={goBack}
+              label="Check your inbox"
+            />
             <div className="mt-10">
               <OtpBoxes
                 onComplete={submitSignupEmailOtp}
@@ -623,7 +632,8 @@ export function AuthFlow() {
                   Now verify your number
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Email confirmed. Every PropCompare account is secured with a verified phone number.
+                  Email confirmed. Every PropCompare account is secured with a verified phone
+                  number.
                 </p>
                 <div className="mt-8">
                   <PhoneField

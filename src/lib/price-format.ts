@@ -25,7 +25,9 @@ export function isCityPriceHidden(city?: string | null): boolean {
   return city.trim().toLowerCase() === "ahmedabad";
 }
 
-export function priceLabel(property: Pick<Property, "pricePerSqft"> & { city?: string | null }): string {
+export function priceLabel(
+  property: Pick<Property, "pricePerSqft"> & { city?: string | null },
+): string {
   if (isCityPriceHidden(property.city)) return "On Request";
   const summary = property.pricePerSqft?.trim();
   if (!summary || NO_PRICE.test(summary)) return "On Request";
@@ -34,7 +36,9 @@ export function priceLabel(property: Pick<Property, "pricePerSqft"> & { city?: s
 
 /** True when a real figure is available — for callers that want to vary
  *  surrounding copy rather than just print the value. */
-export function hasPrice(property: Pick<Property, "pricePerSqft"> & { city?: string | null }): boolean {
+export function hasPrice(
+  property: Pick<Property, "pricePerSqft"> & { city?: string | null },
+): boolean {
   if (isCityPriceHidden(property.city)) return false;
   return priceLabel(property) !== "On Request";
 }
