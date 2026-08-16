@@ -20,6 +20,7 @@
     "dev:all": "concurrently -n web,ocr -c cyan,magenta \"bun run dev\" \"bun run dev:ocr\""
   },
   "dependencies": {
+    "@google-cloud/storage": "^8.0.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

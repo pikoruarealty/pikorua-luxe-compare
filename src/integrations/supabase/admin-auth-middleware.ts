@@ -6,7 +6,7 @@ import { requireSupabaseAuth } from "./auth-middleware";
 
 export interface AdminProfileContext {
   id: string;
-  role: "owner" | "developer";
+  role: "owner" | "reviewer" | "support" | "developer";
   email: string;
   isActive: boolean;
 }
@@ -24,9 +24,12 @@ export const requireAdminAuth = createMiddleware({ type: "function" })
     if (error || !data || !data.is_active) {
       throw new Error("Unauthorized: not an active admin");
     }
+    if (!["owner", "reviewer", "support", "developer"].includes(data.role)) {
+      throw new Error("Unauthorized: invalid role");
+    }
     const adminProfile: AdminProfileContext = {
       id: data.id,
-      role: data.role,
+      role: data.role as AdminProfileContext["role"],
       email: data.email,
       isActive: data.is_active,
     };
@@ -39,6 +42,33 @@ export const requireOwnerAuth = createMiddleware({ type: "function" })
   .server(async ({ next, context }) => {
     if (context.adminProfile.role !== "owner") {
       throw new Error("Forbidden: owner access required");
+    }
+    return next();
+  });
+
+export const requireReviewerAuth = createMiddleware({ type: "function" })
+  .middleware([requireAdminAuth])
+  .server(async ({ next, context }) => {
+    if (context.adminProfile.role !== "owner" && context.adminProfile.role !== "reviewer") {
+      throw new Error("Forbidden: reviewer access required");
+    }
+    return next();
+  });
+
+export const requireDeveloperAuth = createMiddleware({ type: "function" })
+  .middleware([requireAdminAuth])
+  .server(async ({ next, context }) => {
+    if (context.adminProfile.role !== "developer") {
+      throw new Error("Forbidden: developer access required");
+    }
+    return next();
+  });
+
+export const requireModerationAuth = createMiddleware({ type: "function" })
+  .middleware([requireAdminAuth])
+  .server(async ({ next, context }) => {
+    if (!(["owner", "reviewer", "support"] as const).includes(context.adminProfile.role as never)) {
+      throw new Error("Forbidden: moderation access required");
     }
     return next();
   });

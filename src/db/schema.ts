@@ -16,6 +16,14 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -79,8 +87,14 @@ export const ocrJobState = pgEnum("ocr_job_state", [
 // Legacy identity tables are declared only for typed foreign keys. Their SQL
 // remains in the earlier Supabase migrations.
 export const properties = pgTable("properties", {
-  id: uuid("id").primaryKey(),
-  slug: text("slug").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  configurations: jsonb("configurations").notNull().default({}),
+  priceSummary: text("price_summary"),
+  isPublished: boolean("is_published").notNull().default(false),
+  createdBy: uuid("created_by"),
   currentPublicationVersionId: uuid("current_publication_version_id"),
 });
 export const adminProfiles = pgTable("admin_profiles", {
@@ -301,6 +315,95 @@ export const propertyEnquiries = pgTable("property_enquiries", {
   updatedAt: updatedAt(),
 });
 
+export const propertyAssets = pgTable("property_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id").references(() => properties.id, { onDelete: "restrict" }),
+  ownerDeveloperId: uuid("owner_developer_id")
+    .notNull()
+    .references(() => adminProfiles.id, { onDelete: "restrict" }),
+  state: text("state").notNull().default("pending"),
+  approvedBy: uuid("approved_by").references(() => adminProfiles.id, { onDelete: "restrict" }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+});
+
+export const sourceDocuments = pgTable(
+  "source_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerDeveloperId: uuid("owner_developer_id").references(() => adminProfiles.id, {
+      onDelete: "restrict",
+    }),
+    storageBucket: text("storage_bucket").notNull(),
+    storageObjectPath: text("storage_object_path").notNull(),
+    originalFilename: text("original_filename").notNull(),
+    sha256: text("sha256").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+    retentionHold: boolean("retention_hold").notNull().default(false),
+    uploadState: text("upload_state").notNull().default("pending"),
+    verifiedChecksumAt: timestamp("verified_checksum_at", { withTimezone: true }),
+    purgedAt: timestamp("purged_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.ownerDeveloperId, table.sha256)],
+);
+
+export const publicationAssets = pgTable(
+  "publication_assets",
+  {
+    publicationVersionId: uuid("publication_version_id")
+      .notNull()
+      .references(() => propertyPublicationVersions.id, { onDelete: "restrict" }),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => propertyAssets.id, { onDelete: "restrict" }),
+    sortOrder: smallint("sort_order").notNull().default(0),
+  },
+  (table) => [unique().on(table.publicationVersionId, table.assetId)],
+);
+
+export const reviewActions = pgTable("review_actions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workflowId: uuid("workflow_id")
+    .notNull()
+    .references(() => propertySubmissionWorkflows.id, { onDelete: "cascade" }),
+  submissionRevisionId: uuid("submission_revision_id").references(
+    () => propertySubmissionRevisions.id,
+    { onDelete: "restrict" },
+  ),
+  actorId: uuid("actor_id")
+    .notNull()
+    .references(() => adminProfiles.id, { onDelete: "restrict" }),
+  action: text("action").notNull(),
+  reason: text("reason"),
+  beforeValues: jsonb("before_values"),
+  afterValues: jsonb("after_values"),
+  createdAt: createdAt(),
+});
+
+export const auditEvents = pgTable("audit_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorType: text("actor_type").notNull(),
+  actorId: uuid("actor_id"),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: uuid("entity_id"),
+  reason: text("reason"),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: createdAt(),
+});
+
+export const cacheInvalidationOutbox = pgTable("cache_invalidation_outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  topic: text("topic").notNull(),
+  entityId: uuid("entity_id").notNull(),
+  payload: jsonb("payload").notNull().default({}),
+  attempts: integer("attempts").notNull().default(0),
+  availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+});
+
 export const ocrJobs = pgTable("ocr_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   sourceDocumentId: uuid("source_document_id").notNull().unique(),
@@ -318,3 +421,26 @@ export const ocrJobs = pgTable("ocr_jobs", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+export const ocrExtractionRevisions = pgTable(
+  "ocr_extraction_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => ocrJobs.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    schemaVersion: integer("schema_version").notNull(),
+    modelVersion: text("model_version").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    parserVersion: text("parser_version").notNull(),
+    formulaVersion: text("formula_version").notNull(),
+    extractionPayload: jsonb("extraction_payload").notNull().$type<{ [key: string]: JsonValue }>(),
+    validationResult: jsonb("validation_result")
+      .notNull()
+      .default({})
+      .$type<{ [key: string]: JsonValue }>(),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.jobId, table.revision)],
+);

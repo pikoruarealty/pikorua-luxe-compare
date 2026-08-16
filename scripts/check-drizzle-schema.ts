@@ -2,10 +2,16 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
-const migration = await readFile(
-  resolve(root, "supabase/migrations/20260816120000_v2_canonical_foundation.sql"),
-  "utf8",
-);
+const migrationFiles = [
+  "20260816120000_v2_canonical_foundation.sql",
+  "20260816130000_atomic_publication.sql",
+  "20260816140000_durable_ocr_uploads.sql",
+];
+const migration = (
+  await Promise.all(
+    migrationFiles.map((file) => readFile(resolve(root, "supabase/migrations", file), "utf8")),
+  )
+).join("\n");
 const drizzle = await readFile(resolve(root, "src/db/schema.ts"), "utf8");
 
 const mirroredTables = [
@@ -21,6 +27,13 @@ const mirroredTables = [
   "property_reviews",
   "property_enquiries",
   "ocr_jobs",
+  "property_assets",
+  "source_documents",
+  "publication_assets",
+  "review_actions",
+  "audit_events",
+  "cache_invalidation_outbox",
+  "ocr_extraction_revisions",
 ] as const;
 
 const missing = mirroredTables.filter(

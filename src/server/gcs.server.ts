@@ -1,0 +1,36 @@
+import { Storage } from "@google-cloud/storage";
+
+let storage: Storage | undefined;
+
+function client() {
+  storage ??= new Storage({ projectId: process.env.GCP_PROJECT_ID });
+  return storage;
+}
+
+export async function createPrivatePdfUploadUrl(
+  bucket: string,
+  objectPath: string,
+  sha256: string,
+) {
+  const expiresAt = Date.now() + 15 * 60 * 1000;
+  const [url] = await client()
+    .bucket(bucket)
+    .file(objectPath)
+    .getSignedUrl({
+      version: "v4",
+      action: "write",
+      expires: expiresAt,
+      contentType: "application/pdf",
+      extensionHeaders: { "x-goog-meta-sha256": sha256 },
+    });
+  return { url, expiresAt: new Date(expiresAt).toISOString() };
+}
+
+export async function getPrivateObjectMetadata(bucket: string, objectPath: string) {
+  const [metadata] = await client().bucket(bucket).file(objectPath).getMetadata();
+  return {
+    contentType: metadata.contentType ?? null,
+    sizeBytes: Number(metadata.size ?? -1),
+    sha256: metadata.metadata?.sha256 ?? null,
+  };
+}
