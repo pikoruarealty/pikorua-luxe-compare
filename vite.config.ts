@@ -30,7 +30,9 @@ export default defineConfig(async ({ command }) => {
   if (command === "build") {
     const { nitro } = await import("nitro/vite");
     plugins.push(
-      nitro(process.env.VERCEL ? { preset: "vercel" } : { preset: "cloudflare-module" }),
+      nitro({
+        preset: process.env.VERCEL ? "vercel" : process.env.NITRO_PRESET || "cloudflare-module",
+      }),
     );
   }
 

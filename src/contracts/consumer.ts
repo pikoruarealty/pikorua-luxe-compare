@@ -14,6 +14,20 @@ export const recommendationRequestSchema = z
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
 
+export interface CatalogueMarket {
+  id: string;
+  stateCode: string;
+  stateName: string;
+  cityCode: string;
+  cityName: string;
+  configurations: Array<{
+    id: string;
+    kind: string;
+    displayName: string;
+    sortOrder: number;
+  }>;
+}
+
 export const budgetFitSchema = z.enum(["within", "slightly_above", "well_above", "unknown"]);
 
 export const publicPropertySummarySchema = z

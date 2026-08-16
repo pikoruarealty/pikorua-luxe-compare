@@ -1,0 +1,16 @@
+[Unit]
+Description=PropCompare production containers
+Requires=docker.service network-online.target
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/propcompare
+ExecStartPre=/bin/sh /opt/propcompare/ops/fetch-secrets.sh
+ExecStart=/usr/bin/docker compose --env-file .env.deploy -f docker-compose.production.yml up -d
+ExecStop=/usr/bin/docker compose --env-file .env.deploy -f docker-compose.production.yml down
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

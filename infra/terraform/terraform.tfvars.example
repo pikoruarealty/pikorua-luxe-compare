@@ -1,0 +1,6 @@
+project_id        = "replace-with-production-project"
+github_repository = "replace-owner/replace-repository"
+monitored_host    = "www.example.com"
+
+# Add existing Monitoring notification channels after they are created.
+alert_notification_channels = []

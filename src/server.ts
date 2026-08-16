@@ -29,24 +29,53 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
   // A process-global "last error" can attribute one concurrent request's
   // stack to another request. Log only the response we can prove belongs here.
-  console.error(new Error(`h3 swallowed SSR error: ${body}`));
+  const incidentId = crypto.randomUUID();
+  console.error(`[ssr-failed] incident=${incidentId}`);
+  const { reportServerIncident } = await import("@/server/observability.server");
+  await reportServerIncident(incidentId, "ssr");
   return new Response(renderErrorPage(), {
     status: 500,
-    headers: { "content-type": "text/html; charset=utf-8" },
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "x-propcompare-incident": incidentId,
+    },
   });
 }
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const url = new URL(request.url);
+    if (url.pathname === "/healthz") {
+      return Response.json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });
+    }
+    if (url.pathname === "/readyz") {
+      try {
+        const { getDatabase } = await import("@/db/client.server");
+        const { sql } = await import("drizzle-orm");
+        await getDatabase().execute(sql`select 1`);
+        return Response.json({ status: "ready" }, { headers: { "Cache-Control": "no-store" } });
+      } catch {
+        return Response.json(
+          { status: "unavailable" },
+          { status: 503, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+    }
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      const incidentId = crypto.randomUUID();
+      console.error(`[server-failed] incident=${incidentId}`);
+      const { reportServerIncident } = await import("@/server/observability.server");
+      await reportServerIncident(incidentId, "server-entry");
       return new Response(renderErrorPage(), {
         status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "x-propcompare-incident": incidentId,
+        },
       });
     }
   },

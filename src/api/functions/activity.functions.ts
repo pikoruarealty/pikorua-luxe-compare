@@ -68,6 +68,25 @@ function validatedMetadata(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+export function approvedMetadata(event: ActivityEvent, value: Record<string, unknown>) {
+  if (event !== "quiz_completed") return {};
+  const approved: Record<string, unknown> = {};
+  if (typeof value.marketId === "string") approved.marketId = value.marketId.slice(0, 100);
+  if (typeof value.budgetBandId === "string")
+    approved.budgetBandId = value.budgetBandId.slice(0, 50);
+  if (Array.isArray(value.configurationOptionIds)) {
+    approved.configurationOptionIds = value.configurationOptionIds
+      .filter((item): item is string => typeof item === "string")
+      .slice(0, 20);
+  }
+  if (Array.isArray(value.propertyTypeIds)) {
+    approved.propertyTypeIds = value.propertyTypeIds
+      .filter((item): item is string => typeof item === "string")
+      .slice(0, 20);
+  }
+  return approved;
+}
+
 /**
  * Records one visitor interaction. Public (no auth) — anonymous browsing counts
  * too; the event links to a profile automatically when the visitor is signed in.
@@ -114,13 +133,25 @@ export const logActivity = createServerFn({ method: "POST" })
           return { ok: false };
         }
       }
-      await supabaseAdmin.from("customer_activity").insert({
-        profile_id: profileId,
-        session_key: data.sessionKey,
-        event_type: data.event,
-        property_slug: data.propertySlug,
-        metadata: data.metadata as never,
-      });
+      const metadata = approvedMetadata(data.event, data.metadata);
+      if (process.env.APP_ENV === "production") {
+        const { publishProductEvent } = await import("@/server/analytics-publisher.server");
+        await publishProductEvent({
+          event: data.event,
+          profileId,
+          anonymousSessionId: data.sessionKey,
+          propertySlug: data.propertySlug,
+          metadata,
+        });
+      } else {
+        await supabaseAdmin.from("customer_activity").insert({
+          profile_id: profileId,
+          session_key: data.sessionKey,
+          event_type: data.event,
+          property_slug: data.propertySlug,
+          metadata: metadata as never,
+        });
+      }
       return { ok: true };
     } catch {
       // Analytics is best-effort — swallow so browsing never breaks.

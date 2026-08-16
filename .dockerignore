@@ -1,0 +1,15 @@
+.git
+.github
+.output
+.wrangler
+node_modules
+property-ocr-suite/backend/.venv
+property-ocr-suite/backend/.pytest_cache
+property-ocr-suite/backend/storage
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!.env.example
+*.docx
+*.pdf

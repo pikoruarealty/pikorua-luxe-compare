@@ -1,0 +1,13 @@
+FROM python:3.13-slim
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+WORKDIR /worker
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends tesseract-ocr \
+  && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt ./
+RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY app ./app
+RUN useradd --system --uid 10001 worker && chown -R worker:worker /worker
+USER worker
+CMD ["python", "-m", "app.worker"]

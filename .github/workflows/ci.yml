@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches:
@@ -26,6 +27,7 @@ jobs:
       - run: bun run schema:check
       - run: bun run db:drift
       - run: bun run build
+      - run: bun run check:built-leakage
 
   ocr:
     runs-on: ubuntu-latest
@@ -53,3 +55,12 @@ jobs:
           version: latest
       - run: supabase start -x studio,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
       - run: supabase db reset --local
+
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production web image
+        run: docker build --build-arg RELEASE_SHA=${{ github.sha }} -t propcompare-web:ci .
+      - name: Build production OCR image
+        run: docker build -f property-ocr-suite/backend/Dockerfile.worker -t propcompare-ocr:ci property-ocr-suite/backend

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client.server";
+import type { CatalogueMarket } from "@/contracts/consumer";
 import {
   configurationOptions,
   configurationVariants,
@@ -9,20 +10,6 @@ import {
   properties,
   propertyPublicationVersions,
 } from "@/db/schema";
-
-export interface CatalogueMarket {
-  id: string;
-  stateCode: string;
-  stateName: string;
-  cityCode: string;
-  cityName: string;
-  configurations: Array<{
-    id: string;
-    kind: string;
-    displayName: string;
-    sortOrder: number;
-  }>;
-}
 
 export async function getPublishedCatalogueMarkets(): Promise<CatalogueMarket[]> {
   const db = getDatabase();

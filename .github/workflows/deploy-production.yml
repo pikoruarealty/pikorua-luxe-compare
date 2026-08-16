@@ -1,0 +1,62 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: Inactive slot to deploy
+        required: true
+        type: choice
+        options: [blue, green]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: propcompare-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  build-and-deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
+      - name: Build versioned images
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          docker build --build-arg RELEASE_SHA="$RELEASE_SHA" -t "asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/web:$RELEASE_SHA" .
+          docker build -f property-ocr-suite/backend/Dockerfile.worker -t "asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-worker:$RELEASE_SHA" property-ocr-suite/backend
+          docker push "asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/web:$RELEASE_SHA"
+          docker push "asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-worker:$RELEASE_SHA"
+      - name: Copy immutable deployment configuration
+        env:
+          VM_NAME: ${{ vars.GCP_VM_NAME }}
+          VM_ZONE: ${{ vars.GCP_VM_ZONE }}
+        run: |
+          tar -czf deployment.tgz docker-compose.production.yml ops
+          gcloud compute scp deployment.tgz "$VM_NAME:/tmp/propcompare-deployment.tgz" --zone "$VM_ZONE" --tunnel-through-iap --quiet
+      - name: Health-check and switch traffic
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          RELEASE_SHA: ${{ github.sha }}
+          SLOT: ${{ inputs.slot }}
+          VM_NAME: ${{ vars.GCP_VM_NAME }}
+          VM_ZONE: ${{ vars.GCP_VM_ZONE }}
+        run: |
+          WEB_IMAGE="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/web:$RELEASE_SHA"
+          OCR_IMAGE="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-worker:$RELEASE_SHA"
+          gcloud compute ssh "$VM_NAME" --zone "$VM_ZONE" --tunnel-through-iap --quiet --command="sudo sh /opt/propcompare/ops/install-release.sh '$SLOT' '$WEB_IMAGE' '$OCR_IMAGE' '$RELEASE_SHA'"

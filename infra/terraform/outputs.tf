@@ -1,0 +1,9 @@
+output "vm_name" { value = google_compute_instance.web.name }
+output "vm_zone" { value = google_compute_instance.web.zone }
+output "public_ip" { value = google_compute_address.web.address }
+output "artifact_registry" { value = google_artifact_registry_repository.containers.name }
+output "source_evidence_bucket" { value = google_storage_bucket.source_evidence.name }
+output "approved_media_bucket" { value = google_storage_bucket.approved_media.name }
+output "analytics_topic" { value = google_pubsub_topic.product_events.name }
+output "github_deploy_service_account" { value = google_service_account.github_deploy.email }
+output "github_workload_identity_provider" { value = google_iam_workload_identity_pool_provider.github.name }

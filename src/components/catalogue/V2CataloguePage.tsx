@@ -6,13 +6,17 @@ import { toast } from "sonner";
 
 import { getRecommendations } from "@/api/functions/recommendations.functions";
 import { saveConfirmedPreferences } from "@/api/functions/preferences-v2.functions";
-import type { RecommendationItem, RecommendationRequest } from "@/contracts/consumer";
+import type {
+  CatalogueMarket,
+  RecommendationItem,
+  RecommendationRequest,
+} from "@/contracts/consumer";
 import { BUDGET_BANDS } from "@/domain/budget";
-import type { CatalogueMarket } from "@/repositories/catalogue-bootstrap.repository.server";
 import { useCompareStore } from "@/stores/compare-store";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { useActivityLog } from "@/hooks/use-activity-log";
 
 const STORAGE_KEY = "propcompare:v2-preferences";
 const SESSION_KEY = "propcompare:v2-preferences-confirmed";
@@ -41,6 +45,7 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
   const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
   const recommend = useServerFn(getRecommendations);
   const save = useServerFn(saveConfirmedPreferences);
+  const logActivity = useActivityLog();
   const selectedCompare = useCompareStore((state) => state.selected);
 
   useEffect(() => {
@@ -110,6 +115,12 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(request));
     sessionStorage.setItem(SESSION_KEY, "true");
     setConfirmed(true);
+    logActivity("quiz_completed", null, {
+      marketId: request.marketId,
+      configurationOptionIds: request.configurationOptionIds,
+      budgetBandId: request.budgetBandId,
+      propertyTypeIds: request.propertyTypeIds ?? [],
+    });
     if (userProfile) void save({ data: request }).catch(() => undefined);
   };
 

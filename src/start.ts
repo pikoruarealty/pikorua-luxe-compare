@@ -12,6 +12,8 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     }
     const incidentId = crypto.randomUUID();
     console.error(`[request-failed] incident=${incidentId}`);
+    const { reportServerIncident } = await import("@/server/observability.server");
+    await reportServerIncident(incidentId, "request-middleware");
     return new Response(renderErrorPage(), {
       status: 500,
       headers: {

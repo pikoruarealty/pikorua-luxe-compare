@@ -1,0 +1,25 @@
+name: Migrate production database
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: propcompare-production-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Apply reviewed expand/migrate migration set
+        env:
+          DATABASE_URL_PRODUCTION: ${{ secrets.DATABASE_URL_PRODUCTION }}
+        run: supabase db push --db-url "$DATABASE_URL_PRODUCTION" --include-all
