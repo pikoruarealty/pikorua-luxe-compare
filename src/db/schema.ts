@@ -267,6 +267,15 @@ export const propertyReviews = pgTable("property_reviews", {
   updatedAt: updatedAt(),
 });
 
+export const propertyRatingAggregates = pgTable("property_rating_aggregates", {
+  propertyId: uuid("property_id")
+    .primaryKey()
+    .references(() => properties.id, { onDelete: "cascade" }),
+  averageRating: numeric("average_rating", { precision: 3, scale: 2 }).notNull().default("0"),
+  publishedReviewCount: integer("published_review_count").notNull().default(0),
+  updatedAt: updatedAt(),
+});
+
 export const propertyEnquiries = pgTable("property_enquiries", {
   id: uuid("id").primaryKey().defaultRandom(),
   propertyId: uuid("property_id")

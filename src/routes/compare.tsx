@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { getPropertiesBySlugs } from "@/api/functions/properties.functions";
+import { getComparisonBootstrap } from "@/api/functions/properties.functions";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ComparisonHero } from "@/components/compare/ComparisonHero";
@@ -33,7 +33,9 @@ export const Route = createFileRoute("/compare")({
       .map((id) => id.trim())
       .filter(Boolean)
       .slice(0, 3);
-    return slugs.length > 0 ? getPropertiesBySlugs({ data: { slugs } }) : [];
+    return slugs.length > 0
+      ? getComparisonBootstrap({ data: { slugs } })
+      : { authRequired: false as const, properties: [] };
   },
   head: () => ({
     meta: [
@@ -54,30 +56,48 @@ export const Route = createFileRoute("/compare")({
 
 function ComparePage() {
   const { shared } = Route.useSearch();
-  const properties = Route.useLoaderData();
+  const bootstrap = Route.useLoaderData();
   const { userProfile, hydrated, requestGatedAuth } = useOnboarding();
+  const router = useRouter();
+  const properties = bootstrap.authRequired ? [] : bootstrap.properties;
+  const projectNames = bootstrap.authRequired
+    ? bootstrap.projects.map((project) => project.name)
+    : properties.map((property) => property.name);
 
   // A shared link is gated: the recipient identifies themselves before the
   // comparison renders. Wait for `hydrated` so a returning signed-in visitor
   // never sees the gate flash while the session check resolves.
-  const gated = shared && hydrated && !userProfile;
+  const gated = bootstrap.authRequired && hydrated && !userProfile;
   useEffect(() => {
     if (gated) requestGatedAuth();
   }, [gated, requestGatedAuth]);
+  useEffect(() => {
+    if (bootstrap.authRequired && userProfile) void router.invalidate();
+  }, [bootstrap.authRequired, router, userProfile]);
   // Hold the comparison back entirely rather than rendering it behind the
   // overlay — the content must not be readable before the visitor signs in.
-  if (shared && (!hydrated || !userProfile)) {
+  if (bootstrap.authRequired) {
     return (
       <div className="min-h-screen">
         <SiteHeader />
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center">
-          <p className="text-[11px] tracking-luxury text-champagne">Shared comparison</p>
+          <p className="text-[11px] tracking-luxury text-champagne">
+            {shared ? "Shared comparison" : "Authentication required"}
+          </p>
           <h1 className="mt-4 font-display text-4xl text-ivory sm:text-5xl">
-            A comparison was <span className="gold-text">shared with you</span>
+            {shared ? (
+              <>
+                A comparison was <span className="gold-text">shared with you</span>
+              </>
+            ) : (
+              <>
+                Sign in to <span className="gold-text">compare properties</span>
+              </>
+            )}
           </h1>
           <p className="mt-4 max-w-md text-muted-foreground">
-            {properties.length >= 2
-              ? `${properties.map((p) => p.name).join(" vs ")}. Sign in with your details to view the full comparison.`
+            {projectNames.length >= 2
+              ? `${projectNames.join(" vs ")}. Sign in with your details to view the full comparison.`
               : "Sign in with your details to view the full comparison."}
           </p>
           {hydrated && (

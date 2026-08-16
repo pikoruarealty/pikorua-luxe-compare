@@ -6,6 +6,7 @@ import type {
   PropertyConfigurations,
   PropertyGallery,
 } from "@/types/property";
+import type { VisitorSession } from "@/server/session.server";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 import { parseNumeric } from "@/lib/property-derivations";
 
@@ -187,6 +188,25 @@ function toAdminProperty(row: PropertyRow): AdminProperty {
   return { ...toProperty(row), rowId: row.id, isPublished: Boolean(row.is_published) };
 }
 
+/** Legacy compatibility projection while v2 publications are being populated.
+ * Commercial values and unsupported editorial content are removed on the
+ * server, before any server-function response can enter SSR or hydration. */
+function toConsumerProperty(row: PropertyRow): Property {
+  const property = toProperty(row);
+  return {
+    ...property,
+    configurations: Object.fromEntries(
+      Object.entries(property.configurations).map(([kind, variants]) => [
+        kind,
+        variants?.map((variant) => ({ ...variant, price: null, rate: null })) ?? [],
+      ]),
+    ) as PropertyConfigurations,
+    pricePerSqft: "Price on Request",
+    advantages: [],
+    expertNote: "",
+  };
+}
+
 /** Public: every published property, ordered for stable rendering. */
 export const getProperties = createServerFn({ method: "GET" }).handler(
   async (): Promise<Property[]> => {
@@ -197,7 +217,7 @@ export const getProperties = createServerFn({ method: "GET" }).handler(
       .eq("is_published", true)
       .order("created_at", { ascending: true });
     if (error) throwSafeError("getProperties", error, "Could not load properties");
-    return (data as PropertyRow[]).map(toProperty);
+    return (data as PropertyRow[]).map(toConsumerProperty);
   },
 );
 
@@ -211,7 +231,7 @@ export const getDetailedProperties = createServerFn({ method: "GET" }).handler(
       .eq("is_published", true)
       .order("created_at", { ascending: true });
     if (error) throwSafeError("getDetailedProperties", error, "Could not load properties");
-    return (data as PropertyRow[]).map(toProperty);
+    return (data as PropertyRow[]).map(toConsumerProperty);
   },
 );
 
@@ -237,24 +257,57 @@ export const getPropertyBySlug = createServerFn({ method: "GET" })
       .eq("is_published", true)
       .maybeSingle();
     if (error) throwSafeError("getPropertyBySlug", error, "Could not load property");
-    return row ? toProperty(row as PropertyRow) : null;
+    return row ? toConsumerProperty(row as PropertyRow) : null;
   });
 
-/** Public: complete rows for a shareable comparison, capped by the UI's slots. */
-export const getPropertiesBySlugs = createServerFn({ method: "GET" })
+/** Authenticated legacy comparison bootstrap. Anonymous callers receive only
+ * safe identifiers and names needed to render the sign-in destination. */
+export type ComparisonBootstrap =
+  | { authRequired: true; projects: Array<{ slug: string; name: string }> }
+  | { authRequired: false; properties: Property[] };
+
+export const getComparisonBootstrap = createServerFn({ method: "GET" })
   .inputValidator((data: { slugs: string[] }) => ({ slugs: parseSlugs(data, 3) }))
-  .handler(async ({ data }): Promise<Property[]> => {
+  .handler(async ({ data }): Promise<ComparisonBootstrap> => {
+    const { useSession, setResponseHeader } = await import("@tanstack/react-start/server");
+    const { sessionConfig } = await import("@/server/session.server");
+    // `useSession` is TanStack Start's request composable, not a React hook.
+    const session = await useSession<VisitorSession>(sessionConfig());
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (!session.data?.profileId) {
+      const { data: rows, error } = await supabaseAdmin
+        .from("properties")
+        .select("slug, name")
+        .in("slug", data.slugs)
+        .eq("is_published", true);
+      if (error) throwSafeError("getComparisonBootstrap", error, "Could not load comparison");
+      const bySlug = new Map((rows ?? []).map((row) => [row.slug, row.name]));
+      return {
+        authRequired: true,
+        projects: data.slugs.flatMap((slug) => {
+          const name = bySlug.get(slug);
+          return name ? [{ slug, name }] : [];
+        }),
+      };
+    }
+
+    setResponseHeader("Cache-Control", "private, no-store");
     const { data: rows, error } = await supabaseAdmin
       .from("properties")
       .select(PROPERTY_COLUMNS)
       .in("slug", data.slugs)
       .eq("is_published", true);
-    if (error) throwSafeError("getPropertiesBySlugs", error, "Could not load properties");
-    const bySlug = new Map((rows as PropertyRow[]).map((row) => [row.slug, toProperty(row)]));
-    return data.slugs
-      .map((slug) => bySlug.get(slug))
-      .filter((row): row is Property => Boolean(row));
+    if (error) throwSafeError("getComparisonBootstrap", error, "Could not load properties");
+    const bySlug = new Map(
+      (rows as PropertyRow[]).map((row) => [row.slug, toConsumerProperty(row)]),
+    );
+    return {
+      authRequired: false,
+      properties: data.slugs
+        .map((slug) => bySlug.get(slug))
+        .filter((row): row is Property => Boolean(row)),
+    };
   });
 
 /** Owner-only: all properties including unpublished, for the admin list. */

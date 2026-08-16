@@ -96,6 +96,16 @@ export const POLICIES = {
     failClosed: false,
     message: "Too many events.",
   },
+  /** Qualitative matching can otherwise be probed as a commercial-value oracle. */
+  RECOMMENDATION: {
+    name: "recommendation",
+    windows: [
+      { limit: 30, window: "1 m" },
+      { limit: 300, window: "1 h" },
+    ],
+    failClosed: true,
+    message: "Too many recommendation requests. Please try again shortly.",
+  },
   /** Nominatim geocoding — someone else's service, and their terms. */
   GEOCODE: {
     name: "geocode",
