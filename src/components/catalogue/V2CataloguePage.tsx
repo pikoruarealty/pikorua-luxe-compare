@@ -11,7 +11,7 @@ import type {
   RecommendationItem,
   RecommendationRequest,
 } from "@/contracts/consumer";
-import { BUDGET_BANDS } from "@/domain/budget";
+import { BUDGET_BANDS, SELECTABLE_BUDGET_BANDS } from "@/domain/budget";
 import { useCompareStore } from "@/stores/compare-store";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -77,7 +77,7 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
     [markets],
   );
   const cities = markets.filter((candidate) => candidate.stateCode === stateCode);
-  const broadBands = [...new Set(BUDGET_BANDS.map((band) => band.broadLabel))];
+  const broadBands = [...new Set(SELECTABLE_BUDGET_BANDS.map((band) => band.broadLabel))];
 
   const request = useMemo<RecommendationRequest | null>(
     () =>
@@ -255,17 +255,17 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
                       </div>
                       {broadBudget && (
                         <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-                          {BUDGET_BANDS.filter((band) => band.broadLabel === broadBudget).map(
-                            (band) => (
-                              <Choice
-                                key={band.id}
-                                selected={budgetBandId === band.id}
-                                onClick={() => setBudgetBandId(band.id)}
-                              >
-                                {band.label}
-                              </Choice>
-                            ),
-                          )}
+                          {SELECTABLE_BUDGET_BANDS.filter(
+                            (band) => band.broadLabel === broadBudget,
+                          ).map((band) => (
+                            <Choice
+                              key={band.id}
+                              selected={budgetBandId === band.id}
+                              onClick={() => setBudgetBandId(band.id)}
+                            >
+                              {band.label}
+                            </Choice>
+                          ))}
                         </div>
                       )}
                     </div>

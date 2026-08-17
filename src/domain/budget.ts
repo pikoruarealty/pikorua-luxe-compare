@@ -6,6 +6,11 @@ export interface BudgetBand {
   label: string;
   minimumRupees: number;
   maximumRupees: number | null;
+  /** False for the narrow gap-filler bands that exist only so every rupee
+   *  amount has somewhere to classify — the quiz never offers them as a
+   *  button. A buyer between two round-number bands still gets covered by
+   *  classifyBudgetFit's own tolerance on whichever visible band they pick. */
+  selectable?: false;
 }
 
 const CRORE = 10_000_000;
@@ -13,6 +18,7 @@ const CRORE = 10_000_000;
 // Contiguous by construction (each band's minimum is the previous band's
 // maximum) so that every rupee amount from 1 Cr upward falls in exactly one
 // band — a ₹2.5 Cr buyer, or a ₹10.7 Cr one, always has somewhere to land.
+// Only bands without `selectable: false` are shown as quiz buttons.
 export const BUDGET_BANDS = [
   {
     id: "1_2_cr",
@@ -27,6 +33,7 @@ export const BUDGET_BANDS = [
     label: "₹2–3Cr",
     minimumRupees: 2 * CRORE,
     maximumRupees: 3 * CRORE,
+    selectable: false,
   },
   {
     id: "3_4_cr",
@@ -48,6 +55,7 @@ export const BUDGET_BANDS = [
     label: "₹5.5–6Cr",
     minimumRupees: 5.5 * CRORE,
     maximumRupees: 6 * CRORE,
+    selectable: false,
   },
   {
     id: "6_7_cr",
@@ -62,6 +70,7 @@ export const BUDGET_BANDS = [
     label: "₹7–8Cr",
     minimumRupees: 7 * CRORE,
     maximumRupees: 8 * CRORE,
+    selectable: false,
   },
   {
     id: "8_9_cr",
@@ -83,6 +92,7 @@ export const BUDGET_BANDS = [
     label: "₹10.5–11Cr",
     minimumRupees: 10.5 * CRORE,
     maximumRupees: 11 * CRORE,
+    selectable: false,
   },
   {
     id: "11_12_cr",
@@ -97,6 +107,7 @@ export const BUDGET_BANDS = [
     label: "₹12–13Cr",
     minimumRupees: 12 * CRORE,
     maximumRupees: 13 * CRORE,
+    selectable: false,
   },
   {
     id: "13_14_cr",
@@ -118,6 +129,7 @@ export const BUDGET_BANDS = [
     label: "₹15.5–16Cr",
     minimumRupees: 15.5 * CRORE,
     maximumRupees: 16 * CRORE,
+    selectable: false,
   },
   {
     id: "16_17_cr",
@@ -132,6 +144,7 @@ export const BUDGET_BANDS = [
     label: "₹17–18Cr",
     minimumRupees: 17 * CRORE,
     maximumRupees: 18 * CRORE,
+    selectable: false,
   },
   {
     id: "18_19_cr",
@@ -153,6 +166,7 @@ export const BUDGET_BANDS = [
     label: "₹20.5–21Cr",
     minimumRupees: 20.5 * CRORE,
     maximumRupees: 21 * CRORE,
+    selectable: false,
   },
   {
     id: "21_cr_plus",
@@ -162,6 +176,10 @@ export const BUDGET_BANDS = [
     maximumRupees: null,
   },
 ] as const satisfies readonly BudgetBand[];
+
+export const SELECTABLE_BUDGET_BANDS = (BUDGET_BANDS as readonly BudgetBand[]).filter(
+  (band) => band.selectable !== false,
+);
 
 export const budgetBandIdSchema = z.enum(
   BUDGET_BANDS.map((band) => band.id) as [string, ...string[]],
