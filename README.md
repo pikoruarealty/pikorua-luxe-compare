@@ -135,16 +135,15 @@ scripts/          One-time seed / migration scripts
 
 ## Deployment
 
-The build targets Nitro and is dual-deployable:
+The build targets Nitro. Deploy target is a GCP VM running the Docker image built from
+[`Dockerfile`](Dockerfile), which sets `NITRO_PRESET=node-server`:
 
-- **Cloudflare Workers** — default preset; configured in [`wrangler.jsonc`](wrangler.jsonc).
+```bash
+docker build -t propcompare .
+docker run -p 3000:3000 propcompare
+```
 
-  ```bash
-  bun run build
-  wrangler deploy
-  ```
-
-- **Vercel** — set automatically when `VERCEL` is present in the build environment
-  (the config switches Nitro to the `vercel` preset).
+See [`ops/deploy-slot.sh`](ops/deploy-slot.sh) and `.github/workflows/deploy-production.yml`
+for the actual production rollout.
 
 Set the same environment variables from `.env.example` in your host's dashboard.

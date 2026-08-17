@@ -24,9 +24,9 @@ export default defineConfig(async ({ command }) => {
     viteReact(),
   ];
 
-  // Nitro produces the deployable server output at build time only. Vercel sets
-  // VERCEL in its build env; every other target builds for Cloudflare (matches
-  // wrangler.jsonc).
+  // Nitro produces the deployable server output at build time only. Deploy
+  // target is a GCP VM (Dockerfile sets NITRO_PRESET=node-server); the
+  // Vercel/Cloudflare fallbacks below only matter for a bare local build.
   if (command === "build") {
     const { nitro } = await import("nitro/vite");
     plugins.push(

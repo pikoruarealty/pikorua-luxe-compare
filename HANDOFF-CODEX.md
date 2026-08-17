@@ -39,7 +39,7 @@ Confirmed directly against the current tree (not from memory):
 | **L-2** image magic-byte verification | **NOT FIXED** | `property-images.functions.ts` — content type is still caller-declared, never checked against bytes |
 | **L-10** `uniqueSlug` TOCTOU / up to ~200 round-trips | **NOT FIXED** | `property-crud.functions.ts` `uniqueSlug` — same sequential-check loop as originally audited |
 | `property-images` upload authorization | **UNCHANGED, still open question** | still gated by `requireAdminAuth` (any active admin/developer), not `requireOwnerAuth` |
-| `vercel.json` present on `main` | **NOT ADDRESSED** | contradicts the plan's GCP-only deploy target (Part 9); not yet assigned to a task |
+| `vercel.json` present on `main` | **ADDRESSED** | `vercel.json` and `wrangler.jsonc` removed; README's deploy section now describes the actual GCP/Docker path |
 
 Everything else originally listed under Phases 5–7 (L-3 quiz-answer shape validation, L-5
 request-scoped error capture, L-6 password strength/rotation, L-9 pagination) was not re-verified
@@ -83,8 +83,7 @@ now against what actually shipped, so the next reader doesn't have to guess inte
 - Don't touch generated files: `src/routeTree.gen.ts`, `src/integrations/supabase/types.ts`,
   `src/generated/**`.
 - Server-only code lives in `src/server/**`, imported via `await import(...)` inside handlers.
-- Deploy target is a GCP VM. `vercel.json` on `main` is a leftover that should eventually be
-  removed or reconciled — see the open item above.
+- Deploy target is a GCP VM via the Dockerfile (`NITRO_PRESET=node-server`).
 - Only format files you actually changed.
 - `useSession` is a server composable, not a React hook — the `react-hooks/rules-of-hooks`
   false-positive on it is fixed with a scoped `/* eslint-disable react-hooks/rules-of-hooks */`

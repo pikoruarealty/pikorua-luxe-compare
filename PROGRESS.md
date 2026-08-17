@@ -129,12 +129,22 @@ gap for the buyer, not exposing every narrow band as a button.
 If you add more gap-filler bands later, remember: `selectable: false` keeps them out of the
 quiz; omit the flag (or don't set it) to make a band choosable.
 
+### Post-Phase-0 follow-up: hosting config cleanup
+
+`vercel.json` and `wrangler.jsonc` were leftover from a prior hosting setup and contradicted
+the plan's GCP-VM-only deploy target; the actual deploy is Docker (`Dockerfile` sets
+`NITRO_PRESET=node-server`) via `ops/deploy-slot.sh` / `.github/workflows/deploy-production.yml`.
+Both files removed; `vite.config.ts`'s comment and README's Deployment section updated to
+describe the real path. The Vercel/Cloudflare preset fallbacks in `vite.config.ts` were left
+in place (harmless, Docker always overrides `NITRO_PRESET` explicitly) rather than ripped out,
+since that's a behavior change beyond a cleanup pass.
+
 ### Left open, not part of Phase 0's scope, but real
 
-- **`vercel.json` on `main`**, and the production build's Nitro preset targets **Cloudflare
-  Workers** (`wrangler.json` output) — both contradict the plan's GCP-VM-only deploy target.
-  Neither was introduced by this work. Nobody's assigned a task to fix it yet.
-- The two new SQL migrations above are written but **not executed against the live DB**.
+- The two new SQL migrations above are written but **not executed against the live DB**, and
+  the constraint-name assumption in `20260817130000_expand_customer_activity_events.sql` is
+  still unverified against the live schema — no DB credentials were available in this session
+  to check it. Verify before/during next deploy.
 
 ---
 
