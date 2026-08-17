@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client.server";
-import type { CatalogueMarket } from "@/contracts/consumer";
+import { assertConsumerPayloadSafe, type CatalogueMarket } from "@/contracts/consumer";
 import {
   configurationOptions,
   configurationVariants,
@@ -72,10 +72,12 @@ export async function getPublishedCatalogueMarkets(): Promise<CatalogueMarket[]>
       sortOrder: row.sortOrder,
     });
   }
-  return [...grouped.values()]
+  const response = [...grouped.values()]
     .map((market) => ({
       ...market,
       configurations: market.configurations.sort((a, b) => a.sortOrder - b.sortOrder),
     }))
     .sort((a, b) => a.stateName.localeCompare(b.stateName) || a.cityName.localeCompare(b.cityName));
+  assertConsumerPayloadSafe(response);
+  return response;
 }

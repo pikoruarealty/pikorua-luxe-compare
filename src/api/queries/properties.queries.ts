@@ -2,11 +2,12 @@ import { queryOptions } from "@tanstack/react-query";
 import type { Property } from "@/types/property";
 import {
   getAllPropertiesForAdmin,
-  getDetailedProperties,
   getProperties,
+  getWorkspaceCatalogue,
 } from "@/api/functions/properties.functions";
 
 export const PROPERTIES_KEY = ["properties"] as const;
+export const WORKSPACE_CATALOGUE_KEY = ["properties", "workspace"] as const;
 
 // Property data changes rarely (only via the admin portal), so a short staleTime
 // avoids a refetch on every route transition despite router defaultPreloadStaleTime: 0.
@@ -17,10 +18,13 @@ export const propertiesQueryOptions = () =>
     staleTime: 60_000,
   });
 
-export const detailedPropertiesQueryOptions = () =>
+// Keyed separately from the shell so the two tiers never share a cache entry:
+// a visitor who signs in must not keep reading the public-tier payload, and a
+// visitor who signs out must not keep reading the gated one.
+export const workspaceCatalogueQueryOptions = () =>
   queryOptions({
-    queryKey: ["properties", "detailed"],
-    queryFn: () => getDetailedProperties(),
+    queryKey: WORKSPACE_CATALOGUE_KEY,
+    queryFn: () => getWorkspaceCatalogue(),
     staleTime: 60_000,
   });
 

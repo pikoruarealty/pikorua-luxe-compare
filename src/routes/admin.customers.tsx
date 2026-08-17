@@ -29,6 +29,10 @@ const EVENT_LABEL: Record<ActivityEvent, string> = {
   compare_open: "Opened comparison",
   favorite_add: "Saved to favourites",
   contact_click: "Clicked contact",
+  gate_shown: "Saw the sign-in gate",
+  gate_unlocked: "Unlocked the full comparison",
+  alternative_clicked: "Clicked an alternative match",
+  weighting_changed: "Adjusted ranking weighting",
 };
 
 const fmtDate = (iso: string | null) =>

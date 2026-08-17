@@ -26,10 +26,17 @@ describe("recommendation rules", () => {
   });
 
   it("classifies exact and twenty-percent boundaries", () => {
-    expect(classifyBudgetFit(10_000_000, 10_000_000)).toBe("within");
-    expect(classifyBudgetFit(12_000_000, 10_000_000)).toBe("slightly_above");
-    expect(classifyBudgetFit(12_000_001, 10_000_000)).toBe("well_above");
-    expect(classifyBudgetFit(null, 10_000_000)).toBe("unknown");
+    expect(classifyBudgetFit(10_000_000, 5_000_000, 10_000_000)).toBe("within");
+    expect(classifyBudgetFit(12_000_000, 5_000_000, 10_000_000)).toBe("slightly_above");
+    expect(classifyBudgetFit(12_000_001, 5_000_000, 10_000_000)).toBe("well_above");
+    expect(classifyBudgetFit(null, 5_000_000, 10_000_000)).toBe("unknown");
+  });
+
+  it("classifies below-minimum boundaries symmetrically", () => {
+    expect(classifyBudgetFit(5_000_000, 5_000_000, 10_000_000)).toBe("within");
+    expect(classifyBudgetFit(4_166_667, 5_000_000, 10_000_000)).toBe("slightly_below");
+    expect(classifyBudgetFit(4_166_666, 5_000_000, 10_000_000)).toBe("well_below");
+    expect(classifyBudgetFit(1_000_000, 20_000_000, null)).toBe("well_below");
   });
 
   it("selects the highest selected configuration still within budget", () => {

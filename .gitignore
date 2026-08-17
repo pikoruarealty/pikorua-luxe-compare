@@ -47,3 +47,10 @@ pnpm-lock.yaml
 
 # The OCR service under property-ocr-suite/ keeps its own .gitignore for the
 # Python-specific entries (venv, __pycache__, runtime storage).
+
+# Ad-hoc working notes — scratch plans/handoffs that aren't meant to be
+# committed. HANDOFF-CODEX.md is the one exception: it's plan-mandated and
+# stays tracked.
+WORK-SPLIT.md
+*.worklog.md
+*.scratch.md

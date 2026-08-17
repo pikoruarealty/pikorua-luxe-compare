@@ -10,6 +10,9 @@ export interface BudgetBand {
 
 const CRORE = 10_000_000;
 
+// Contiguous by construction (each band's minimum is the previous band's
+// maximum) so that every rupee amount from 1 Cr upward falls in exactly one
+// band — a ₹2.5 Cr buyer, or a ₹10.7 Cr one, always has somewhere to land.
 export const BUDGET_BANDS = [
   {
     id: "1_2_cr",
@@ -17,6 +20,13 @@ export const BUDGET_BANDS = [
     label: "₹1–2Cr",
     minimumRupees: 1 * CRORE,
     maximumRupees: 2 * CRORE,
+  },
+  {
+    id: "2_3_cr",
+    broadLabel: "₹1–5Cr",
+    label: "₹2–3Cr",
+    minimumRupees: 2 * CRORE,
+    maximumRupees: 3 * CRORE,
   },
   {
     id: "3_4_cr",
@@ -33,11 +43,25 @@ export const BUDGET_BANDS = [
     maximumRupees: 5.5 * CRORE,
   },
   {
+    id: "5.5_6_cr",
+    broadLabel: "₹6–10Cr",
+    label: "₹5.5–6Cr",
+    minimumRupees: 5.5 * CRORE,
+    maximumRupees: 6 * CRORE,
+  },
+  {
     id: "6_7_cr",
     broadLabel: "₹6–10Cr",
     label: "₹6–7Cr",
     minimumRupees: 6 * CRORE,
     maximumRupees: 7 * CRORE,
+  },
+  {
+    id: "7_8_cr",
+    broadLabel: "₹6–10Cr",
+    label: "₹7–8Cr",
+    minimumRupees: 7 * CRORE,
+    maximumRupees: 8 * CRORE,
   },
   {
     id: "8_9_cr",
@@ -54,11 +78,25 @@ export const BUDGET_BANDS = [
     maximumRupees: 10.5 * CRORE,
   },
   {
+    id: "10.5_11_cr",
+    broadLabel: "₹11–15Cr",
+    label: "₹10.5–11Cr",
+    minimumRupees: 10.5 * CRORE,
+    maximumRupees: 11 * CRORE,
+  },
+  {
     id: "11_12_cr",
     broadLabel: "₹11–15Cr",
     label: "₹11–12Cr",
     minimumRupees: 11 * CRORE,
     maximumRupees: 12 * CRORE,
+  },
+  {
+    id: "12_13_cr",
+    broadLabel: "₹11–15Cr",
+    label: "₹12–13Cr",
+    minimumRupees: 12 * CRORE,
+    maximumRupees: 13 * CRORE,
   },
   {
     id: "13_14_cr",
@@ -75,11 +113,25 @@ export const BUDGET_BANDS = [
     maximumRupees: 15.5 * CRORE,
   },
   {
+    id: "15.5_16_cr",
+    broadLabel: "₹16–20Cr",
+    label: "₹15.5–16Cr",
+    minimumRupees: 15.5 * CRORE,
+    maximumRupees: 16 * CRORE,
+  },
+  {
     id: "16_17_cr",
     broadLabel: "₹16–20Cr",
     label: "₹16–17Cr",
     minimumRupees: 16 * CRORE,
     maximumRupees: 17 * CRORE,
+  },
+  {
+    id: "17_18_cr",
+    broadLabel: "₹16–20Cr",
+    label: "₹17–18Cr",
+    minimumRupees: 17 * CRORE,
+    maximumRupees: 18 * CRORE,
   },
   {
     id: "18_19_cr",
@@ -94,6 +146,13 @@ export const BUDGET_BANDS = [
     label: "₹20Cr",
     minimumRupees: 19 * CRORE,
     maximumRupees: 20.5 * CRORE,
+  },
+  {
+    id: "20.5_21_cr",
+    broadLabel: "₹21Cr+",
+    label: "₹20.5–21Cr",
+    minimumRupees: 20.5 * CRORE,
+    maximumRupees: 21 * CRORE,
   },
   {
     id: "21_cr_plus",

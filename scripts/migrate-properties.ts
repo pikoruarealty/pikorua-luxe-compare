@@ -6,7 +6,7 @@
  *
  * Runs OUTSIDE Vite, so it cannot use `@/assets/*` imports. Image files are
  * resolved as plain filenames from src/assets via fs. Derivation logic is the
- * shared src/lib/property-derivations.ts (same output as src/data/properties.ts).
+ * shared src/lib/property-derivations.ts.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -19,10 +19,6 @@ import {
   type RawRow,
   DEFAULT_CITY,
   DEFAULT_STATE,
-  amenitiesFor,
-  advantagesFor,
-  expertNoteFor,
-  taglineFor,
   summariseConfiguration,
   normalizePossession,
   parseNumeric,
@@ -60,8 +56,7 @@ interface ImageOverride {
   gallery: Partial<Record<Slot, string>>;
 }
 
-// Per-slug image filenames — transcribed from the bundled imageOverrides in
-// src/data/properties.ts (as plain filenames instead of Vite asset imports).
+// Per-slug image filenames (plain filenames instead of Vite asset imports).
 const IMAGE_MAP: Record<string, ImageOverride> = {
   anamika: {
     cover: "anamika-cover.jpg",
@@ -328,7 +323,7 @@ async function uploadImage(slugId: string, filename: string): Promise<string | n
   return supabase.storage.from(BUCKET).getPublicUrl(objectPath).data.publicUrl;
 }
 
-/** Build the Property object exactly as src/data/properties.ts does. */
+/** Build the Property object for the DB row. */
 function deriveProperty(r: RawRow, index: number): { slugId: string; property: Property } {
   const cfgs: PropertyConfigurations = {};
   for (const k of CONFIG_KEYS) {
@@ -357,7 +352,11 @@ function deriveProperty(r: RawRow, index: number): { slugId: string; property: P
     name: r.name,
     developer: r.developer || "-",
     category,
-    tagline: taglineFor(r),
+    // No brochure source for a marketing tagline or an expert take, so these
+    // stay blank instead of being invented — a gap publishes as not_stated,
+    // never inferred. `amenities`/`advantages` keep real per-project data
+    // from the brochure (r.amenities / r.highlights) where present.
+    tagline: "",
     image: FALLBACK_COVERS[index % FALLBACK_COVERS.length],
     size: sizeDisplay,
     sizeNumeric: parseNumeric(superBuiltUpArea),
@@ -371,10 +370,10 @@ function deriveProperty(r: RawRow, index: number): { slugId: string; property: P
     configurations: cfgs,
     pricePerSqft: buildPriceSummary(cfgs),
     possession: normalizePossession(r.possession),
-    amenities: r.amenities?.length ? r.amenities : amenitiesFor(category),
-    advantages: advantagesFor(r),
+    amenities: r.amenities?.length ? r.amenities : [],
+    advantages: r.highlights?.length ? r.highlights : [],
     gallery: { livingRoom: "", pool: "", clubhouse: "", masterBedroom: "" },
-    expertNote: expertNoteFor(r),
+    expertNote: "",
   };
   return { slugId, property };
 }

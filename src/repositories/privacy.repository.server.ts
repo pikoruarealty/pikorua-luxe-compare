@@ -1,5 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 
+import { assertConsumerPayloadSafe } from "@/contracts/consumer";
 import { getDatabase } from "@/db/client.server";
 import { auditEvents, profiles } from "@/db/schema";
 
@@ -14,6 +15,7 @@ export async function setAnalyticsOptOut(profileId: string, optedOut: boolean) {
   if (optedOut) {
     await db.execute(sql`delete from public.customer_activity where profile_id = ${profileId}`);
   }
+  assertConsumerPayloadSafe(updated);
   return updated;
 }
 
@@ -24,6 +26,7 @@ export async function getPrivacyPreferences(profileId: string) {
     .where(eq(profiles.id, profileId))
     .limit(1);
   if (!profile) throw new Error("Profile not found");
+  assertConsumerPayloadSafe(profile);
   return profile;
 }
 

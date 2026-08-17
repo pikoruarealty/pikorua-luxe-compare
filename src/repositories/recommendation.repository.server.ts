@@ -191,6 +191,7 @@ export async function findRecommendations(
           ...variant,
           fit: classifyBudgetFit(
             privateVariant?.privateUpperBoundRupees ?? null,
+            budget.minimumRupees,
             budget.maximumRupees,
           ),
           commercialDataStale: Boolean(staleAfter && staleAfter.getTime() < now),

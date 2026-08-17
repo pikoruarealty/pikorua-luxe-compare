@@ -299,7 +299,11 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
                 <select
                   aria-label="Sort catalogue"
                   value={sort}
-                  onChange={(event) => setSort(event.target.value as Sort)}
+                  onChange={(event) => {
+                    const next = event.target.value as Sort;
+                    setSort(next);
+                    logActivity("weighting_changed", null, { sort: next });
+                  }}
                   className="h-10 rounded-full border border-border bg-card px-4 text-sm"
                 >
                   <option value="recommended">Recommended</option>
@@ -445,6 +449,7 @@ function Continue({ disabled, onClick }: { disabled: boolean; onClick: () => voi
 
 function RecommendationRow({ item }: { item: RecommendationItem }) {
   const { toggle, isSelected } = useCompareStore();
+  const logActivity = useActivityLog();
   const selected = isSelected(item.property.slug);
   const fitLabel =
     item.fit === "within"
@@ -453,7 +458,11 @@ function RecommendationRow({ item }: { item: RecommendationItem }) {
         ? "Slightly above selected budget"
         : item.fit === "well_above"
           ? "Well above selected budget"
-          : "Commercial fit unavailable";
+          : item.fit === "slightly_below"
+            ? "Slightly below selected budget"
+            : item.fit === "well_below"
+              ? "Well below selected budget"
+              : "Commercial fit unavailable";
   return (
     <article className="grid gap-5 py-7 sm:grid-cols-[220px_1fr_auto] sm:items-center">
       <div className="aspect-[4/3] overflow-hidden rounded-xl bg-muted">
@@ -505,6 +514,9 @@ function RecommendationRow({ item }: { item: RecommendationItem }) {
         <button
           type="button"
           onClick={() => {
+            if (item.isAlternativeConfiguration) {
+              logActivity("alternative_clicked", item.property.slug);
+            }
             const result = toggle(item.property.slug);
             if (!result.ok) toast.error(result.reason);
           }}

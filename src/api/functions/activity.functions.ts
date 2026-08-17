@@ -9,7 +9,11 @@ export type ActivityEvent =
   | "compare_add"
   | "compare_open"
   | "favorite_add"
-  | "contact_click";
+  | "contact_click"
+  | "gate_shown"
+  | "gate_unlocked"
+  | "alternative_clicked"
+  | "weighting_changed";
 
 const EVENTS: ActivityEvent[] = [
   "signup",
@@ -19,6 +23,10 @@ const EVENTS: ActivityEvent[] = [
   "compare_open",
   "favorite_add",
   "contact_click",
+  "gate_shown",
+  "gate_unlocked",
+  "alternative_clicked",
+  "weighting_changed",
 ];
 
 const MAX_METADATA_BYTES = 8_192;

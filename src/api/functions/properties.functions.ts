@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { throwSafeError } from "@/lib/safe-error";
 import type {
+  ConfigDetail,
   Property,
   PropertyCategory,
   PropertyConfigurations,
@@ -19,8 +20,13 @@ import fallbackPropertyImage from "@/assets/property-1.jpg";
 // Root-route consumers only need catalogue and preference fields. Keeping the
 // long narratives out of this projection stops every route, including admin
 // pages, from serialising the complete portfolio into its document payload.
+//
+// This is the PUBLIC tier (plan Part 2.1): identity, locality, possession,
+// media, the configuration kinds offered and their super built-up area. Carpet
+// area is deliberately absent from the SELECT rather than blanked afterwards —
+// an anonymous request never loads it, so there is nothing to leak.
 const PROPERTY_LIST_COLUMNS =
-  "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, carpet_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, gallery, is_published, possession_as_of";
+  "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, gallery, is_published, possession_as_of";
 
 const PROPERTY_COLUMNS =
   "id, slug, name, developer, category, tagline, image_url, size, size_numeric, super_built_up_area, carpet_area, location, state, city, status, configuration_summary, configurations, price_summary, possession, amenities, advantages, gallery, expert_note, is_published, plot_size, total_towers, total_floors, units_per_floor, total_units, available_bhk_types, rera_id, rera_url, proposed_start_date_rera, parking_levels, podium_structure, lifts_per_tower, open_space, geyser_heat_pump_provided, vrv_ac_provided, window_glazing, bath_sanitary_fittings, flooring_type, units_per_acre, construction_quality, internal_ceiling_height, clubhouse_size, developer_background, developer_experience_years, total_delivered_projects, ongoing_projects, notable_delivered_projects, possession_as_of";
@@ -207,31 +213,115 @@ function toConsumerProperty(row: PropertyRow): Property {
   };
 }
 
-/** Public: every published property, ordered for stable rendering. */
+/** Public tier: one area per configuration — the super built-up figure — and
+ *  nothing else. Carpet, built-up, room dimensions, fixture counts and both
+ *  commercial values are gated, so they are omitted from the variant object
+ *  rather than nulled: a devtools inspection of the payload finds no key at all. */
+function toShellVariant(variant: ConfigDetail): ConfigDetail {
+  return { type: variant.type, area: variant.area, carpet: null, price: null, rate: null };
+}
+
+/** The shell projection still has to sanitise `configurations`, because that
+ *  column is a single jsonb blob — the per-variant carpet area and room
+ *  dimensions ride inside it and cannot be excluded by the SELECT. */
+function toShellProperty(row: PropertyRow): Property {
+  const property = toConsumerProperty(row);
+  return {
+    ...property,
+    // Forced blank rather than left to the SELECT's omission: `carpet_area`
+    // isn't in PROPERTY_LIST_COLUMNS today, but a future column-list edit
+    // should not be able to leak it silently through this path.
+    carpetArea: "-",
+    configurations: Object.fromEntries(
+      Object.entries(property.configurations).map(([kind, variants]) => [
+        kind,
+        variants?.map(toShellVariant) ?? [],
+      ]),
+    ) as PropertyConfigurations,
+  };
+}
+
+/** Resolves the visitor's profile id, or null when anonymous.
+ *
+ *  Deliberately reads the session directly instead of using
+ *  `requireVisitorAuth`: that middleware resolves the profile through the v2
+ *  Drizzle client, and the legacy read path must keep working while the v2
+ *  flags are off. */
+/* eslint-disable react-hooks/rules-of-hooks */
+async function visitorProfileId(): Promise<string | null> {
+  const { useSession } = await import("@tanstack/react-start/server");
+  const { sessionConfig } = await import("@/server/session.server");
+  // `useSession` is TanStack Start's request composable, not a React hook.
+  const session = await useSession<VisitorSession>(sessionConfig());
+  return session.data?.profileId ?? null;
+}
+/* eslint-enable react-hooks/rules-of-hooks */
+
+async function selectPublished(columns: string, label: string): Promise<PropertyRow[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("properties")
+    .select(columns)
+    .eq("is_published", true)
+    .order("created_at", { ascending: true });
+  if (error) throwSafeError(label, error, "Could not load properties");
+  return data as unknown as PropertyRow[];
+}
+
+/** Public: the catalogue shell — every published property at the public tier. */
 export const getProperties = createServerFn({ method: "GET" }).handler(
+  async (): Promise<Property[]> =>
+    (await selectPublished(PROPERTY_LIST_COLUMNS, "getProperties")).map(toShellProperty),
+);
+
+/** Verified visitors only: the full published catalogue depth.
+ *
+ *  Anonymous callers are rejected outright rather than downgraded — this is the
+ *  gated tier, and an unauthenticated request for it is an error, not a request
+ *  for something else. Route loaders should call `getWorkspaceCatalogue`. */
+export const getDetailedProperties = createServerFn({ method: "GET" }).handler(
   async (): Promise<Property[]> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("properties")
-      .select(PROPERTY_LIST_COLUMNS)
-      .eq("is_published", true)
-      .order("created_at", { ascending: true });
-    if (error) throwSafeError("getProperties", error, "Could not load properties");
-    return (data as PropertyRow[]).map(toConsumerProperty);
+    if (!(await visitorProfileId())) throw new Error("Authentication required");
+    const { setResponseHeader } = await import("@tanstack/react-start/server");
+    setResponseHeader("Cache-Control", "private, no-store");
+    return (await selectPublished(PROPERTY_COLUMNS, "getDetailedProperties")).map(
+      toConsumerProperty,
+    );
   },
 );
 
-/** Public: the full published catalogue for the home comparison workspace. */
-export const getDetailedProperties = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Property[]> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("properties")
-      .select(PROPERTY_COLUMNS)
-      .eq("is_published", true)
-      .order("created_at", { ascending: true });
-    if (error) throwSafeError("getDetailedProperties", error, "Could not load properties");
-    return (data as PropertyRow[]).map(toConsumerProperty);
+/** The tier a caller was actually served. `public` means the deep rows were
+ *  never sent, so the UI must render them as withheld rather than as absent
+ *  data — the two look identical in the payload and mean different things. */
+export type CatalogueTier = "public" | "gated";
+
+export interface WorkspaceCatalogue {
+  tier: CatalogueTier;
+  properties: Property[];
+}
+
+/** Home-workspace bootstrap: serves the tier the caller is entitled to.
+ *
+ *  The tier decision lives here, on the server, so the route loader never has
+ *  to catch a rejection to find out who it is talking to. */
+export const getWorkspaceCatalogue = createServerFn({ method: "GET" }).handler(
+  async (): Promise<WorkspaceCatalogue> => {
+    if (!(await visitorProfileId())) {
+      return {
+        tier: "public",
+        properties: (await selectPublished(PROPERTY_LIST_COLUMNS, "getWorkspaceCatalogue")).map(
+          toShellProperty,
+        ),
+      };
+    }
+    const { setResponseHeader } = await import("@tanstack/react-start/server");
+    setResponseHeader("Cache-Control", "private, no-store");
+    return {
+      tier: "gated",
+      properties: (await selectPublished(PROPERTY_COLUMNS, "getWorkspaceCatalogue")).map(
+        toConsumerProperty,
+      ),
+    };
   },
 );
 

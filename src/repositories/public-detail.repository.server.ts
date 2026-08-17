@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm";
 
-import { publicConfigurationSchema, publicPropertySummarySchema } from "@/contracts/consumer";
+import {
+  assertConsumerPayloadSafe,
+  publicConfigurationSchema,
+  publicPropertySummarySchema,
+} from "@/contracts/consumer";
 import { getDatabase } from "@/db/client.server";
 import {
   configurationOptions,
@@ -77,7 +81,7 @@ export async function findPublicPropertyDetail(slug: string) {
       .from(propertySpecifications)
       .where(eq(propertySpecifications.publicationVersionId, first.publicationId)),
   ]);
-  return {
+  const response = {
     property: publicPropertySummarySchema.parse({
       id: first.propertyId,
       slug: first.slug,
@@ -109,4 +113,8 @@ export async function findPublicPropertyDetail(slug: string) {
     specifications,
     verificationDate: first.verifiedAt.toISOString(),
   };
+  // `snapshot` and both catalog tables are jsonb/free-text today, so the zod
+  // parse above cannot vouch for what rides inside them. This is the backstop.
+  assertConsumerPayloadSafe(response);
+  return response;
 }

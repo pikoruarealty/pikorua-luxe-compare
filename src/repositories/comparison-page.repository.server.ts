@@ -1,5 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 
+import { assertConsumerPayloadSafe } from "@/contracts/consumer";
 import { getDatabase } from "@/db/client.server";
 import { properties, propertyPublicationVersions } from "@/db/schema";
 
@@ -23,8 +24,10 @@ export async function findSafeComparisonIdentities(slugs: string[]) {
       return [row.slug, name] as const;
     }),
   );
-  return slugs.flatMap((slug) => {
+  const response = slugs.flatMap((slug) => {
     const name = names.get(slug);
     return name ? [{ slug, name }] : [];
   });
+  assertConsumerPayloadSafe(response);
+  return response;
 }

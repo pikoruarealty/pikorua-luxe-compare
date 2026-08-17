@@ -20,6 +20,7 @@ import { PreferenceBanner } from "@/components/marketing/PreferenceBanner";
 import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
 import { getV2ComparisonPage } from "@/api/functions/comparison-page.functions";
 import { V2Comparison } from "@/components/compare/V2Comparison";
+import { useActivityLog } from "@/hooks/use-activity-log";
 
 const searchSchema = z.object({
   ids: z.string().optional().default(""),
@@ -79,6 +80,7 @@ function ComparePage() {
   const loaderData = Route.useLoaderData();
   const { userProfile, hydrated, requestGatedAuth } = useOnboarding();
   const router = useRouter();
+  const logActivity = useActivityLog();
   const bootstrap = loaderData.mode === "disabled" ? null : loaderData.bootstrap;
   const properties =
     loaderData.mode === "legacy" && !loaderData.bootstrap.authRequired
@@ -103,8 +105,21 @@ function ComparePage() {
     if (gated) requestGatedAuth();
   }, [gated, requestGatedAuth]);
   useEffect(() => {
-    if (bootstrap?.authRequired && userProfile) void router.invalidate();
-  }, [bootstrap?.authRequired, router, userProfile]);
+    if (gated) logActivity("gate_shown");
+  }, [gated, logActivity]);
+  useEffect(() => {
+    if (bootstrap?.authRequired && userProfile) {
+      logActivity("gate_unlocked");
+      void router.invalidate();
+    }
+  }, [bootstrap?.authRequired, logActivity, router, userProfile]);
+  const comparisonReady =
+    loaderData.mode === "v2"
+      ? Boolean(!bootstrap?.authRequired && loaderData.bootstrap.comparison)
+      : Boolean(!bootstrap?.authRequired && properties.length >= 2);
+  useEffect(() => {
+    if (comparisonReady) logActivity("compare_open");
+  }, [comparisonReady, logActivity]);
   if (!bootstrap) return <ComparisonDisabled />;
   // Hold the comparison back entirely rather than rendering it behind the
   // overlay — the content must not be readable before the visitor signs in.

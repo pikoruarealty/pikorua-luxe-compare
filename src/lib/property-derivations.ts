@@ -24,61 +24,6 @@ export interface RawRow {
 export const DEFAULT_CITY = "Ahmedabad";
 export const DEFAULT_STATE = "Gujarat";
 
-export const amenitiesFor = (type: PropertyCategory): string[] => {
-  if (type === "Plots")
-    return [
-      "Gated Community",
-      "Landscaped Avenues",
-      "24/7 Security",
-      "Underground Utilities",
-      "Clubhouse Access",
-      "Jogging Track",
-    ];
-  if (type === "Bungalow")
-    return [
-      "Private Garden",
-      "Plunge Pool",
-      "Home Automation",
-      "Driver & Staff Quarters",
-      "Private Elevator",
-      "24/7 Concierge",
-      "EV Charging",
-      "Landscaped Forecourt",
-    ];
-  return [
-    "Infinity Pool",
-    "Sky Lounge",
-    "Spa & Wellness",
-    "Concierge 24/7",
-    "Banquet Hall",
-    "Cinema Lounge",
-    "Fitness Studio",
-    "EV Charging",
-  ];
-};
-
-export const advantagesFor = (r: RawRow): string[] => {
-  const a: string[] = [];
-  if (r.highlights?.length) a.push(...r.highlights);
-  a.push(`${r.location} — premium West Ahmedabad address`);
-  if (r.type === "Apartment") a.push("Curated luxury apartment living");
-  if (r.type === "Bungalow") a.push("Standalone bungalow with private grounds");
-  if (r.type === "Plots") a.push("Build-to-suit plotted development");
-  if (/Pre-Launch/i.test(r.status)) a.push("Early-bird pricing window open");
-  if (/Ready/i.test(r.status)) a.push("Move-in ready, zero wait");
-  if (/Near Possession/i.test(r.status)) a.push("Handover within months");
-  return a;
-};
-
-export const expertNoteFor = (r: RawRow): string =>
-  `${r.name} by ${r.developer || "a reputed developer"} on ${r.location} offers ${r.type.toLowerCase()} living in a tightly held micro-market — a considered pick for discerning buyers in Ahmedabad's luxury corridor.`;
-
-export const taglineFor = (r: RawRow): string => {
-  if (r.type === "Plots") return `Plotted enclave at ${r.location}.`;
-  if (r.type === "Bungalow") return `Private bungalow address in ${r.location}.`;
-  return `Luxury residences on ${r.location}.`;
-};
-
 export const summariseConfiguration = (
   cfgs: PropertyConfigurations,
   type: PropertyCategory,

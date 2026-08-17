@@ -28,7 +28,14 @@ export interface CatalogueMarket {
   }>;
 }
 
-export const budgetFitSchema = z.enum(["within", "slightly_above", "well_above", "unknown"]);
+export const budgetFitSchema = z.enum([
+  "within",
+  "slightly_above",
+  "well_above",
+  "slightly_below",
+  "well_below",
+  "unknown",
+]);
 
 export const publicPropertySummarySchema = z
   .object({

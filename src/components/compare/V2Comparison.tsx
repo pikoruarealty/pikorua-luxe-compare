@@ -172,6 +172,8 @@ function fitLabel(fit: string | undefined) {
   if (fit === "within") return "Matches selected budget";
   if (fit === "slightly_above") return "Slightly above selected budget";
   if (fit === "well_above") return "Well above selected budget";
+  if (fit === "slightly_below") return "Slightly below selected budget";
+  if (fit === "well_below") return "Well below selected budget";
   return "Commercial fit unavailable";
 }
 

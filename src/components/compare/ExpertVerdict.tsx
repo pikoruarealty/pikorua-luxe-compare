@@ -4,6 +4,7 @@ import type { Property } from "@/types/property";
 import { Section } from "./Section";
 
 export function ExpertVerdict({ properties }: { properties: Property[] }) {
+  if (!properties.some((p) => p.expertNote.trim().length > 0)) return null;
   return (
     <Section
       id="verdict"

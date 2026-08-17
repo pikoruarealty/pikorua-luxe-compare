@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 
+import { assertConsumerPayloadSafe } from "@/contracts/consumer";
 import { getDatabase } from "@/db/client.server";
 import {
   auditEvents,
@@ -59,7 +60,7 @@ export async function listPublicReviews(slug: string) {
     )
     .orderBy(desc(propertyReviews.publishedAt), desc(propertyReviews.createdAt))
     .limit(100);
-  return rows.map((row) => ({
+  const response = rows.map((row) => ({
     id: row.id,
     publicName: row.publicName,
     phoneVerified: true as const,
@@ -68,6 +69,8 @@ export async function listPublicReviews(slug: string) {
     publishedAt: row.publishedAt?.toISOString() ?? null,
     developerResponse: row.responseVisibility === "published" ? (row.responseText ?? null) : null,
   }));
+  assertConsumerPayloadSafe(response);
+  return response;
 }
 
 export async function findOwnReview(profileId: string, slug: string) {
@@ -89,7 +92,9 @@ export async function findOwnReview(profileId: string, slug: string) {
       ),
     )
     .limit(1);
-  return review ?? null;
+  if (!review) return null;
+  assertConsumerPayloadSafe(review);
+  return review;
 }
 
 async function refreshAggregate(

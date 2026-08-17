@@ -1,5 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 
+import { assertConsumerPayloadSafe } from "@/contracts/consumer";
 import { getDatabase } from "@/db/client.server";
 import { properties, propertyPublicationVersions, savedLocations } from "@/db/schema";
 
@@ -47,7 +48,7 @@ export async function propertyAddressInputs(slugs: string[]) {
       eq(properties.currentPublicationVersionId, propertyPublicationVersions.id),
     )
     .where(inArray(properties.slug, slugs));
-  return rows.map((row) => {
+  const response = rows.map((row) => {
     const snapshot = row.snapshot as Record<string, unknown>;
     return {
       slug: row.slug,
@@ -56,4 +57,6 @@ export async function propertyAddressInputs(slugs: string[]) {
         .join(", "),
     };
   });
+  assertConsumerPayloadSafe(response);
+  return response;
 }

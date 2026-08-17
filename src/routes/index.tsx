@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import {
   ArrowLeft,
@@ -14,7 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { PropertiesProvider, useProperties } from "@/context/PropertiesContext";
-import { detailedPropertiesQueryOptions } from "@/api/queries/properties.queries";
+import {
+  WORKSPACE_CATALOGUE_KEY,
+  workspaceCatalogueQueryOptions,
+} from "@/api/queries/properties.queries";
 import { PropertyListRow } from "@/components/property/PropertyListRow";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -52,11 +56,9 @@ export const Route = createFileRoute("/")({
   }),
   loader: async ({ context }) => {
     const v2 = await getCatalogueBootstrap();
-    if (v2.enabled) return { v2, properties: [] };
-    return {
-      v2,
-      properties: await context.queryClient.ensureQueryData(detailedPropertiesQueryOptions()),
-    };
+    if (v2.enabled) return { v2, properties: [], tier: "public" as const };
+    const catalogue = await context.queryClient.ensureQueryData(workspaceCatalogueQueryOptions());
+    return { v2, properties: catalogue.properties, tier: catalogue.tier };
   },
   component: Index,
 });
@@ -72,13 +74,31 @@ function matchesQuery(p: Property, q: string): boolean {
 }
 
 function Index() {
-  const { properties, v2 } = Route.useLoaderData();
+  const { properties, v2, tier } = Route.useLoaderData();
+  useCatalogueTierSync(tier);
   if (v2.enabled) return <V2CataloguePage markets={v2.markets} />;
   return (
     <PropertiesProvider properties={properties}>
       <IndexContent />
     </PropertiesProvider>
   );
+}
+
+/** The catalogue is served at one of two tiers, chosen server-side from the
+ *  session cookie. Signing in or out mid-visit changes which tier the visitor is
+ *  entitled to, but the cached query still holds the other one — so drop it and
+ *  re-run the loader as soon as the two disagree. */
+function useCatalogueTierSync(tier: "public" | "gated") {
+  const { userProfile, hydrated } = useOnboarding();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  useEffect(() => {
+    if (!hydrated) return;
+    if (Boolean(userProfile) === (tier === "gated")) return;
+    void queryClient
+      .invalidateQueries({ queryKey: WORKSPACE_CATALOGUE_KEY })
+      .then(() => router.invalidate());
+  }, [hydrated, userProfile, tier, queryClient, router]);
 }
 
 function IndexContent() {

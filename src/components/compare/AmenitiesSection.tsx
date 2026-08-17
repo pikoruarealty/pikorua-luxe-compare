@@ -4,6 +4,7 @@ import type { Property } from "@/types/property";
 import { Section } from "./Section";
 
 export function AmenitiesSection({ properties }: { properties: Property[] }) {
+  if (!properties.some((p) => p.amenities.length > 0)) return null;
   return (
     <Section
       id="amenities"

@@ -1,6 +1,12 @@
 import type { BudgetBand } from "./budget";
 
-export type BudgetFit = "within" | "slightly_above" | "well_above" | "unknown";
+export type BudgetFit =
+  | "within"
+  | "slightly_above"
+  | "well_above"
+  | "slightly_below"
+  | "well_below"
+  | "unknown";
 
 export interface PrivateRecommendationVariant {
   id: string;
@@ -29,15 +35,21 @@ export type RankedRecommendationProject<
 
 export function classifyBudgetFit(
   privateUpperBoundRupees: number | null,
+  budgetMinimumRupees: number,
   budgetMaximumRupees: number | null,
 ): BudgetFit {
   if (privateUpperBoundRupees === null) return "unknown";
-  if (budgetMaximumRupees === null || privateUpperBoundRupees <= budgetMaximumRupees) {
-    return "within";
+  if (budgetMaximumRupees !== null && privateUpperBoundRupees > budgetMaximumRupees) {
+    return privateUpperBoundRupees * 100 <= budgetMaximumRupees * 120
+      ? "slightly_above"
+      : "well_above";
   }
-  return privateUpperBoundRupees * 100 <= budgetMaximumRupees * 120
-    ? "slightly_above"
-    : "well_above";
+  if (privateUpperBoundRupees < budgetMinimumRupees) {
+    return privateUpperBoundRupees * 120 >= budgetMinimumRupees * 100
+      ? "slightly_below"
+      : "well_below";
+  }
+  return "within";
 }
 
 export function selectPrimaryVariant(
@@ -78,8 +90,10 @@ export function selectPrimaryVariant(
 const fitOrder: Record<BudgetFit, number> = {
   within: 0,
   slightly_above: 1,
-  well_above: 2,
-  unknown: 3,
+  slightly_below: 2,
+  well_above: 3,
+  well_below: 4,
+  unknown: 5,
 };
 
 export function rankRecommendationProjects<Project extends PrivateRecommendationProject>(
@@ -95,13 +109,21 @@ export function rankRecommendationProjects<Project extends PrivateRecommendation
       );
       const primary = selectPrimaryVariant(project.variants, selectedIds, budget);
       const upper = primary?.privateUpperBoundRupees ?? null;
-      const fit = primary ? classifyBudgetFit(upper, budget.maximumRupees) : "unknown";
+      const fit = primary
+        ? classifyBudgetFit(upper, budget.minimumRupees, budget.maximumRupees)
+        : "unknown";
       const distance =
-        upper === null || budget.maximumRupees === null
+        upper === null
           ? 0
-          : fit === "within"
-            ? budget.maximumRupees - upper
-            : upper - budget.maximumRupees;
+          : fit === "slightly_below" || fit === "well_below"
+            ? budget.minimumRupees - upper
+            : fit === "within"
+              ? budget.maximumRupees === null
+                ? 0
+                : budget.maximumRupees - upper
+              : budget.maximumRupees === null
+                ? 0
+                : upper - budget.maximumRupees;
 
       return {
         ...project,
