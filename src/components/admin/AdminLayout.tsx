@@ -1,13 +1,22 @@
 import { type ReactNode, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, Inbox, LayoutDashboard, ShieldCheck, UserRound, Users } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  Inbox,
+  LayoutDashboard,
+  ShieldCheck,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/api/queries/admin.queries";
 import { supabase } from "@/integrations/supabase/client";
 import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
 
 interface NavItem extends PortalNavItem {
   ownerOnly?: boolean;
+  reviewerOnly?: boolean;
 }
 
 const NAV: NavItem[] = [
@@ -16,6 +25,7 @@ const NAV: NavItem[] = [
   { to: "/admin/customers", label: "Customers", icon: UserRound, ownerOnly: true },
   { to: "/admin/submissions", label: "Submissions", icon: Inbox, ownerOnly: true },
   { to: "/admin/moderation", label: "Moderation", icon: ShieldCheck },
+  { to: "/admin/verification", label: "Verification", icon: BadgeCheck, reviewerOnly: true },
   { to: "/admin/developers", label: "Developers", icon: Users, ownerOnly: true },
 ];
 
@@ -30,10 +40,12 @@ function FullScreen({ children }: { children: ReactNode }) {
 export function AdminLayout({
   children,
   requireOwner = false,
+  requireReviewer = false,
   title,
 }: {
   children: ReactNode;
   requireOwner?: boolean;
+  requireReviewer?: boolean;
   title?: string;
 }) {
   const { data: profile, isPending } = useQuery(adminMeQueryOptions());
@@ -87,6 +99,24 @@ export function AdminLayout({
       </FullScreen>
     );
   }
+  if (requireReviewer && profile.role !== "owner" && profile.role !== "reviewer") {
+    return (
+      <FullScreen>
+        <div className="max-w-sm text-center">
+          <h1 className="font-display text-2xl text-foreground">Reviewer access only</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Verification and scoring are restricted to owners and reviewers.
+          </p>
+          <Link
+            to="/admin"
+            className="foil mt-6 inline-flex rounded-full px-5 py-2.5 text-xs tracking-[0.18em] uppercase"
+          >
+            Back to dashboard
+          </Link>
+        </div>
+      </FullScreen>
+    );
+  }
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -94,7 +124,11 @@ export function AdminLayout({
     navigate({ to: "/admin/login" });
   };
 
-  const visibleNav = NAV.filter((n) => !n.ownerOnly || profile.role === "owner");
+  const visibleNav = NAV.filter(
+    (n) =>
+      (!n.ownerOnly || profile.role === "owner") &&
+      (!n.reviewerOnly || profile.role === "owner" || profile.role === "reviewer"),
+  );
 
   return (
     <PortalShell

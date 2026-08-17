@@ -17,4 +17,9 @@ describe("server feature flags", () => {
   it("fails closed with a generic error", () => {
     expect(() => requireFeature("V2_ENQUIRIES", {})).toThrow("Feature unavailable");
   });
+
+  it("keeps PropScore dark unless its server flag is explicitly enabled", () => {
+    expect(isFeatureEnabled("V2_PROPSCORE", {})).toBe(false);
+    expect(isFeatureEnabled("V2_PROPSCORE", { V2_PROPSCORE: "1" })).toBe(true);
+  });
 });

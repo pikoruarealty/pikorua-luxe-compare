@@ -162,7 +162,10 @@ function ComparePage() {
 
   if (loaderData.mode === "v2") {
     return loaderData.bootstrap.comparison ? (
-      <V2Comparison comparison={loaderData.bootstrap.comparison} />
+      <V2Comparison
+        comparison={loaderData.bootstrap.comparison}
+        propscoreEnabled={loaderData.bootstrap.propscoreEnabled}
+      />
     ) : (
       <div className="min-h-screen">
         <SiteHeader />

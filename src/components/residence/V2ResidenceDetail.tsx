@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { useCompareStore } from "@/stores/compare-store";
 import { PropertyEngagement } from "./PropertyEngagement";
+import { PropScorePanel } from "@/components/propscore/PropScorePanel";
 
 type Detail = NonNullable<
   Awaited<
@@ -109,6 +110,11 @@ export function V2ResidenceDetail({ detail }: { detail: Detail }) {
               }))}
             />
           </div>
+          {detail.propscoreEnabled && (
+            <div className="mt-12">
+              <PropScorePanel slug={detail.property.slug} />
+            </div>
+          )}
           <PropertyEngagement
             slug={detail.property.slug}
             configurations={detail.configurations}

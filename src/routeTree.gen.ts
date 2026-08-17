@@ -19,8 +19,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ResidenceIdRouteImport } from './routes/residence.$id'
+import { Route as MethodologyPropscoreRouteImport } from './routes/methodology.propscore'
 import { Route as DeveloperReviewsRouteImport } from './routes/developer.reviews'
 import { Route as DeveloperEnquiriesRouteImport } from './routes/developer.enquiries'
+import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminMfaRouteImport } from './routes/admin.mfa'
@@ -84,6 +86,11 @@ const ResidenceIdRoute = ResidenceIdRouteImport.update({
   path: '/residence/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MethodologyPropscoreRoute = MethodologyPropscoreRouteImport.update({
+  id: '/methodology/propscore',
+  path: '/methodology/propscore',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DeveloperReviewsRoute = DeveloperReviewsRouteImport.update({
   id: '/developer/reviews',
   path: '/developer/reviews',
@@ -92,6 +99,11 @@ const DeveloperReviewsRoute = DeveloperReviewsRouteImport.update({
 const DeveloperEnquiriesRoute = DeveloperEnquiriesRouteImport.update({
   id: '/developer/enquiries',
   path: '/developer/enquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminVerificationRoute = AdminVerificationRouteImport.update({
+  id: '/admin/verification',
+  path: '/admin/verification',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
@@ -170,8 +182,10 @@ export interface FileRoutesByFullPath {
   '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
   '/developer/reviews': typeof DeveloperReviewsRoute
+  '/methodology/propscore': typeof MethodologyPropscoreRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
   '/developer/': typeof DeveloperIndexRoute
@@ -196,8 +210,10 @@ export interface FileRoutesByTo {
   '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
   '/developer/reviews': typeof DeveloperReviewsRoute
+  '/methodology/propscore': typeof MethodologyPropscoreRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin': typeof AdminIndexRoute
   '/developer': typeof DeveloperIndexRoute
@@ -223,8 +239,10 @@ export interface FileRoutesById {
   '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
   '/developer/reviews': typeof DeveloperReviewsRoute
+  '/methodology/propscore': typeof MethodologyPropscoreRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
   '/developer/': typeof DeveloperIndexRoute
@@ -251,8 +269,10 @@ export interface FileRouteTypes {
     | '/admin/mfa'
     | '/admin/moderation'
     | '/admin/submissions'
+    | '/admin/verification'
     | '/developer/enquiries'
     | '/developer/reviews'
+    | '/methodology/propscore'
     | '/residence/$id'
     | '/admin/'
     | '/developer/'
@@ -277,8 +297,10 @@ export interface FileRouteTypes {
     | '/admin/mfa'
     | '/admin/moderation'
     | '/admin/submissions'
+    | '/admin/verification'
     | '/developer/enquiries'
     | '/developer/reviews'
+    | '/methodology/propscore'
     | '/residence/$id'
     | '/admin'
     | '/developer'
@@ -303,8 +325,10 @@ export interface FileRouteTypes {
     | '/admin/mfa'
     | '/admin/moderation'
     | '/admin/submissions'
+    | '/admin/verification'
     | '/developer/enquiries'
     | '/developer/reviews'
+    | '/methodology/propscore'
     | '/residence/$id'
     | '/admin/'
     | '/developer/'
@@ -330,8 +354,10 @@ export interface RootRouteChildren {
   AdminMfaRoute: typeof AdminMfaRoute
   AdminModerationRoute: typeof AdminModerationRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
+  AdminVerificationRoute: typeof AdminVerificationRoute
   DeveloperEnquiriesRoute: typeof DeveloperEnquiriesRoute
   DeveloperReviewsRoute: typeof DeveloperReviewsRoute
+  MethodologyPropscoreRoute: typeof MethodologyPropscoreRoute
   ResidenceIdRoute: typeof ResidenceIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DeveloperIndexRoute: typeof DeveloperIndexRoute
@@ -415,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidenceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/methodology/propscore': {
+      id: '/methodology/propscore'
+      path: '/methodology/propscore'
+      fullPath: '/methodology/propscore'
+      preLoaderRoute: typeof MethodologyPropscoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/developer/reviews': {
       id: '/developer/reviews'
       path: '/developer/reviews'
@@ -427,6 +460,13 @@ declare module '@tanstack/react-router' {
       path: '/developer/enquiries'
       fullPath: '/developer/enquiries'
       preLoaderRoute: typeof DeveloperEnquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/verification': {
+      id: '/admin/verification'
+      path: '/admin/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AdminVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/submissions': {
@@ -530,8 +570,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminMfaRoute: AdminMfaRoute,
   AdminModerationRoute: AdminModerationRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
+  AdminVerificationRoute: AdminVerificationRoute,
   DeveloperEnquiriesRoute: DeveloperEnquiriesRoute,
   DeveloperReviewsRoute: DeveloperReviewsRoute,
+  MethodologyPropscoreRoute: MethodologyPropscoreRoute,
   ResidenceIdRoute: ResidenceIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   DeveloperIndexRoute: DeveloperIndexRoute,
