@@ -9,7 +9,7 @@
  *
  *  Usage: bun run scripts/check-brochures.ts [--verbose]
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
   mapExtractedPayload,
@@ -23,6 +23,9 @@ const VERBOSE = process.argv.includes("--verbose");
 /** One job per source brochure — the richest, since re-runs of the same file
  *  differ only in how much the model happened to read that time. */
 function newestPerBrochure(): { name: string; extraction: PropertyExtraction }[] {
+  // Gitignored runtime storage — never exists on a fresh checkout (CI, a new
+  // clone) until someone runs a brochure through the OCR service locally.
+  if (!existsSync(JOB_DIR)) return [];
   const best = new Map<string, { score: number; extraction: PropertyExtraction }>();
   for (const file of readdirSync(JOB_DIR)) {
     const path = join(JOB_DIR, file);
