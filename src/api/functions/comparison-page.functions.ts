@@ -16,7 +16,7 @@ const inputSchema = z
 export const getV2ComparisonPage = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
-    const { requireFeature } = await import("@/server/feature-flags.server");
+    const { isFeatureEnabled, requireFeature } = await import("@/server/feature-flags.server");
     requireFeature("V2_COMPARISON");
     const { sessionConfig } = await import("@/server/session.server");
     const session = await useSession<VisitorSession>(sessionConfig());
@@ -33,5 +33,6 @@ export const getV2ComparisonPage = createServerFn({ method: "POST" })
     return {
       authRequired: false as const,
       comparison: await findConsumerComparison(session.data.profileId, data.slugs),
+      propscoreEnabled: isFeatureEnabled("V2_PROPSCORE"),
     };
   });

@@ -122,6 +122,9 @@ export function SiteFooter() {
             <Link to="/community-guidelines" className="hover:text-foreground">
               Review guidelines
             </Link>
+            <Link to="/methodology/propscore" className="hover:text-foreground">
+              PropScore methodology
+            </Link>
           </nav>
         </div>
       </div>

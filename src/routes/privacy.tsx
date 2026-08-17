@@ -41,7 +41,7 @@ function PrivacyPage() {
         {
           title: "Google Maps data",
           paragraphs: [
-            "When location comparison is enabled, PropCompare stores your own label and a Google Place ID. Google-returned coordinates and formatted provider content are re-fetched for use and are not retained beyond permitted caching. Google Maps attribution and provider terms apply.",
+            "For your saved locations, PropCompare stores only your label and a Google Place ID; provider coordinates are re-fetched within permitted caching rules. Separately, PropCompare stores reviewer-verified project coordinates and dated route snapshots to a small curated set of market landmarks so consumer page requests do not make live landmark searches. Google Maps attribution and provider terms apply.",
           ],
         },
       ]}

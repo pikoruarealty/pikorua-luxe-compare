@@ -2,6 +2,8 @@ import {
   bigint,
   boolean,
   check,
+  date,
+  doublePrecision,
   integer,
   jsonb,
   numeric,
@@ -535,4 +537,174 @@ export const ocrExtractionRevisions = pgTable(
     createdAt: createdAt(),
   },
   (table) => [unique().on(table.jobId, table.revision)],
+);
+
+export const propertyReraVerifications = pgTable(
+  "property_rera_verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    publicationVersionId: uuid("publication_version_id")
+      .notNull()
+      .references(() => propertyPublicationVersions.id, { onDelete: "restrict" }),
+    revision: integer("revision").notNull(),
+    registrationNumber: text("registration_number").notNull(),
+    sourceUrl: text("source_url"),
+    sourceDocumentId: uuid("source_document_id").references(() => sourceDocuments.id, {
+      onDelete: "restrict",
+    }),
+    checkedBy: uuid("checked_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+    status: text("status").notNull(),
+    publishedPromoterName: text("published_promoter_name"),
+    officialPromoterName: text("official_promoter_name"),
+    promoterMatch: boolean("promoter_match"),
+    promoterMatchBasis: text("promoter_match_basis"),
+    promoterMatchReason: text("promoter_match_reason"),
+    publishedCompletionDate: date("published_completion_date"),
+    officialCompletionDate: date("official_completion_date"),
+    completionDifferenceDays: integer("completion_difference_days"),
+    notes: text("notes"),
+    supersedesId: uuid("supersedes_id"),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.publicationVersionId, table.revision)],
+);
+
+export const propertyReraAreaChecks = pgTable(
+  "property_rera_area_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    verificationId: uuid("verification_id")
+      .notNull()
+      .references(() => propertyReraVerifications.id, { onDelete: "cascade" }),
+    configurationVariantId: uuid("configuration_variant_id")
+      .notNull()
+      .references(() => configurationVariants.id, { onDelete: "restrict" }),
+    brochureRawValue: numeric("brochure_raw_value", { precision: 14, scale: 3 }).notNull(),
+    brochureRawUnit: text("brochure_raw_unit").notNull(),
+    brochureRawText: text("brochure_raw_text").notNull(),
+    brochureSqFt: numeric("brochure_sq_ft", { precision: 14, scale: 3 }).notNull(),
+    reraRawValue: numeric("rera_raw_value", { precision: 14, scale: 3 }).notNull(),
+    reraRawUnit: text("rera_raw_unit").notNull(),
+    reraRawText: text("rera_raw_text").notNull(),
+    reraSqFt: numeric("rera_sq_ft", { precision: 14, scale: 3 }).notNull(),
+    absoluteDifferenceSqFt: numeric("absolute_difference_sq_ft", {
+      precision: 14,
+      scale: 3,
+    }).notNull(),
+    differencePercent: numeric("difference_percent", { precision: 8, scale: 3 }).notNull(),
+    result: text("result").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.verificationId, table.configurationVariantId)],
+);
+
+export const propertyScoreVersions = pgTable(
+  "property_score_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    publicationVersionId: uuid("publication_version_id")
+      .notNull()
+      .references(() => propertyPublicationVersions.id, { onDelete: "restrict" }),
+    methodologyVersion: text("methodology_version").notNull(),
+    revision: integer("revision").notNull(),
+    composite: smallint("composite"),
+    status: text("status").notNull(),
+    coveragePercent: smallint("coverage_percent").notNull(),
+    cohortSnapshot: jsonb("cohort_snapshot").notNull().default({}),
+    calculatedBy: uuid("calculated_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    calculatedAt: timestamp("calculated_at", { withTimezone: true }).notNull(),
+    supersedesId: uuid("supersedes_id"),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.publicationVersionId, table.methodologyVersion, table.revision)],
+);
+
+export const propertyScoreDimensions = pgTable(
+  "property_score_dimensions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    scoreVersionId: uuid("score_version_id")
+      .notNull()
+      .references(() => propertyScoreVersions.id, { onDelete: "cascade" }),
+    dimension: text("dimension").notNull(),
+    score: smallint("score"),
+    status: text("status").notNull(),
+    coveragePercent: smallint("coverage_percent").notNull(),
+    inputSnapshot: jsonb("input_snapshot").notNull().default({}),
+    publicExplanation: jsonb("public_explanation").notNull().default([]),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.scoreVersionId, table.dimension)],
+);
+
+export const marketLandmarks = pgTable(
+  "market_landmarks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    marketId: uuid("market_id")
+      .notNull()
+      .references(() => markets.id, { onDelete: "cascade" }),
+    category: text("category").notNull(),
+    displayName: text("display_name").notNull(),
+    googlePlaceId: text("google_place_id").notNull(),
+    sortOrder: smallint("sort_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    verifiedBy: uuid("verified_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.marketId, table.googlePlaceId)],
+);
+
+export const propertyVerifiedLocations = pgTable(
+  "property_verified_locations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    publicationVersionId: uuid("publication_version_id")
+      .notNull()
+      .references(() => propertyPublicationVersions.id, { onDelete: "restrict" }),
+    revision: integer("revision").notNull(),
+    googlePlaceId: text("google_place_id").notNull(),
+    latitude: doublePrecision("latitude").notNull(),
+    longitude: doublePrecision("longitude").notNull(),
+    verifiedBy: uuid("verified_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    supersedesId: uuid("supersedes_id"),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.publicationVersionId, table.revision)],
+);
+
+export const propertyConnectivitySnapshots = pgTable(
+  "property_connectivity_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    verifiedLocationId: uuid("verified_location_id")
+      .notNull()
+      .references(() => propertyVerifiedLocations.id, { onDelete: "restrict" }),
+    landmarkId: uuid("landmark_id")
+      .notNull()
+      .references(() => marketLandmarks.id, { onDelete: "restrict" }),
+    revision: integer("revision").notNull(),
+    status: text("status").notNull(),
+    distanceMeters: integer("distance_meters"),
+    durationSeconds: integer("duration_seconds"),
+    travelMode: text("travel_mode").notNull().default("driving"),
+    provider: text("provider").notNull().default("google_routes"),
+    calculatedBy: uuid("calculated_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    calculatedAt: timestamp("calculated_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.verifiedLocationId, table.landmarkId, table.revision)],
 );

@@ -19,6 +19,7 @@ export const getV2PublicPropertyDetail = createServerFn({ method: "GET" })
           ...detail,
           reviewsEnabled: isFeatureEnabled("V2_REVIEWS"),
           enquiriesEnabled: isFeatureEnabled("V2_ENQUIRIES"),
+          propscoreEnabled: isFeatureEnabled("V2_PROPSCORE"),
         }
       : null;
   });
