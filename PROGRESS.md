@@ -107,6 +107,28 @@ All 8 tasks closed, verified against the plan's Part 8 checklist, and committed
 fabricated template strings or gated fields (`baseSalePriceRupees`, carpet area) found in
 client-facing code.
 
+### Post-Phase-0 follow-up: budget band selection vs. classification
+
+After Phase 0 shipped, we noticed closing the `BUDGET_BANDS` gaps had a side effect: the
+same array drives both the quiz's selectable buttons *and* the internal matching math, so
+fixing the real dead-end (a ₹2.5 Cr buyer had no button at all) also expanded the quiz from
+~13 buttons to 21 — three narrow, near-duplicate-feeling buttons like `₹9–10.5Cr` /
+`₹10.5–11Cr` / `₹11–12Cr` in a row.
+
+**Decision:** decoupled the two jobs (commit `409f91c`). `BudgetBand` now has an optional
+`selectable?: false` flag; the 8 gap-filler bands (`2_3_cr`, `5.5_6_cr`, `7_8_cr`,
+`10.5_11_cr`, `12_13_cr`, `15.5_16_cr`, `17_18_cr`, `20.5_21_cr`) are marked non-selectable.
+`SELECTABLE_BUDGET_BANDS` (a filtered export) is what `V2CataloguePage.tsx`'s quiz renders —
+back to the original ~13 round-number choices. `BUDGET_BANDS` (the full 21) is still what
+`classifyBudgetFit`/`getBudgetBand`/recommendation ranking use, so no rupee value is ever
+unclassifiable. A buyer whose real budget falls in a gap (e.g. ₹2.5 Cr) picks the closest
+visible band and still sees near-miss properties surface as "slightly above/below" via the
+existing ±20% tolerance in `classifyBudgetFit` — that tolerance is what actually closes the
+gap for the buyer, not exposing every narrow band as a button.
+
+If you add more gap-filler bands later, remember: `selectable: false` keeps them out of the
+quiz; omit the flag (or don't set it) to make a band choosable.
+
 ### Left open, not part of Phase 0's scope, but real
 
 - **`vercel.json` on `main`**, and the production build's Nitro preset targets **Cloudflare
