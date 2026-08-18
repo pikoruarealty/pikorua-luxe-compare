@@ -5,7 +5,7 @@ interface CanonicalField {
   name: string;
   type: string;
   required: boolean;
-  visibility: "public" | "private_commercial" | "internal";
+  visibility: "public" | "private_commercial" | "gated" | "internal";
   label: string;
   maxLength?: number;
   minimum?: number;
@@ -18,6 +18,7 @@ interface CanonicalSchema {
   propertyTypes: string[];
   areaBases: string[];
   units: string[];
+  ceilingHeightBases: string[];
   fields: CanonicalField[];
 }
 
@@ -51,17 +52,28 @@ function zodType(field: CanonicalField): string {
     case "unit":
       expression = "areaUnitSchema";
       break;
+    case "ceilingHeightBasis":
+      expression = "ceilingHeightBasisSchema";
+      break;
+    case "boolean":
+      expression = "z.boolean()";
+      break;
+    case "stringArray":
+      expression = "z.array(z.string().trim().max(200)).max(100)";
+      break;
     default:
       expression = "z.string().trim()";
   }
-  if (field.maxLength) expression += `.max(${field.maxLength})`;
-  if (field.minimum !== undefined) expression += `.min(${field.minimum})`;
+  if (field.type !== "stringArray" && field.maxLength) expression += `.max(${field.maxLength})`;
+  if (field.type !== "stringArray" && field.minimum !== undefined)
+    expression += `.min(${field.minimum})`;
   if (!field.required) expression += ".nullable()";
   return expression;
 }
 
 const publicFields = schema.fields.filter((field) => field.visibility === "public");
 const commercialFields = schema.fields.filter((field) => field.visibility === "private_commercial");
+const gatedFields = schema.fields.filter((field) => field.visibility === "gated");
 const metadata = schema.fields.map(({ name, label, required, visibility }) => ({
   name,
   label,
@@ -77,17 +89,23 @@ const tsOutput =
   `export const configurationKindSchema = z.enum([${quoted(schema.configurationKinds)}]);\n` +
   `export const propertyTypeSchema = z.enum([${quoted(schema.propertyTypes)}]);\n` +
   `export const areaBasisSchema = z.enum([${quoted(schema.areaBases)}]);\n` +
-  `export const areaUnitSchema = z.enum([${quoted(schema.units)}]);\n\n` +
+  `export const areaUnitSchema = z.enum([${quoted(schema.units)}]);\n` +
+  `export const ceilingHeightBasisSchema = z.enum([${quoted(schema.ceilingHeightBases)}]);\n\n` +
   `export const canonicalPublicPropertySchema = z.object({\n${publicFields
     .map((field) => `  ${field.name}: ${zodType(field)},`)
     .join("\n")}\n}).strict();\n\n` +
   `export const canonicalCommercialTermsSchema = z.object({\n${commercialFields
     .map((field) => `  ${field.name}: ${zodType(field)},`)
     .join("\n")}\n}).strict();\n\n` +
+  `export const canonicalGatedPropertySchema = z.object({\n${gatedFields
+    .map((field) => `  ${field.name}: ${zodType(field)},`)
+    .join("\n")}\n}).strict();\n\n` +
   `export type FieldState = z.infer<typeof fieldStateSchema>;\n` +
   `export type ConfigurationKind = z.infer<typeof configurationKindSchema>;\n` +
+  `export type AreaUnit = z.infer<typeof areaUnitSchema>;\n` +
   `export type CanonicalPublicProperty = z.infer<typeof canonicalPublicPropertySchema>;\n` +
-  `export type CanonicalCommercialTerms = z.infer<typeof canonicalCommercialTermsSchema>;\n\n` +
+  `export type CanonicalCommercialTerms = z.infer<typeof canonicalCommercialTermsSchema>;\n` +
+  `export type CanonicalGatedProperty = z.infer<typeof canonicalGatedPropertySchema>;\n\n` +
   `export const propertyFormMetadata = ${JSON.stringify(metadata, null, 2)} as const;\n`;
 
 const pythonType = (field: CanonicalField): string => {
@@ -106,7 +124,13 @@ const pythonType = (field: CanonicalField): string => {
                 ? "AreaBasis"
                 : field.type === "unit"
                   ? "AreaUnit"
-                  : "str";
+                  : field.type === "ceilingHeightBasis"
+                    ? "CeilingHeightBasis"
+                    : field.type === "boolean"
+                      ? "bool"
+                      : field.type === "stringArray"
+                        ? "list[str]"
+                        : "str";
   return field.required ? base : `${base} | None`;
 };
 
@@ -133,10 +157,23 @@ const pythonOutput =
   "\n" +
   enumBlock("AreaUnit", schema.units) +
   "\n" +
+  enumBlock("CeilingHeightBasis", schema.ceilingHeightBases) +
+  "\n" +
   `class CanonicalPublicProperty(BaseModel):\n    model_config = ConfigDict(extra="forbid")\n${publicFields
     .map((field) => `    ${field.name}: ${pythonType(field)}${field.required ? "" : " = None"}`)
     .join("\n")}\n\n` +
   `class CanonicalCommercialTerms(BaseModel):\n    model_config = ConfigDict(extra="forbid")\n${commercialFields
+    .map((field) => {
+      const constraint =
+        field.minimum !== undefined
+          ? ` = Field(default=${field.required ? "..." : "None"}, ge=${field.minimum})`
+          : field.required
+            ? ""
+            : " = None";
+      return `    ${field.name}: ${pythonType(field)}${constraint}`;
+    })
+    .join("\n")}\n\n` +
+  `class CanonicalGatedProperty(BaseModel):\n    model_config = ConfigDict(extra="forbid")\n${gatedFields
     .map((field) => {
       const constraint =
         field.minimum !== undefined

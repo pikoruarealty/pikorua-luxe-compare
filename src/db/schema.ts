@@ -2,6 +2,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   integer,
   jsonb,
   numeric,
@@ -55,7 +56,12 @@ export const areaBasis = pgEnum("area_basis", [
   "plot",
   "not_stated",
 ]);
-export const areaUnit = pgEnum("area_unit", ["sq_ft", "sq_m", "sq_yd"]);
+export const areaUnit = pgEnum("area_unit", ["sq_ft", "sq_m", "sq_yd", "acre", "gaj"]);
+export const ceilingHeightBasis = pgEnum("ceiling_height_basis", [
+  "clear",
+  "slab_to_slab",
+  "not_stated",
+]);
 export const submissionState = pgEnum("submission_state", [
   "draft",
   "submitted",
@@ -191,15 +197,158 @@ export const configurationVariants = pgTable("configuration_variants", {
   balconiesState: fieldState("balconies_state").notNull().default("not_stated"),
   publicFacts: jsonb("public_facts").notNull().default({}).$type<Record<string, unknown>>(),
   sortOrder: smallint("sort_order").notNull().default(0),
+  servantRoomPresent: boolean("servant_room_present"),
+  servantRoomState: fieldState("servant_room_state").notNull().default("not_stated"),
+  floorPlanPage: integer("floor_plan_page"),
+  floorPlanPageState: fieldState("floor_plan_page_state").notNull().default("not_stated"),
   createdAt: createdAt(),
 });
+
+// Column is variant_id (not configurationVariantId) to match Phase 5's raw SQL, already
+// written against this exact name in src/repositories/propscore.repository.server.ts.
+export const configurationVariantAreas = pgTable(
+  "configuration_variant_areas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => configurationVariants.id, { onDelete: "cascade" }),
+    basis: areaBasis("basis").notNull(),
+    value: numeric("value", { precision: 14, scale: 3 }),
+    unit: areaUnit("unit"),
+    rawText: text("raw_text"),
+    state: fieldState("state").notNull().default("not_stated"),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.variantId, table.basis)],
+);
+
+export const configurationVariantRooms = pgTable("configuration_variant_rooms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  configurationVariantId: uuid("configuration_variant_id")
+    .notNull()
+    .references(() => configurationVariants.id, { onDelete: "cascade" }),
+  roomType: text("room_type").notNull(),
+  dimensionRaw: text("dimension_raw"),
+  areaValue: numeric("area_value", { precision: 10, scale: 2 }),
+  areaUnit: areaUnit("area_unit"),
+  roomState: fieldState("room_state").notNull().default("not_stated"),
+  sortOrder: smallint("sort_order").notNull().default(0),
+  createdAt: createdAt(),
+});
+
+export const propertyPublicationDetails = pgTable("property_publication_details", {
+  publicationVersionId: uuid("publication_version_id")
+    .primaryKey()
+    .references(() => propertyPublicationVersions.id, { onDelete: "cascade" }),
+
+  plotSizeValue: numeric("plot_size_value", { precision: 14, scale: 3 }),
+  plotSizeUnit: areaUnit("plot_size_unit"),
+  plotSizeState: fieldState("plot_size_state").notNull().default("not_stated"),
+  totalTowers: integer("total_towers"),
+  totalTowersState: fieldState("total_towers_state").notNull().default("not_stated"),
+  totalFloors: integer("total_floors"),
+  totalFloorsState: fieldState("total_floors_state").notNull().default("not_stated"),
+  unitsPerFloor: integer("units_per_floor"),
+  unitsPerFloorState: fieldState("units_per_floor_state").notNull().default("not_stated"),
+  totalUnits: integer("total_units"),
+  totalUnitsState: fieldState("total_units_state").notNull().default("not_stated"),
+  unitsPerAcre: numeric("units_per_acre", { precision: 10, scale: 3 }),
+  unitsPerAcreState: fieldState("units_per_acre_state").notNull().default("not_stated"),
+  openSpacePercent: numeric("open_space_percent", { precision: 5, scale: 2 }),
+  openSpacePercentState: fieldState("open_space_percent_state").notNull().default("not_stated"),
+  parkingLevels: integer("parking_levels"),
+  parkingLevelsState: fieldState("parking_levels_state").notNull().default("not_stated"),
+  podiumStructure: text("podium_structure"),
+  podiumStructureState: fieldState("podium_structure_state").notNull().default("not_stated"),
+  liftsPerTower: integer("lifts_per_tower"),
+  liftsPerTowerState: fieldState("lifts_per_tower_state").notNull().default("not_stated"),
+  clubhouseSizeSqFt: numeric("clubhouse_size_sq_ft", { precision: 12, scale: 2 }),
+  clubhouseSizeSqFtState: fieldState("clubhouse_size_sq_ft_state").notNull().default("not_stated"),
+
+  internalCeilingHeightFt: numeric("internal_ceiling_height_ft", { precision: 5, scale: 2 }),
+  ceilingHeightBasis: ceilingHeightBasis("ceiling_height_basis").notNull().default("not_stated"),
+  ceilingHeightState: fieldState("ceiling_height_state").notNull().default("not_stated"),
+  constructionQuality: text("construction_quality"),
+  constructionQualityState: fieldState("construction_quality_state")
+    .notNull()
+    .default("not_stated"),
+  flooringType: text("flooring_type"),
+  flooringTypeState: fieldState("flooring_type_state").notNull().default("not_stated"),
+  windowGlazing: text("window_glazing"),
+  windowGlazingState: fieldState("window_glazing_state").notNull().default("not_stated"),
+  bathSanitaryFittings: text("bath_sanitary_fittings"),
+  bathSanitaryFittingsState: fieldState("bath_sanitary_fittings_state")
+    .notNull()
+    .default("not_stated"),
+  vrvAcProvision: text("vrv_ac_provision"),
+  vrvAcProvisionState: fieldState("vrv_ac_provision_state").notNull().default("not_stated"),
+  geyserProvision: text("geyser_provision"),
+  geyserProvisionState: fieldState("geyser_provision_state").notNull().default("not_stated"),
+
+  experienceYears: integer("experience_years"),
+  experienceYearsState: fieldState("experience_years_state").notNull().default("not_stated"),
+  deliveredProjects: integer("delivered_projects"),
+  deliveredProjectsState: fieldState("delivered_projects_state").notNull().default("not_stated"),
+  ongoingProjects: integer("ongoing_projects"),
+  ongoingProjectsState: fieldState("ongoing_projects_state").notNull().default("not_stated"),
+  notableDeliveredProjects: text("notable_delivered_projects").array().notNull().default([]),
+  notableDeliveredProjectsState: fieldState("notable_delivered_projects_state")
+    .notNull()
+    .default("not_stated"),
+  background: text("background"),
+  backgroundState: fieldState("background_state").notNull().default("not_stated"),
+
+  proposedStartDateRera: date("proposed_start_date_rera"),
+  proposedStartDateReraState: fieldState("proposed_start_date_rera_state")
+    .notNull()
+    .default("not_stated"),
+  possessionConfirmedAsOf: date("possession_confirmed_as_of"),
+  possessionConfirmedAsOfState: fieldState("possession_confirmed_as_of_state")
+    .notNull()
+    .default("not_stated"),
+
+  amenitiesOther: text("amenities_other"),
+
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const amenityCatalog = pgTable("amenity_catalog", {
+  code: text("code").primaryKey(),
+  displayName: text("display_name").notNull(),
+  groupName: text("group_name").notNull(),
+  sortOrder: smallint("sort_order").notNull(),
+  createdAt: createdAt(),
+});
+
+export const specificationCatalog = pgTable("specification_catalog", {
+  code: text("code").primaryKey(),
+  displayName: text("display_name").notNull(),
+  groupName: text("group_name").notNull(),
+  sortOrder: smallint("sort_order").notNull(),
+  createdAt: createdAt(),
+});
+
+export const fieldSynonyms = pgTable(
+  "field_synonyms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    canonicalField: text("canonical_field").notNull(),
+    synonym: text("synonym").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [unique().on(table.canonicalField, table.synonym)],
+);
 
 export const propertyAmenities = pgTable("property_amenities", {
   id: uuid("id").primaryKey().defaultRandom(),
   publicationVersionId: uuid("publication_version_id")
     .notNull()
     .references(() => propertyPublicationVersions.id, { onDelete: "cascade" }),
-  amenityCode: text("amenity_code").notNull(),
+  amenityCode: text("amenity_code")
+    .notNull()
+    .references(() => amenityCatalog.code, { onDelete: "restrict" }),
   displayName: text("display_name").notNull(),
   valueState: fieldState("value_state").notNull().default("stated"),
   details: text("details"),
@@ -210,7 +359,9 @@ export const propertySpecifications = pgTable("property_specifications", {
   publicationVersionId: uuid("publication_version_id")
     .notNull()
     .references(() => propertyPublicationVersions.id, { onDelete: "cascade" }),
-  specificationCode: text("specification_code").notNull(),
+  specificationCode: text("specification_code")
+    .notNull()
+    .references(() => specificationCatalog.code, { onDelete: "restrict" }),
   displayName: text("display_name").notNull(),
   valueText: text("value_text"),
   valueState: fieldState("value_state").notNull().default("not_stated"),

@@ -15,12 +15,15 @@ the remote. **Never commit to `main` directly.**
 
 ## Status at a glance
 
-- [x] **Phase 0 — Merge and stop the live bleeding** — DONE (this session)
-- [ ] **Phase 1 — The canonical dictionary** — NOT STARTED, up next
-- [ ] Phase 2 — Comparison depth on the v2 contract
+- [x] **Phase 0 — Merge and stop the live bleeding** — DONE
+- [x] **Phase 1 — The canonical dictionary** — DONE (this session, uncommitted)
+- [ ] **Phase 2 — Comparison depth on the v2 contract** — up next
 - [ ] Phase 3 — Load the 26 brochures and flip v1 → v2
 - [ ] Phase 4 — Extraction accuracy
-- [ ] Phase 5 — Verification & PropScore
+- [x] Phase 5 — Verification & PropScore — landed dark on `main` by the other developer
+      (PR `phase-5-verification-propscore`, commit `0e1762a`), behind `V2_PROPSCORE=0`. See
+      note below — it was built ahead of schedule, against Phase 1's not-yet-existent
+      tables, and stays off until Phase 1 + Phase 3 + their own migration are all in.
 - [ ] Phase 6 — Reviews with real content & site-visit verification
 - [ ] Phase 7 — Developer intelligence (first real revenue)
 - [ ] Phase 8 — Depth then breadth
@@ -148,14 +151,59 @@ since that's a behavior change beyond a cleanup pass.
 
 ---
 
-## Phase 1 — up next, not started
+## Phase 1 — done, uncommitted
 
-Per the plan: closes issues 3, 4, 5, 6, 7 (all of Part 3 — read that section before
-starting). Scope: per-basis variant areas, widened typed fields, amenity catalog,
-specification catalog, `ceilingHeightBasis`, a synonym table, canonical unit conversion
-that retains the raw string. Ships as one additive PR against `schemas/property.v1.json`
-plus one migration; regenerate both generated contracts; `bun run schema:check` must be
-green.
+Closes issues 3, 4, 5, 6, 7 (all of Part 3). Purely additive — nothing in `src/` reads or
+writes any of it yet; wiring the live publish path onto these fields is Phase 2's job.
+
+- `schemas/property.v1.json` widened: `area_unit` gained `acre`/`gaj`; a new
+  `ceilingHeightBasis` type (`clear` / `slab_to_slab` / `not_stated`); 32 new fields
+  covering project structure, construction/specification, developer track record, timeline,
+  and per-variant bathrooms/balconies/servant room/floor plan page. Split into `public` vs.
+  a new `gated` visibility tier, matching the two-tier consumer model in Part 2.1.
+- `scripts/generate-property-contracts.ts` regenerated both `src/generated/property-contract.ts`
+  (new `canonicalGatedPropertySchema`, `.strict()`) and the Python contract
+  (`CanonicalGatedProperty`). Added a `stringArray` field type and an `AreaUnit` type export
+  needed by `src/domain/units.ts`.
+- New migration `supabase/migrations/20260818120000_canonical_dictionary.sql`: widens
+  `area_unit`; new `ceiling_height_basis` enum; new tables `configuration_variant_areas`
+  (one area row per basis per variant — override O5), `property_publication_details` (1:1
+  per publication version, ~35 columns each with its own `field_state`),
+  `configuration_variant_rooms`, `amenity_catalog` (~43 seeded codes/8 groups),
+  `specification_catalog` (6 seeded codes), `field_synonyms` (seeded from the plan's literal
+  list). FK'd `property_amenities`/`property_specifications` onto the new catalogs. RLS +
+  `service_role` grants on all 6 new tables, same pattern as every other v2 table.
+  **Not run against the live database.**
+- `src/db/schema.ts` mirrors the migration exactly; `scripts/check-drizzle-schema.ts` updated
+  with the new migration filename and 6 table names.
+- `src/domain/units.ts` (+ test): pure `toSqFt` / `fromSqFt` / `convertArea` canonical unit
+  conversion (sq_m ×10.7639, sq_yd/gaj ×9, acre ×43,560). Not wired into the OCR pipeline —
+  that's Phase 4.
+- **Deliberate deviation from the plan's literal wording:** Part 3.1 says the existing
+  `configuration_variants` area columns should become "a generated view over
+  basis='super_built_up'" for one release. Postgres can't make a stored column a computed
+  view in place, and nothing reads them as a view today. Left as writable scalar columns;
+  repointing them onto `configuration_variant_areas` is Phase 2's job.
+- **Cross-branch integration note:** the other developer's already-merged Phase 5 code
+  (`src/repositories/propscore.repository.server.ts`) has raw SQL written dark against this
+  migration's `configuration_variant_areas` table, hardcoding the FK column name
+  `variant_id`. Caught before commit; the column is named `variant_id` (not
+  `configuration_variant_id`) in both the migration and the Drizzle mirror to match. This
+  also matches the plan's own literal Part 3.1 column name.
+
+**Full verification loop passed:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+21/21 files · 96/96 tests (including the new `units.test.ts`), `bun run check` clean,
+`bun run db:drift` clean, production `bun run build` succeeded. `bun run schema:check`
+regenerates cleanly but currently reports a diff against the last commit — expected, since
+this work is uncommitted; it will pass once committed.
+
+**Still open before Phase 1 is fully closed:**
+- Run the migration against a real database and confirm `ALTER TYPE ... ADD VALUE` behaves
+  as expected outside a dry read.
+- Decide how/when to reconcile `core-features-addon` with `origin/main`'s Phase 5 commits
+  (34 files, dark behind `V2_PROPSCORE`) — plan is to finish Phase 1 first, then merge `main`
+  in, since Phase 1 is small and additive and doing it first avoids carrying Phase 5's diff
+  through Phase 1 edits.
 
 ---
 

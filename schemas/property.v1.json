@@ -25,7 +25,8 @@
   ],
   "propertyTypes": ["apartment", "villa", "bungalow", "plot"],
   "areaBases": ["carpet", "rera_carpet", "built_up", "super_built_up", "plot", "not_stated"],
-  "units": ["sq_ft", "sq_m", "sq_yd"],
+  "units": ["sq_ft", "sq_m", "sq_yd", "acre", "gaj"],
+  "ceilingHeightBases": ["clear", "slab_to_slab", "not_stated"],
   "fields": [
     {
       "name": "name",
@@ -148,6 +149,256 @@
       "required": false,
       "visibility": "private_commercial",
       "label": "Rate area basis"
+    },
+    {
+      "name": "amenitiesOther",
+      "type": "string",
+      "required": false,
+      "visibility": "public",
+      "label": "Other amenities (uncatalogued)",
+      "maxLength": 2000
+    },
+    {
+      "name": "totalTowers",
+      "type": "integer",
+      "required": false,
+      "visibility": "public",
+      "label": "Total towers",
+      "minimum": 0
+    },
+    {
+      "name": "totalFloors",
+      "type": "integer",
+      "required": false,
+      "visibility": "public",
+      "label": "Total floors",
+      "minimum": 0
+    },
+    {
+      "name": "unitsPerFloor",
+      "type": "integer",
+      "required": false,
+      "visibility": "public",
+      "label": "Units per floor",
+      "minimum": 0
+    },
+    {
+      "name": "totalUnits",
+      "type": "integer",
+      "required": false,
+      "visibility": "public",
+      "label": "Total units",
+      "minimum": 0
+    },
+    {
+      "name": "plotSizeValue",
+      "type": "decimal",
+      "required": false,
+      "visibility": "gated",
+      "label": "Plot size",
+      "minimum": 0
+    },
+    {
+      "name": "plotSizeUnit",
+      "type": "unit",
+      "required": false,
+      "visibility": "gated",
+      "label": "Plot size unit"
+    },
+    {
+      "name": "unitsPerAcre",
+      "type": "decimal",
+      "required": false,
+      "visibility": "gated",
+      "label": "Units per acre",
+      "minimum": 0
+    },
+    {
+      "name": "openSpacePercent",
+      "type": "decimal",
+      "required": false,
+      "visibility": "gated",
+      "label": "Open space (%)",
+      "minimum": 0
+    },
+    {
+      "name": "parkingLevels",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Parking levels",
+      "minimum": 0
+    },
+    {
+      "name": "podiumStructure",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Podium structure",
+      "maxLength": 200
+    },
+    {
+      "name": "liftsPerTower",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Lifts per tower",
+      "minimum": 0
+    },
+    {
+      "name": "clubhouseSizeSqFt",
+      "type": "decimal",
+      "required": false,
+      "visibility": "gated",
+      "label": "Clubhouse size (sq ft)",
+      "minimum": 0
+    },
+    {
+      "name": "internalCeilingHeightFt",
+      "type": "decimal",
+      "required": false,
+      "visibility": "gated",
+      "label": "Internal ceiling height (ft)",
+      "minimum": 0
+    },
+    {
+      "name": "ceilingHeightBasis",
+      "type": "ceilingHeightBasis",
+      "required": false,
+      "visibility": "gated",
+      "label": "Ceiling height basis"
+    },
+    {
+      "name": "constructionQuality",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Construction quality",
+      "maxLength": 200
+    },
+    {
+      "name": "flooringType",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Flooring type",
+      "maxLength": 200
+    },
+    {
+      "name": "windowGlazing",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Window glazing",
+      "maxLength": 200
+    },
+    {
+      "name": "bathSanitaryFittings",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Bath & sanitary fittings",
+      "maxLength": 200
+    },
+    {
+      "name": "vrvAcProvision",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "VRV/AC provision",
+      "maxLength": 200
+    },
+    {
+      "name": "geyserProvision",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Geyser provision",
+      "maxLength": 200
+    },
+    {
+      "name": "experienceYears",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Developer experience (years)",
+      "minimum": 0
+    },
+    {
+      "name": "deliveredProjects",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Delivered projects",
+      "minimum": 0
+    },
+    {
+      "name": "ongoingProjects",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Ongoing projects",
+      "minimum": 0
+    },
+    {
+      "name": "notableDeliveredProjects",
+      "type": "stringArray",
+      "required": false,
+      "visibility": "gated",
+      "label": "Notable delivered projects"
+    },
+    {
+      "name": "background",
+      "type": "string",
+      "required": false,
+      "visibility": "gated",
+      "label": "Developer background",
+      "maxLength": 2000
+    },
+    {
+      "name": "proposedStartDateRera",
+      "type": "date",
+      "required": false,
+      "visibility": "gated",
+      "label": "Proposed start date (RERA)"
+    },
+    {
+      "name": "possessionConfirmedAsOf",
+      "type": "date",
+      "required": false,
+      "visibility": "gated",
+      "label": "Possession confirmed as of"
+    },
+    {
+      "name": "bathrooms",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Bathrooms",
+      "minimum": 0
+    },
+    {
+      "name": "balconies",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Balconies",
+      "minimum": 0
+    },
+    {
+      "name": "servantRoom",
+      "type": "boolean",
+      "required": false,
+      "visibility": "gated",
+      "label": "Servant room"
+    },
+    {
+      "name": "floorPlanPage",
+      "type": "integer",
+      "required": false,
+      "visibility": "gated",
+      "label": "Floor plan page",
+      "minimum": 0
     }
   ]
 }

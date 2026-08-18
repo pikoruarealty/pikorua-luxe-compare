@@ -45,6 +45,13 @@ class AreaUnit(str, Enum):
     SQ_FT = "sq_ft"
     SQ_M = "sq_m"
     SQ_YD = "sq_yd"
+    ACRE = "acre"
+    GAJ = "gaj"
+
+class CeilingHeightBasis(str, Enum):
+    CLEAR = "clear"
+    SLAB_TO_SLAB = "slab_to_slab"
+    NOT_STATED = "not_stated"
 
 class CanonicalPublicProperty(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -61,9 +68,44 @@ class CanonicalPublicProperty(BaseModel):
     areaValue: Decimal | None = None
     areaBasis: AreaBasis | None = None
     areaUnit: AreaUnit | None = None
+    amenitiesOther: str | None = None
+    totalTowers: int | None = None
+    totalFloors: int | None = None
+    unitsPerFloor: int | None = None
+    totalUnits: int | None = None
 
 class CanonicalCommercialTerms(BaseModel):
     model_config = ConfigDict(extra="forbid")
     baseSalePriceRupees: int | None = Field(default=None, ge=0)
     rateRupeesPerSqFt: Decimal | None = Field(default=None, ge=0)
     rateAreaBasis: AreaBasis | None = None
+
+class CanonicalGatedProperty(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    plotSizeValue: Decimal | None = Field(default=None, ge=0)
+    plotSizeUnit: AreaUnit | None = None
+    unitsPerAcre: Decimal | None = Field(default=None, ge=0)
+    openSpacePercent: Decimal | None = Field(default=None, ge=0)
+    parkingLevels: int | None = Field(default=None, ge=0)
+    podiumStructure: str | None = None
+    liftsPerTower: int | None = Field(default=None, ge=0)
+    clubhouseSizeSqFt: Decimal | None = Field(default=None, ge=0)
+    internalCeilingHeightFt: Decimal | None = Field(default=None, ge=0)
+    ceilingHeightBasis: CeilingHeightBasis | None = None
+    constructionQuality: str | None = None
+    flooringType: str | None = None
+    windowGlazing: str | None = None
+    bathSanitaryFittings: str | None = None
+    vrvAcProvision: str | None = None
+    geyserProvision: str | None = None
+    experienceYears: int | None = Field(default=None, ge=0)
+    deliveredProjects: int | None = Field(default=None, ge=0)
+    ongoingProjects: int | None = Field(default=None, ge=0)
+    notableDeliveredProjects: list[str] | None = None
+    background: str | None = None
+    proposedStartDateRera: date | None = None
+    possessionConfirmedAsOf: date | None = None
+    bathrooms: int | None = Field(default=None, ge=0)
+    balconies: int | None = Field(default=None, ge=0)
+    servantRoom: bool | None = None
+    floorPlanPage: int | None = Field(default=None, ge=0)

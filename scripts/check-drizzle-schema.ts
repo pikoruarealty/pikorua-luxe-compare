@@ -8,6 +8,7 @@ const migrationFiles = [
   "20260816140000_durable_ocr_uploads.sql",
   "20260816150000_reviews_enquiries_runtime.sql",
   "20260816170000_saved_google_locations.sql",
+  "20260818120000_canonical_dictionary.sql",
 ];
 const migration = (
   await Promise.all(
@@ -40,6 +41,12 @@ const mirroredTables = [
   "audit_events",
   "cache_invalidation_outbox",
   "ocr_extraction_revisions",
+  "configuration_variant_areas",
+  "configuration_variant_rooms",
+  "property_publication_details",
+  "amenity_catalog",
+  "specification_catalog",
+  "field_synonyms",
 ] as const;
 
 const missing = mirroredTables.filter(
