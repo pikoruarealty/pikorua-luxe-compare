@@ -102,13 +102,21 @@ phone — which is most of this product's actual traffic.
       usable on mobile, before the flag flip
 
 ## Phase 3 — Load the 26 and flip
-**Status: NOT STARTED**
+**Status: STARTED**
 
+- [x] Diff re-extracted values against current rows; classify every difference as fix or
+      regression, don't assume — `src/lib/extraction-diff.ts` (`classifyDiffs`,
+      `buildReviewReport`), built on top of `brochure-field-mapping.ts`'s `buildMergeRows`/
+      `extractedFieldList` rather than a new engine. Categories: `failing` (Phase 4 hook, not
+      yet wired to real validators) → `conflict` → `gap_fill` → `cosmetic`, plus
+      `silent_accept` for genuine gaps at ≥0.85 confidence — matches §5.1's review order and
+      "N auto-accepted, M need you" report-card format. Configuration-variant rows (areas,
+      rooms) never silently auto-accept since they don't trace back to one scalar
+      `ExtractedField`. Covered by `scripts/check-extraction-diff.ts`, wired into `bun run check`.
 - [ ] Re-extract all 26 brochures through `property-ocr-suite` into the submission workflow
-- [ ] Exception-only review per brochure (§5.1 — target ~70–80% silent auto-accept)
+- [ ] Exception-only review per brochure (§5.1 — target ~70–80% silent auto-accept), using the
+      diff/classification tool above
 - [ ] Publish all 26; every field carries real provenance and an honest `field_state`
-- [ ] Diff re-extracted values against current rows; classify every difference as fix or
-      regression, don't assume
 - [ ] Flip `V2_CATALOGUE`, `V2_COMPARISON`, `V2_REVIEWS` together in staging first
 - [ ] **Gate: v2 must render every row v1 renders before the flip** — side-by-side screenshot
       diff

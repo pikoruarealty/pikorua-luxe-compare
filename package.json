@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check": "bun run scripts/check-mapping.ts && bun run scripts/check-polling.ts && bun run scripts/check-brochures.ts && bun run scripts/check-consumer-boundaries.ts",
+    "check": "bun run scripts/check-mapping.ts && bun run scripts/check-extraction-diff.ts && bun run scripts/check-polling.ts && bun run scripts/check-brochures.ts && bun run scripts/check-consumer-boundaries.ts",
     "check:built-leakage": "bun run scripts/check-built-commercial-sentinels.ts",
     "schema:generate": "bun run scripts/generate-property-contracts.ts && prettier --write src/generated/property-contract.ts",
     "schema:check": "bun run schema:generate && git diff --exit-code -- src/generated/property-contract.ts property-ocr-suite/backend/app/generated/property_contract.py",

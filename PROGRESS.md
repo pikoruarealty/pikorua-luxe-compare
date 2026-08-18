@@ -347,6 +347,50 @@ Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `
 
 ---
 
+## Phase 3 — load the 26 and flip (started: diff/classification tooling)
+
+**Diff/classification tool — 2026-08-18.** Before touching live brochures, built the
+exception-only-review machinery §5.1 describes, since it doesn't depend on the OCR service or
+real brochure files being available.
+
+- `src/lib/extraction-diff.ts`: `classifyDiffs(current, response, isFailingValidation?)` runs
+  `brochure-field-mapping.ts`'s existing `buildMergeRows` (the closest existing analog — a
+  saved-vs-incoming row differ already used by the admin merge UI) and layers a classification
+  on top rather than building a second diff engine. Every row lands in one of:
+  `failing` (a Phase 4 cross-field validator rejected it — sorts first regardless of
+  confidence; Phase 4 doesn't exist yet, so this is reachable only via the optional
+  `isFailingValidation` predicate hook, wired for when those validators land) → `conflict` (an
+  existing value the brochure disagrees with — never assumed to be wrong) → `gap_fill` (a
+  genuinely blank field, but confidence too low to trust unattended) → `cosmetic` (a
+  case/whitespace-only difference, deprioritised, not treated as a real conflict) →
+  `silent_accept` (a genuine gap at ≥0.85 extraction confidence — the only category that skips
+  human review). Configuration-variant rows (per-basis areas, room dimensions) don't trace back
+  to a single scalar `ExtractedField`, so they carry `confidence: null` and can never
+  silently auto-accept even when found.
+- `buildReviewReport(diffs)` produces the "N auto-accepted, M need you" card §5.1 describes
+  closing a brochure review with, plus counts for failed-validation and conflicting rows when
+  present.
+- `scripts/check-extraction-diff.ts`: assertion-script coverage in the project's existing
+  narrative-`assert` style (not vitest), wired into `bun run check` right after
+  `check-mapping.ts`. Covers: confident gap fill auto-accepts; low-confidence gap needs review;
+  a disagreeing value is a conflict, not an assumed correction; a case-only difference reads as
+  cosmetic, not a real conflict; a configuration-variant row never auto-accepts regardless of
+  confidence; a field flagged by the `isFailingValidation` hook sorts first ahead of an
+  ordinary conflict; the report card counts line up and auto-accepted rows never also appear in
+  the review queue.
+
+**Full verification loop passed:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+114/114 (unchanged — the new script isn't a vitest file), `bun run check` clean including the
+new script (`review report : 1 auto-accepted, 4 need you, 1 conflicting with a saved value.`),
+production `bun run build` succeeded.
+
+**Still open:** everything else in Phase 3 — re-extracting the 26 real brochures through
+`property-ocr-suite`, running them through this review tool per-brochure, publishing with real
+provenance, the v1-vs-v2 side-by-side render gate, and the flag flip. All of that needs the OCR
+service running and real brochure files, neither exercised yet this session.
+
+---
+
 ## Phase 5 — implementation foundation landed dark
 
 Phase 5 now has a deterministic `propscore-v1.0.0` domain, manual RERA discrepancy rules,
