@@ -1,0 +1,144 @@
+# PropCompare v2 — phase-wise task list
+
+Derived from `okay-so-we-have-declarative-waterfall.md` (Part 6, cross-referenced with
+Parts 3–5). This file tracks task-level status per phase and is kept up to date as work
+lands — check `PROGRESS.md` for the narrative decisions behind each checked box.
+
+Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contract, the
+26-property load, extraction accuracy). **Him** = `src/db/**`, `src/repositories/**`,
+`src/domain/**`, migrations, infra/ops, CI, v2 route components, plus Phases 5–8.
+`schemas/property.v1.json` is the one shared file — additive changes only, one PR at a time.
+
+---
+
+## Phase 0 — Merge and stop the live bleeding
+**Status: DONE**
+
+- [x] Fast-forward `main` to `security-and-cosmetics`, flags off
+- [x] Session-gate `getDetailedProperties`; `getProperties` returns shell columns only
+- [x] Guard remaining repositories with `assertConsumerPayloadSafe`
+- [x] Close `BUDGET_BANDS` gaps; bound `classifyBudgetFit` on `minimumRupees`
+- [x] Delete `advantagesFor`/`expertNoteFor`/`amenitiesFor`/`taglineFor`; stop seeding them
+- [x] Emit `compare_open`, `gate_shown`, `gate_unlocked`, `alternative_clicked`,
+      `weighting_changed`
+- [x] Refresh `HANDOFF-CODEX.md`
+- [x] `.gitignore` working notes; confirm `/property-ocr-suite/` ignore status
+
+## Phase 1 — The canonical dictionary
+**Status: DONE (merged into `core-features-addon`, not yet on `main`)**
+
+- [x] 3.1 — `configuration_variant_areas` child table (one area row per basis per variant)
+- [x] 3.2 — widen the dictionary: project structure, construction, developer, timeline,
+      per-variant fields — all with `field_state`
+- [x] 3.2 — `ceilingHeightBasis` (`clear` / `slab_to_slab` / `not_stated`)
+- [x] 3.3 — `amenity_catalog` (~40 codes/8 groups) + FK from `property_amenities`
+- [x] 3.4 — `specification_catalog` + FK from `property_specifications`
+- [x] 3.5 — `field_synonyms` table, seeded
+- [x] 3.5 — canonical unit conversion (`src/domain/units.ts`): sq_m, sq_yd, acre, gaj → sq_ft
+- [x] Regenerate both contracts (`schema:generate`); `schema:check` green once committed
+- [x] Drizzle mirror (`src/db/schema.ts`) + `check-drizzle-schema.ts` updated; `db:drift` green
+- [ ] Run the migration against a real database (not done — no live DB touched this session)
+- [ ] Push branch / open PR against `main`
+
+## Phase 2 — Comparison depth on the v2 contract
+**Status: NOT STARTED**
+
+- [ ] Extend `consumerComparisonPropertySchema` to carry the Phase 1 vectors
+- [ ] Add `priceBandLabel` to the public summary (override O2)
+- [ ] New gated payload for `rate` + `rateAreaBasis`, with its own `assertConsumerPayloadSafe`
+      call (override O1)
+- [ ] Port `ComparisonMatrixTable`'s nine sections onto the new contract
+- [ ] `V2Comparison.tsx` becomes a shell around the matrix table, not a replacement for it
+- [ ] Build `UnlockGate` (skeleton bars, D4)
+- [ ] Build `WeightingStrip`
+- [ ] Build `WhyThisWins`
+- [ ] Build `MissingAlternatives`
+- [ ] Re-point `alternative_clicked`/`weighting_changed` events at their real Phase 2 UI
+      (currently wired to placeholder call sites from Phase 0)
+- [ ] Acceptance test: `/compare` with no session shows no carpet areas, no room dimensions,
+      no rate, no prices; `priceBandLabel` present, `baseSalePriceRupees` absent. Deep rows
+      fill in place after phone-only unlock, no navigation. `/compare/a-vs-b` renders SSR
+      with JS disabled.
+
+## Phase 3 — Load the 26 and flip
+**Status: NOT STARTED**
+
+- [ ] Re-extract all 26 brochures through `property-ocr-suite` into the submission workflow
+- [ ] Exception-only review per brochure (§5.1 — target ~70–80% silent auto-accept)
+- [ ] Publish all 26; every field carries real provenance and an honest `field_state`
+- [ ] Diff re-extracted values against current rows; classify every difference as fix or
+      regression, don't assume
+- [ ] Flip `V2_CATALOGUE`, `V2_COMPARISON`, `V2_REVIEWS` together in staging first
+- [ ] **Gate: v2 must render every row v1 renders before the flip** — side-by-side screenshot
+      diff
+- [ ] Cut over in production; retire the v1 read path
+
+## Phase 4 — Extraction accuracy
+**Status: NOT STARTED — runs in parallel with Phases 1–3, is the constraint on everything
+after Phase 3**
+
+- [ ] (a) Cross-field arithmetic validators: `price ÷ super_built_up ≈ rate` (±5%);
+      `carpet < built_up < super_built_up`; `carpet ÷ super_built_up` ∈ 0.50–0.80;
+      `Σ room areas ≤ carpet`; `totalUnits ≈ towers × floors × unitsPerFloor` (±15%);
+      `unitsPerAcre ≈ totalUnits ÷ plot-in-acres`; area increases 3→4→5 BHK;
+      `possession > proposedStartDateRera`; RERA ID format; sanity envelopes
+- [ ] A failed rule forces review regardless of model confidence
+- [ ] (b) Golden set: 10–15 hand-verified brochures across formats, committed as ground
+      truth, with a per-field accuracy report; record baseline before changing anything
+- [ ] (c) Two-pass consensus on a single document (different chunk boundaries; agree+valid
+      → auto-accept, disagree → review with both candidates)
+- [ ] (e) Learning loop: store `(developer, format fingerprint, field, extracted, corrected,
+      page)` per correction; format-specific hints for the same developer's next brochure
+- [ ] `pytest`: every validation rule has a passing and a failing case; deliberately corrupt
+      a fixture (6.57 → 65.7) and confirm the rate-check catches it
+
+## Phase 5 — Verification & PropScore
+**Status: DONE (landed dark on `main` ahead of schedule, by the other developer)**
+
+- [x] RERA cross-check domain (`src/domain/rera-verification.ts`)
+- [x] PropScore composite domain — 5 sub-scores: Space, Privacy/Density, Specification,
+      Developer, Possession (`src/domain/propscore.ts`)
+- [x] Connectivity/POI repository (`src/repositories/connectivity.repository.server.ts`)
+- [x] Admin verification console (`src/routes/admin.verification.tsx`)
+- [x] Methodology published on a permanent URL (`src/routes/methodology.propscore.tsx`)
+- [x] Gated consumer contract (`gatedPropScoreSchema` in `src/contracts/consumer.ts`)
+- [ ] Flip `V2_PROPSCORE` on — blocked until Phase 1 is on `main`, Phase 3 has published real
+      data, their own migration (`20260817140000_phase5_verification_propscore.sql`) has run,
+      landmarks are curated, and score explanations pass manual review
+
+## Phase 6 — Reviews with real content & site-visit verification
+**Status: NOT STARTED**
+
+- [ ] Structured review form (not stars): sales experience, carpet-vs-promised,
+      construction, density, noise, approach, negotiation
+- [ ] Verification tiers with evidence requirements
+- [ ] Developer right of reply (already built — wire it to the new review shape)
+- [ ] Our own field verification on the top 15 projects
+
+## Phase 7 — Developer intelligence (first real revenue)
+**Status: NOT STARTED**
+
+- [ ] Per-project dashboard: comparison volume, most-compared-against, chosen/rejected
+      reasons, band positioning, sentiment
+- [ ] Sold as intelligence, not ranking
+- [ ] Policy: ranking and score are never for sale — publish this as policy, not just practice
+
+## Phase 8 — Depth then breadth
+**Status: NOT STARTED**
+
+- [ ] Ahmedabad to ~100 deeply-covered projects before any second city
+- [ ] Surat and Vadodara as a replicability test
+
+---
+
+**Not scheduled, ever:** Fair Value, AI advisor, gamification, mobile location-awareness.
+
+## Standing rules (every phase)
+- No exact price on any consumer surface, ever. No published claim without a traceable
+  source. Score/ranking never purchasable. No fabricated data in the client payload,
+  including behind the gate. A brochure gap publishes as `not_stated`, never inferred.
+- Never commit to `main` directly. Migrations idempotent, RLS enabled with zero policies.
+- Never touch generated files (`src/routeTree.gen.ts`,
+  `src/integrations/supabase/types.ts`, `src/generated/**`).
+- `bun run lint`, `bun run test`, production `bun run build` clean before every merge to
+  `main`.
