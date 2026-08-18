@@ -6,11 +6,13 @@ export function LegalPage({
   title,
   intro,
   sections,
+  lastUpdated = "16 August 2026",
 }: {
   eyebrow: string;
   title: string;
   intro: string;
   sections: Array<{ title: string; paragraphs: string[] }>;
+  lastUpdated?: string;
 }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -21,7 +23,7 @@ export function LegalPage({
         </p>
         <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-6xl">{title}</h1>
         <p className="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">{intro}</p>
-        <p className="mt-4 text-xs text-muted-foreground">Last updated: 16 August 2026</p>
+        <p className="mt-4 text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
         <div className="mt-12 divide-y divide-border border-y border-border">
           {sections.map((section) => (
             <section key={section.title} className="py-8">

@@ -40,7 +40,8 @@ is incomplete. Never use this checklist to infer that an external service has be
 ## Flag order and rollback
 
 Enable in dependency order: `V2_CATALOGUE`, `V2_COMPARISON`, `V2_OCR`, `V2_REVIEWS`, then
-`V2_ENQUIRIES`. Disable the affected server flag first on a serious defect; this blocks server data
+`V2_ENQUIRIES`, then `V2_PROPSCORE` after Phase 3 data, RERA evidence and methodology approval.
+Disable the affected server flag first on a serious defect; this blocks server data
 access, not only UI. For an application regression, switch Nginx to the retained healthy slot. Do
 not roll back a database migration unless a reviewed reverse migration is known safe; use
 expand/migrate/contract compatibility instead.
@@ -48,6 +49,7 @@ expand/migrate/contract compatibility instead.
 ## Explicitly still deferred
 
 SEO comparison previews, developer organizations, enquiry notifications, Cloud SQL, additional
-cities and Pub/Sub OCR queue migration stay outside the core release. PropScore, fair value, an AI
-advisor, gamification, monetized ranking, fabricated verdicts, automatic RERA scraping and direct
-OCR publication remain prohibited.
+cities and Pub/Sub OCR queue migration stay outside the core release. Fair value, an AI advisor,
+gamification, monetized ranking, fabricated verdicts, automatic RERA scraping and direct OCR
+publication remain prohibited. PropScore is scheduled under Phase 5, remains gated until its
+evidence and legal-review gates pass, and can never be purchased or developer-controlled.

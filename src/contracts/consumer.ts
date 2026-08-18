@@ -106,6 +106,86 @@ export const consumerComparisonSchema = z
 
 export type ConsumerComparison = z.infer<typeof consumerComparisonSchema>;
 
+export const scoreDimensionSchema = z.enum([
+  "space",
+  "privacy",
+  "specification",
+  "developer",
+  "possession",
+]);
+
+const gatedScoreReasonSchema = z
+  .object({
+    label: z.string().min(1).max(200),
+    explanation: z.string().min(1).max(1000),
+    evidenceAsOf: z.string().date(),
+  })
+  .strict();
+
+export const gatedPropScoreSchema = z
+  .object({
+    methodologyVersion: z.string().regex(/^propscore-v\d+\.\d+\.\d+$/),
+    calculatedAt: z.string().datetime(),
+    composite: z.number().int().min(0).max(100).nullable(),
+    status: z.enum(["complete", "insufficient_evidence"]),
+    coveragePercent: z.number().int().min(0).max(100),
+    dimensions: z
+      .array(
+        z
+          .object({
+            key: scoreDimensionSchema,
+            score: z.number().int().min(0).max(100).nullable(),
+            status: z.enum(["complete", "insufficient_evidence", "invalid"]),
+            coveragePercent: z.number().int().min(0).max(100),
+            why: z.array(gatedScoreReasonSchema).max(30),
+          })
+          .strict(),
+      )
+      .length(5),
+    reraCrossCheck: z
+      .object({
+        status: z.enum([
+          "matched",
+          "discrepancy",
+          "unavailable",
+          "invalid_registration",
+          "pending",
+        ]),
+        checkedAt: z.string().datetime().nullable(),
+        promoterMatch: z.boolean().nullable(),
+        completionDifferenceDays: z.number().int().nonnegative().nullable(),
+        areaDiscrepancies: z
+          .array(
+            z
+              .object({
+                configurationLabel: z.string().min(1).max(200),
+                brochureValue: z.string().min(1).max(200),
+                reraValue: z.string().min(1).max(200),
+                differencePercent: z.number().nonnegative(),
+              })
+              .strict(),
+          )
+          .max(50),
+      })
+      .strict(),
+    connectivity: z
+      .array(
+        z
+          .object({
+            category: z.string().min(1).max(100),
+            landmark: z.string().min(1).max(200),
+            distanceKm: z.number().nonnegative().nullable(),
+            durationMinutes: z.number().nonnegative().nullable(),
+            calculatedAt: z.string().datetime(),
+          })
+          .strict(),
+      )
+      .max(20),
+  })
+  .strict();
+
+export type GatedPropScorePayload = z.infer<typeof gatedPropScoreSchema>;
+
 export const FORBIDDEN_CONSUMER_KEYS = new Set([
   "price",
   "pricesummary",
@@ -120,6 +200,8 @@ export const FORBIDDEN_CONSUMER_KEYS = new Set([
   "commercialrevisionid",
   "reviewernote",
   "sourceevidence",
+  "inputsnapshot",
+  "cohortsnapshot",
 ]);
 
 export function assertConsumerPayloadSafe(value: unknown, path = "response"): void {

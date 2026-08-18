@@ -44,7 +44,7 @@ All 8 tasks closed, verified against the plan's Part 8 checklist, and committed
 2. **`getDetailedProperties` is session-gated; `getProperties` returns shell columns only.**
    Confirmed with a live unauthenticated `curl` — rejected, zero property data in the response.
 3. **8 of 12 repositories guarded with `assertConsumerPayloadSafe`.** The other 4 were left
-   unguarded *deliberately* — they don't carry consumer-facing gated fields. If you're adding
+   unguarded _deliberately_ — they don't carry consumer-facing gated fields. If you're adding
    a new repository, check whether it needs this guard before assuming it doesn't.
 4. **`BUDGET_BANDS` widened from 13 to 21 bands, now contiguous** (each band's minimum equals
    the previous band's maximum — every rupee amount from 1 Cr up falls in exactly one band).
@@ -59,12 +59,12 @@ All 8 tasks closed, verified against the plan's Part 8 checklist, and committed
    `amenities`/`highlights` data, empty array if there's none.
    - **Decision, deviating from the plan's literal wording:** the plan said "null the DB
      columns." Doing that as a blanket `UPDATE` would have destroyed real admin-authored
-     content living in the *same* `tagline`/`amenities`/`advantages`/`expert_note` columns
+     content living in the _same_ `tagline`/`amenities`/`advantages`/`expert_note` columns
      (the admin edit form writes real data there too, and there's no reliable way to tell
      "migration-seeded, never touched" from "migration-seeded, later edited" —
      `updateProperty` never sets `created_by`). Instead there's a content-fingerprinted
      migration, `supabase/migrations/20260817120000_clear_fabricated_property_text.sql`,
-     that nulls/strips *only* the generator's known exact-match literal strings, leaving
+     that nulls/strips _only_ the generator's known exact-match literal strings, leaving
      everything else alone.
    - **This migration has NOT been run against the live database.** It exists as a file only.
      Run it (and verify the fingerprints still match what's actually in prod) before
@@ -86,7 +86,7 @@ All 8 tasks closed, verified against the plan's Part 8 checklist, and committed
      widens the `customer_activity_event_type_check` CHECK constraint to accept all 11 event
      values. **Also not yet run against the live database.**
    - **Unverified risk:** this migration assumes Postgres's default auto-generated
-     constraint name (`customer_activity_event_type_check`) for the *original* unnamed
+     constraint name (`customer_activity_event_type_check`) for the _original_ unnamed
      inline CHECK constraint from `20260720120000_customer_activity.sql`. If the live schema
      names it differently, the `DROP CONSTRAINT IF EXISTS` silently no-ops and the following
      `ADD CONSTRAINT` can then fail on a duplicate name. **Verify the actual constraint name
@@ -113,7 +113,7 @@ client-facing code.
 ### Post-Phase-0 follow-up: budget band selection vs. classification
 
 After Phase 0 shipped, we noticed closing the `BUDGET_BANDS` gaps had a side effect: the
-same array drives both the quiz's selectable buttons *and* the internal matching math, so
+same array drives both the quiz's selectable buttons _and_ the internal matching math, so
 fixing the real dead-end (a ₹2.5 Cr buyer had no button at all) also expanded the quiz from
 ~13 buttons to 21 — three narrow, near-duplicate-feeling buttons like `₹9–10.5Cr` /
 `₹10.5–11Cr` / `₹11–12Cr` in a row.
@@ -207,6 +207,21 @@ this work is uncommitted; it will pass once committed.
 
 ---
 
+## Phase 5 — implementation foundation landed dark
+
+Phase 5 now has a deterministic `propscore-v1.0.0` domain, manual RERA discrepancy rules,
+immutable verification/score/connectivity tables, reviewer-only server operations, stored Google
+Routes snapshots, strict gated consumer contracts, residence/comparison panels, a reviewer console
+and the permanent `/methodology/propscore` page. `V2_PROPSCORE` defaults off.
+
+The canonical-field adapter intentionally targets Phase 1's additive
+`configuration_variant_areas` and `specification_catalog` tables without modifying them. Do not
+enable the flag until Phase 1 has landed, Phase 3 has published the source-backed catalogue, the
+Phase 5 migration has run, Ahmedabad landmarks are curated, and every score explanation has passed
+manual evidence review. Automatic RERA scraping remains prohibited.
+
+---
+
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
 
 - No exact price on any consumer surface, ever. No published claim without a traceable
@@ -215,7 +230,7 @@ this work is uncommitted; it will pass once committed.
   an inferred value.
 - Never commit to `main` directly.
 - Migrations must be idempotent, `GRANT ALL ... TO service_role`, `ENABLE ROW LEVEL
-  SECURITY` with zero policies (deny-by-default — everything goes through service-role
+SECURITY` with zero policies (deny-by-default — everything goes through service-role
   server functions).
 - Never touch generated files: `src/routeTree.gen.ts`, `src/integrations/supabase/types.ts`,
   `src/generated/**`.

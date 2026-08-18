@@ -6,8 +6,15 @@ import type { ConsumerComparison } from "@/contracts/consumer";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LocationDistances } from "./LocationDistances";
+import { PropScoreComparison } from "@/components/propscore/PropScorePanel";
 
-export function V2Comparison({ comparison }: { comparison: ConsumerComparison }) {
+export function V2Comparison({
+  comparison,
+  propscoreEnabled = false,
+}: {
+  comparison: ConsumerComparison;
+  propscoreEnabled?: boolean;
+}) {
   const [selected, setSelected] = useState<Record<string, string | null>>(() =>
     Object.fromEntries(
       comparison.properties.map((property) => [
@@ -139,6 +146,14 @@ export function V2Comparison({ comparison }: { comparison: ConsumerComparison })
             name: item.property.name,
           }))}
         />
+        {propscoreEnabled && (
+          <PropScoreComparison
+            properties={chosen.map((item) => ({
+              slug: item.property.slug,
+              name: item.property.name,
+            }))}
+          />
+        )}
         <div className="mt-10 rounded-2xl border border-border p-5">
           <h2 className="font-display text-xl font-bold">Why some values are not compared</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">

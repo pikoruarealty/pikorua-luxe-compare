@@ -8,6 +8,7 @@ const migrationFiles = [
   "20260816140000_durable_ocr_uploads.sql",
   "20260816150000_reviews_enquiries_runtime.sql",
   "20260816170000_saved_google_locations.sql",
+  "20260817140000_phase5_verification_propscore.sql",
   "20260818120000_canonical_dictionary.sql",
 ];
 const migration = (
@@ -47,6 +48,13 @@ const mirroredTables = [
   "amenity_catalog",
   "specification_catalog",
   "field_synonyms",
+  "property_rera_verifications",
+  "property_rera_area_checks",
+  "property_score_versions",
+  "property_score_dimensions",
+  "market_landmarks",
+  "property_verified_locations",
+  "property_connectivity_snapshots",
 ] as const;
 
 const missing = mirroredTables.filter(
