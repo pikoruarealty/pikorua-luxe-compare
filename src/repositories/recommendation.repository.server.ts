@@ -16,7 +16,7 @@ import {
   propertyPublicationVersions,
   propertyRatingAggregates,
 } from "@/db/schema";
-import { getBudgetBand } from "@/domain/budget";
+import { getBudgetBand, priceBandLabelForRupees } from "@/domain/budget";
 import {
   classifyBudgetFit,
   rankRecommendationProjects,
@@ -169,6 +169,10 @@ export async function findRecommendations(
     const primary = project.primaryConfigurationId
       ? project.publicVariants.get(project.primaryConfigurationId)
       : undefined;
+    const upperBounds = project.variants
+      .map((variant) => variant.privateUpperBoundRupees)
+      .filter((value): value is number => value !== null);
+    const startingUpperBound = upperBounds.length ? Math.min(...upperBounds) : null;
     const item = recommendationItemSchema.parse({
       property: {
         id: project.id,
@@ -182,6 +186,7 @@ export async function findRecommendations(
         heroImageUrl: nullableString(project.snapshot.heroImageUrl),
         ratingAverage: project.ratingAverage,
         publishedReviewCount: project.reviewCount,
+        priceBandLabel: priceBandLabelForRupees(startingUpperBound),
       },
       primaryConfigurationId: project.primaryConfigurationId,
       availableConfigurationIds: project.availableConfigurationIds,

@@ -41,15 +41,17 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
 - [ ] Push branch / open PR against `main`
 
 ## Phase 2 — Comparison depth on the v2 contract
-**Status: NOT STARTED**
+**Status: MOSTLY DONE — WeightingStrip/WhyThisWins/MissingAlternatives not started**
 
-- [ ] Extend `consumerComparisonPropertySchema` to carry the Phase 1 vectors
-- [ ] Add `priceBandLabel` to the public summary (override O2)
-- [ ] New gated payload for `rate` + `rateAreaBasis`, with its own `assertConsumerPayloadSafe`
-      call (override O1)
-- [ ] Port `ComparisonMatrixTable`'s nine sections onto the new contract
-- [ ] `V2Comparison.tsx` becomes a shell around the matrix table, not a replacement for it
-- [ ] Build `UnlockGate` (skeleton bars, D4)
+- [x] Extend `consumerComparisonPropertySchema` to carry the Phase 1 vectors
+- [x] Add `priceBandLabel` to the public summary (override O2)
+- [x] New gated payload for `rate` + `rateAreaBasis`, with its own `assertConsumerPayloadSafe`
+      call (override O1) — implemented as `assertGatedComparisonPayloadSafe`, called per
+      property's `gated` subtree after the public-scan pass
+- [x] Port `ComparisonMatrixTable`'s nine sections onto the new contract
+      (`ComparisonMatrixTableV2.tsx`)
+- [x] `V2Comparison.tsx` becomes a shell around the matrix table, not a replacement for it
+- [x] Build `UnlockGate` (skeleton bars, D4) — non-blocking banner, user-initiated unlock
 - [ ] Build `WeightingStrip`
 - [ ] Build `WhyThisWins`
 - [ ] Build `MissingAlternatives`
@@ -58,7 +60,7 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
 - [ ] Acceptance test: `/compare` with no session shows no carpet areas, no room dimensions,
       no rate, no prices; `priceBandLabel` present, `baseSalePriceRupees` absent. Deep rows
       fill in place after phone-only unlock, no navigation. `/compare/a-vs-b` renders SSR
-      with JS disabled.
+      with JS disabled. (Not yet manually verified against a live DB this session.)
 
 ## Phase 3 — Load the 26 and flip
 **Status: NOT STARTED**

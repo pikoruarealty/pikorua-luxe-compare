@@ -17,7 +17,8 @@ the remote. **Never commit to `main` directly.**
 
 - [x] **Phase 0 — Merge and stop the live bleeding** — DONE
 - [x] **Phase 1 — The canonical dictionary** — DONE (this session, uncommitted)
-- [ ] **Phase 2 — Comparison depth on the v2 contract** — up next
+- [x] **Phase 2 — Comparison depth on the v2 contract** — mostly done, uncommitted;
+      `WeightingStrip`/`WhyThisWins`/`MissingAlternatives` and event re-pointing still open
 - [ ] Phase 3 — Load the 26 brochures and flip v1 → v2
 - [ ] Phase 4 — Extraction accuracy
 - [x] Phase 5 — Verification & PropScore — landed dark on `main` by the other developer
@@ -204,6 +205,84 @@ this work is uncommitted; it will pass once committed.
   (34 files, dark behind `V2_PROPSCORE`) — plan is to finish Phase 1 first, then merge `main`
   in, since Phase 1 is small and additive and doing it first avoids carrying Phase 5's diff
   through Phase 1 edits.
+
+---
+
+## Phase 2 — comparison depth on the v2 contract (mostly done, uncommitted)
+
+Closes the contract/repository/UI slice of Part 6. `WeightingStrip`, `WhyThisWins`,
+`MissingAlternatives`, and re-pointing `alternative_clicked`/`weighting_changed` at real UI
+are **not** done — those events still fire from their Phase 0 placeholder call sites in
+`V2CataloguePage.tsx`.
+
+- `src/contracts/consumer.ts`: `publicPropertySummarySchema` gained `priceBandLabel`
+  (override O2); `gatedComparisonPropertySchema` carries the full Phase 1 vector set plus
+  plain (non-`gatedField`-wrapped) `rateRupeesPerSqFt`/`rateAreaBasis` on each gated
+  configuration (override O1). `GATED_ALLOWED_KEYS` and `assertGatedComparisonPayloadSafe`
+  added alongside the existing `assertConsumerPayloadSafe`, so the gated `rate` exception is
+  scoped to the gated subtree only — it stays forbidden everywhere else in the consumer
+  payload.
+- `src/domain/budget.ts`: added `priceBandLabelForRupees(rupees)`, deriving the public label
+  from a private rupee figure without ever returning the figure itself.
+- `src/repositories/comparison.repository.server.ts`: rewritten. `findConsumerComparison`
+  takes `profileId: string | null` — public tier renders unconditionally, `gated` is `null`
+  only when there's no session. Area now reads from `configuration_variant_areas` filtered to
+  `basis = 'super_built_up'`, not the legacy scalar columns on `configuration_variants` — this
+  was the repointing flagged as "Phase 2's job" in the Phase 1 notes above. `priceBandLabel`
+  per property is derived from `Math.min()` of that property's variants' current
+  `commercialTerms.privateUpperBoundRupees`. Response is assembled with the two-step
+  assertion: full payload scanned with every `gated` forced `null`, then each non-null
+  `gated` subtree scanned separately with the gated allowlist.
+- `src/repositories/recommendation.repository.server.ts`: added the same `priceBandLabel`
+  computation so `recommendationItemSchema.parse()` doesn't throw at runtime under `.strict()`
+  — this wouldn't have been caught by `tsc` since the input is a plain object literal typed
+  `unknown` going into `.parse()`.
+- `src/api/functions/comparison-page.functions.ts`: rewritten to drop the old all-or-nothing
+  `authRequired` gate (`findSafeComparisonIdentities`). `getV2ComparisonPage` now always
+  returns a comparison; the gated subtree is `null` per-property based on session state.
+  `src/repositories/comparison-page.repository.server.ts` deleted — it only existed to serve
+  the old gate and had no other callers.
+- `src/routes/compare.tsx`: the v2 path no longer walls the whole page behind sign-in. Split
+  `ComparePage` into a thin dispatcher plus `LegacyComparePage` (unchanged v1-style auth-wall
+  behaviour, preserved as-is) and `V2ComparePage` (renders `V2Comparison` immediately; public
+  tier is always visible, gated rows render skeletons until unlock). This was a deliberate
+  architecture fix, not a refactor for its own sake: the previous v2 route reused the v1
+  full-page block, which contradicts D4/D5 (skeleton rows in place, user-initiated unlock,
+  no page-level wall).
+- `src/components/compare/ComparisonMatrixTableV2.tsx` (new): the nine-section matrix ported
+  onto the two-tier contract. Public cells (`Plain`) render immediately from
+  `PublicPropertySummary`/`publicFacts`/public `configurations`. Gated cells route through a
+  generic `GatedText` helper that renders a `SkeletonBar` when `gated` is `null` (D4 — never a
+  fabricated number), `"Not stated"` vs `"Not offered"` distinctly per `field_state`
+  (guardrail 8), or the formatted value once unlocked.
+- `src/components/compare/UnlockGate.tsx` (new): non-blocking banner, not a modal or redirect
+  — offers unlock via `requestGatedAuth()` on click. Deliberately not auto-triggered (unlike
+  the legacy v1 gate), per D5's two-screen phone→OTP flow being user-initiated.
+- `src/components/compare/V2Comparison.tsx`: rewritten from a flat 6-fact summary into a thin
+  shell around `ComparisonMatrixTableV2` — hero copy, the `UnlockGate` banner when any
+  property's `gated` is `null`, then the matrix, `LocationDistances`, and
+  `PropScoreComparison` behind `V2_PROPSCORE`.
+- `scripts/check-consumer-boundaries.ts`: dropped `rateRupeesPerSqFt` from the forbidden-token
+  list. It's a blunt text scanner over `src/components|routes|stores` predating override O1;
+  the token is now a deliberate, contract-enforced exception (gated tier only, verified by
+  `assertGatedComparisonPayloadSafe` at the repository boundary), not a leak. The three actual
+  private-price columns (`baseSalePriceRupees`, `privateLowerBoundRupees`,
+  `privateUpperBoundRupees`) stay forbidden.
+- `src/contracts/consumer.test.ts`: the leakage-guard fixture needed `priceBandLabel` added
+  to stay valid against the widened `publicPropertySummarySchema`.
+
+**Full verification loop passed:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+25/25 files · 114/114 tests, `bun run check` clean (mapping/polling/brochure/consumer-boundary
+scripts), production `bun run build` succeeded.
+
+**Still open before Phase 2 is fully closed:**
+- `WeightingStrip`, `WhyThisWins`, `MissingAlternatives` — not started.
+- `alternative_clicked`/`weighting_changed` events still wired to their Phase 0 placeholder
+  call sites, not the real Phase 2 UI (which doesn't exist yet).
+- The Part 8 acceptance test (no-session network response has no carpet/room/rate/price
+  fields; deep rows fill in place after phone-only unlock with no navigation; SSR with JS
+  disabled) has not been manually run against a live database this session — no DB was
+  touched, same constraint as Phase 1.
 
 ---
 

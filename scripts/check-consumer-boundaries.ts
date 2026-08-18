@@ -10,7 +10,6 @@ const forbidden = [
   "baseSalePriceRupees",
   "privateLowerBoundRupees",
   "privateUpperBoundRupees",
-  "rateRupeesPerSqFt",
 ];
 const failures: string[] = [];
 

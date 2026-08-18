@@ -20,19 +20,14 @@ export const getV2ComparisonPage = createServerFn({ method: "POST" })
     requireFeature("V2_COMPARISON");
     const { sessionConfig } = await import("@/server/session.server");
     const session = await useSession<VisitorSession>(sessionConfig());
-    if (!session.data?.profileId) {
-      const { findSafeComparisonIdentities } =
-        await import("@/repositories/comparison-page.repository.server");
-      return {
-        authRequired: true as const,
-        projects: await findSafeComparisonIdentities(data.slugs),
-      };
-    }
-    setResponseHeader("Cache-Control", "private, no-store");
+    const profileId = session.data?.profileId ?? null;
+    // Public tier is SSR'd and crawlable for every visitor; the gated tier is
+    // only ever populated for a verified session, so caching must stay
+    // session-scoped whenever one exists (D5, Part 2 two-tier flow).
+    setResponseHeader("Cache-Control", profileId ? "private, no-store" : "public, max-age=60");
     const { findConsumerComparison } = await import("@/repositories/comparison.repository.server");
     return {
-      authRequired: false as const,
-      comparison: await findConsumerComparison(session.data.profileId, data.slugs),
+      comparison: await findConsumerComparison(profileId, data.slugs),
       propscoreEnabled: isFeatureEnabled("V2_PROPSCORE"),
     };
   });
