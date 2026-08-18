@@ -16,6 +16,7 @@ describe("consumer contract leakage guard", () => {
       heroImageUrl: null,
       ratingAverage: null,
       publishedReviewCount: 0,
+      priceBandLabel: "₹2.5–3.5 Cr",
     });
     expect(() => assertConsumerPayloadSafe(summary)).not.toThrow();
   });

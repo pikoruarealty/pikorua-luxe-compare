@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
+import type { ConsumerComparison } from "@/contracts/consumer";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { getComparisonBootstrap } from "@/api/functions/properties.functions";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/compare")({
         bootstrap:
           slugs.length > 0
             ? await getV2ComparisonPage({ data: { slugs } })
-            : { authRequired: false as const, comparison: null },
+            : { comparison: null, propscoreEnabled: false },
       };
     }
     return {
@@ -76,11 +77,26 @@ export const Route = createFileRoute("/compare")({
 });
 
 function ComparePage() {
-  const { shared } = Route.useSearch();
   const loaderData = Route.useLoaderData();
+  if (loaderData.mode === "v2") {
+    return (
+      <V2ComparePage
+        comparison={loaderData.bootstrap.comparison}
+        propscoreEnabled={loaderData.bootstrap.propscoreEnabled}
+      />
+    );
+  }
+  return <LegacyComparePage loaderData={loaderData} />;
+}
+
+type LegacyLoaderData = Exclude<ReturnType<typeof Route.useLoaderData>, { mode: "v2" }>;
+
+function LegacyComparePage({ loaderData }: { loaderData: LegacyLoaderData }) {
+  const { shared } = Route.useSearch();
   const { userProfile, hydrated, requestGatedAuth } = useOnboarding();
   const router = useRouter();
   const logActivity = useActivityLog();
+
   const bootstrap = loaderData.mode === "disabled" ? null : loaderData.bootstrap;
   const properties =
     loaderData.mode === "legacy" && !loaderData.bootstrap.authRequired
@@ -90,12 +106,8 @@ function ComparePage() {
     loaderData.mode === "disabled"
       ? []
       : loaderData.bootstrap.authRequired
-        ? loaderData.bootstrap.projects.map((property) => property.name)
-        : loaderData.mode === "legacy"
-          ? loaderData.bootstrap.properties.map((property) => property.name)
-          : (loaderData.bootstrap.comparison?.properties.map(
-              (property) => property.property.name,
-            ) ?? []);
+        ? loaderData.bootstrap.projects.map((property: { name: string }) => property.name)
+        : loaderData.bootstrap.properties.map((property: { name: string }) => property.name);
 
   // A shared link is gated: the recipient identifies themselves before the
   // comparison renders. Wait for `hydrated` so a returning signed-in visitor
@@ -113,10 +125,7 @@ function ComparePage() {
       void router.invalidate();
     }
   }, [bootstrap?.authRequired, logActivity, router, userProfile]);
-  const comparisonReady =
-    loaderData.mode === "v2"
-      ? Boolean(!bootstrap?.authRequired && loaderData.bootstrap.comparison)
-      : Boolean(!bootstrap?.authRequired && properties.length >= 2);
+  const comparisonReady = Boolean(!bootstrap?.authRequired && properties.length >= 2);
   useEffect(() => {
     if (comparisonReady) logActivity("compare_open");
   }, [comparisonReady, logActivity]);
@@ -155,22 +164,6 @@ function ComparePage() {
               Continue to view
             </button>
           )}
-        </div>
-      </div>
-    );
-  }
-
-  if (loaderData.mode === "v2") {
-    return loaderData.bootstrap.comparison ? (
-      <V2Comparison
-        comparison={loaderData.bootstrap.comparison}
-        propscoreEnabled={loaderData.bootstrap.propscoreEnabled}
-      />
-    ) : (
-      <div className="min-h-screen">
-        <SiteHeader />
-        <div className="container-lux pt-40 text-center">
-          Select at least two projects to compare.
         </div>
       </div>
     );
@@ -233,6 +226,51 @@ function ComparePage() {
       <SiteFooter />
     </div>
   );
+}
+
+function V2ComparePage({
+  comparison,
+  propscoreEnabled,
+}: {
+  comparison: ConsumerComparison | null;
+  propscoreEnabled: boolean;
+}) {
+  const { userProfile } = useOnboarding();
+  const router = useRouter();
+  const logActivity = useActivityLog();
+
+  const compareOpen = Boolean(comparison && comparison.properties.length >= 2);
+  const locked = Boolean(
+    comparison && comparison.properties.some((property) => property.gated === null),
+  );
+  useEffect(() => {
+    if (compareOpen) logActivity("compare_open");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareOpen]);
+  useEffect(() => {
+    if (locked) logActivity("gate_shown");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locked]);
+  useEffect(() => {
+    if (locked && userProfile) {
+      logActivity("gate_unlocked");
+      void router.invalidate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locked, userProfile]);
+
+  if (!comparison) {
+    return (
+      <div className="min-h-screen">
+        <SiteHeader />
+        <div className="container-lux pt-40 text-center">
+          Select at least two projects to compare.
+        </div>
+      </div>
+    );
+  }
+
+  return <V2Comparison comparison={comparison} propscoreEnabled={propscoreEnabled} />;
 }
 
 function ComparisonDisabled() {

@@ -11,6 +11,14 @@ export const SCORE_DIMENSIONS = [
 
 export type ScoreDimension = (typeof SCORE_DIMENSIONS)[number];
 export type ScoreStatus = "complete" | "insufficient_evidence" | "invalid";
+
+export const SCORE_DIMENSION_LABELS: Record<ScoreDimension, string> = {
+  space: "Space",
+  privacy: "Privacy / Density",
+  specification: "Specification",
+  developer: "Developer",
+  possession: "Possession",
+};
 export type ComparisonDirection = "higher_is_stronger" | "lower_is_stronger" | "fixed_rule";
 
 export interface ScoreReason {

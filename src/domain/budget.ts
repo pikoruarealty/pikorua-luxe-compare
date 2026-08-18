@@ -190,3 +190,18 @@ export function getBudgetBand(id: string): BudgetBand {
   if (!band) throw new Error("Invalid budget band");
   return band;
 }
+
+/**
+ * Maps a private rupee figure onto its band's public `label` (e.g. "₹5–6Cr")
+ * without exposing the figure itself. D1/D2: exact prices never leave the
+ * server, but the band they fall in is public on every consumer surface.
+ */
+export function priceBandLabelForRupees(rupees: number | null): string | null {
+  if (rupees === null) return null;
+  const band = BUDGET_BANDS.find(
+    (candidate) =>
+      rupees >= candidate.minimumRupees &&
+      (candidate.maximumRupees === null || rupees < candidate.maximumRupees),
+  );
+  return band?.label ?? null;
+}

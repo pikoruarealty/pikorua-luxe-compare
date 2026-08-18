@@ -17,7 +17,8 @@ the remote. **Never commit to `main` directly.**
 
 - [x] **Phase 0 — Merge and stop the live bleeding** — DONE
 - [x] **Phase 1 — The canonical dictionary** — DONE (this session, uncommitted)
-- [ ] **Phase 2 — Comparison depth on the v2 contract** — up next
+- [x] **Phase 2 — Comparison depth on the v2 contract** — done, uncommitted; only the
+      live-DB acceptance test remains open
 - [ ] Phase 3 — Load the 26 brochures and flip v1 → v2
 - [ ] Phase 4 — Extraction accuracy
 - [x] Phase 5 — Verification & PropScore — landed dark on `main` by the other developer
@@ -144,10 +145,13 @@ since that's a behavior change beyond a cleanup pass.
 
 ### Left open, not part of Phase 0's scope, but real
 
-- The two new SQL migrations above are written but **not executed against the live DB**, and
-  the constraint-name assumption in `20260817130000_expand_customer_activity_events.sql` is
-  still unverified against the live schema — no DB credentials were available in this session
-  to check it. Verify before/during next deploy.
+- ~~The two new SQL migrations above are written but **not executed against the live DB**~~ —
+  resolved 2026-08-18: both ran as part of the 10-migration batch (see "Live DB migration"
+  below). The constraint-name assumption in `20260817130000_expand_customer_activity_events.sql`
+  was also verified directly against the live schema: `pg_constraint` confirms
+  `customer_activity_event_type_check` is still the actual name on `public.customer_activity`,
+  and its definition now lists all 11 event values, so the migration's `DROP CONSTRAINT IF
+  EXISTS` did not silently no-op.
 
 ---
 
@@ -173,7 +177,7 @@ writes any of it yet; wiring the live publish path onto these fields is Phase 2'
   `specification_catalog` (6 seeded codes), `field_synonyms` (seeded from the plan's literal
   list). FK'd `property_amenities`/`property_specifications` onto the new catalogs. RLS +
   `service_role` grants on all 6 new tables, same pattern as every other v2 table.
-  **Not run against the live database.**
+  **Run against the live database 2026-08-18** (see "Live DB migration" note below).
 - `src/db/schema.ts` mirrors the migration exactly; `scripts/check-drizzle-schema.ts` updated
   with the new migration filename and 6 table names.
 - `src/domain/units.ts` (+ test): pure `toSqFt` / `fromSqFt` / `convertArea` canonical unit
@@ -198,12 +202,253 @@ regenerates cleanly but currently reports a diff against the last commit — exp
 this work is uncommitted; it will pass once committed.
 
 **Still open before Phase 1 is fully closed:**
-- Run the migration against a real database and confirm `ALTER TYPE ... ADD VALUE` behaves
-  as expected outside a dry read.
 - Decide how/when to reconcile `core-features-addon` with `origin/main`'s Phase 5 commits
   (34 files, dark behind `V2_PROPSCORE`) — plan is to finish Phase 1 first, then merge `main`
   in, since Phase 1 is small and additive and doing it first avoids carrying Phase 5's diff
   through Phase 1 edits.
+
+### Live DB migration — 2026-08-18
+
+First live-database access this project, via the Supabase connection pooler (direct
+`db.<ref>.supabase.co` is IPv6-only and unreachable from this network; used
+`aws-1-ap-southeast-2.pooler.supabase.com:6543` with the `postgres.<project-ref>` username
+format instead — `DATABASE_URL` in `.env` reflects this). The live project had no
+`supabase_migrations.schema_migrations` tracking table at all — migrations had never been
+run through the normal CLI flow — so before touching anything, diffed the live schema
+(`information_schema`) against every migration file to work out what was actually applied.
+
+Result: the first 9 migrations (base schema through `customer_activity_summary`) matched the
+live schema exactly. The 10 migrations from `v2_canonical_foundation` through this session's
+own `canonical_dictionary` had never been applied — this is real, live data (33 properties,
+11 profiles, 192 activity rows), so each of the 10 was applied in its own transaction, in
+order, stopping immediately on any failure. All 10 applied cleanly (the only output was
+harmless `NOTICE`s from `DROP ... IF EXISTS` skipping objects that were never there on a
+schema this far behind). Verified after: 48 tables present (matches the 36 Drizzle-mirrored
+canonical tables plus the 12 pre-existing ones), `drizzle-kit check` clean, and the original
+9 tables' row counts unchanged. The new property-level v2 tables (`configuration_variants`,
+`property_publication_details`, `property_score_versions`) are empty as expected — the
+migrations' own seed data populated the catalog tables (`markets`, `configuration_options`,
+`amenity_catalog`, `specification_catalog`, `field_synonyms`), but loading real property rows
+into the new schema is Phase 3's job, not this migration's.
+
+**Follow-up verification — 2026-08-18 (later the same day):** with DB access now routine,
+closed out the one item still flagged as unverified from Phase 0: the constraint-name
+assumption in `20260817130000_expand_customer_activity_events.sql`. Queried `pg_constraint`
+directly — `customer_activity_event_type_check` is confirmed still the real constraint name on
+`public.customer_activity`, and its live definition lists all 11 event values, so the
+migration's `DROP CONSTRAINT IF EXISTS` found and replaced the right constraint rather than
+silently no-op'ing. Also swept the standing rule ("RLS enabled with zero policies") across the
+whole live schema: all 46 `public` tables have `relrowsecurity = true` and `pg_policies` has
+zero rows — holds project-wide, not just on the tables touched this session.
+
+---
+
+## Phase 2 — comparison depth on the v2 contract (done except the live-DB acceptance test)
+
+Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `WhyThisWins`,
+`MissingAlternatives`, and re-pointing `alternative_clicked`/`weighting_changed` at real UI.
+
+- `src/contracts/consumer.ts`: `publicPropertySummarySchema` gained `priceBandLabel`
+  (override O2); `gatedComparisonPropertySchema` carries the full Phase 1 vector set plus
+  plain (non-`gatedField`-wrapped) `rateRupeesPerSqFt`/`rateAreaBasis` on each gated
+  configuration (override O1). `GATED_ALLOWED_KEYS` and `assertGatedComparisonPayloadSafe`
+  added alongside the existing `assertConsumerPayloadSafe`, so the gated `rate` exception is
+  scoped to the gated subtree only — it stays forbidden everywhere else in the consumer
+  payload.
+- `src/domain/budget.ts`: added `priceBandLabelForRupees(rupees)`, deriving the public label
+  from a private rupee figure without ever returning the figure itself.
+- `src/repositories/comparison.repository.server.ts`: rewritten. `findConsumerComparison`
+  takes `profileId: string | null` — public tier renders unconditionally, `gated` is `null`
+  only when there's no session. Area now reads from `configuration_variant_areas` filtered to
+  `basis = 'super_built_up'`, not the legacy scalar columns on `configuration_variants` — this
+  was the repointing flagged as "Phase 2's job" in the Phase 1 notes above. `priceBandLabel`
+  per property is derived from `Math.min()` of that property's variants' current
+  `commercialTerms.privateUpperBoundRupees`. Response is assembled with the two-step
+  assertion: full payload scanned with every `gated` forced `null`, then each non-null
+  `gated` subtree scanned separately with the gated allowlist.
+- `src/repositories/recommendation.repository.server.ts`: added the same `priceBandLabel`
+  computation so `recommendationItemSchema.parse()` doesn't throw at runtime under `.strict()`
+  — this wouldn't have been caught by `tsc` since the input is a plain object literal typed
+  `unknown` going into `.parse()`.
+- `src/api/functions/comparison-page.functions.ts`: rewritten to drop the old all-or-nothing
+  `authRequired` gate (`findSafeComparisonIdentities`). `getV2ComparisonPage` now always
+  returns a comparison; the gated subtree is `null` per-property based on session state.
+  `src/repositories/comparison-page.repository.server.ts` deleted — it only existed to serve
+  the old gate and had no other callers.
+- `src/routes/compare.tsx`: the v2 path no longer walls the whole page behind sign-in. Split
+  `ComparePage` into a thin dispatcher plus `LegacyComparePage` (unchanged v1-style auth-wall
+  behaviour, preserved as-is) and `V2ComparePage` (renders `V2Comparison` immediately; public
+  tier is always visible, gated rows render skeletons until unlock). This was a deliberate
+  architecture fix, not a refactor for its own sake: the previous v2 route reused the v1
+  full-page block, which contradicts D4/D5 (skeleton rows in place, user-initiated unlock,
+  no page-level wall).
+- `src/components/compare/ComparisonMatrixTableV2.tsx` (new): the nine-section matrix ported
+  onto the two-tier contract. Public cells (`Plain`) render immediately from
+  `PublicPropertySummary`/`publicFacts`/public `configurations`. Gated cells route through a
+  generic `GatedText` helper that renders a `SkeletonBar` when `gated` is `null` (D4 — never a
+  fabricated number), `"Not stated"` vs `"Not offered"` distinctly per `field_state`
+  (guardrail 8), or the formatted value once unlocked.
+- `src/components/compare/UnlockGate.tsx` (new): non-blocking banner, not a modal or redirect
+  — offers unlock via `requestGatedAuth()` on click. Deliberately not auto-triggered (unlike
+  the legacy v1 gate), per D5's two-screen phone→OTP flow being user-initiated.
+- `src/components/compare/V2Comparison.tsx`: rewritten from a flat 6-fact summary into a thin
+  shell around `ComparisonMatrixTableV2` — hero copy, the `UnlockGate` banner when any
+  property's `gated` is `null`, then the matrix, `LocationDistances`, and
+  `PropScoreComparison` behind `V2_PROPSCORE`.
+- `scripts/check-consumer-boundaries.ts`: dropped `rateRupeesPerSqFt` from the forbidden-token
+  list. It's a blunt text scanner over `src/components|routes|stores` predating override O1;
+  the token is now a deliberate, contract-enforced exception (gated tier only, verified by
+  `assertGatedComparisonPayloadSafe` at the repository boundary), not a leak. The three actual
+  private-price columns (`baseSalePriceRupees`, `privateLowerBoundRupees`,
+  `privateUpperBoundRupees`) stay forbidden.
+- `src/contracts/consumer.test.ts`: the leakage-guard fixture needed `priceBandLabel` added
+  to stay valid against the widened `publicPropertySummarySchema`.
+
+**Second batch — the three remaining components and event re-pointing:**
+- `src/lib/preferences-storage.ts` (new): pulls the localStorage preference key/shape
+  (`propcompare:v2-preferences`) out of `V2CataloguePage.tsx` into a shared module —
+  `readStoredCataloguePreference()` — so `MissingAlternatives` can read the same preference
+  the catalogue page writes, with defensive JSON/shape validation on read.
+- `src/domain/propscore.ts`: added `SCORE_DIMENSION_LABELS` (display labels for the 5
+  `ScoreDimension` keys), used by both new PropScore-driven components below.
+- `src/components/compare/WeightingStrip.tsx` (new): 5-slider (0–5, default 3) weighting
+  control over the PropScore dimensions. Computes a live weighted average per property from
+  each property's already-fetched `GatedPropScorePayload.dimensions`, skipping null scores
+  and zero-weight dimensions. Shows "Not enough verified data" rather than fabricating a
+  number when nothing scoreable is weighted (guardrail 4). Debounces (600ms) a
+  `weighting_changed` activity-log call carrying the current weights. Only renders once
+  PropScore is unlocked (needs `!locked` — see `V2Comparison.tsx` below).
+- `src/components/compare/WhyThisWins.tsx` (new): deliberately not a "winner" card — the
+  hero copy already commits to "factual differences, without a manufactured winner"
+  (guardrail 2, no claim without a traceable source). For each of the 5 dimensions, only
+  surfaces a lead when every compared property has a `"complete"`-status, non-null score for
+  that dimension AND the top score clears the second-best by 5+ points; each lead cites the
+  dimension's own sourced `why[0].explanation`. Renders an honest empty state when nothing
+  clears the bar, never a fabricated differentiator.
+- `src/components/compare/MissingAlternatives.tsx` (new): public-tier, no unlock required
+  (matches `getRecommendations`, which has no `requireVisitorAuth`). Reads the visitor's
+  saved catalogue preference via `readStoredCataloguePreference()`, calls
+  `getRecommendations`, filters out properties already in the comparison, and shows up to 3
+  alternatives with an "Add to compare" link that appends the slug to `/compare`'s `ids`
+  param and logs `alternative_clicked` with the target slug before navigating. Renders
+  nothing if there's no stored preference, no results, or the comparison is already full (3).
+- `src/components/compare/V2Comparison.tsx`: wired `WeightingStrip`/`WhyThisWins` inside the
+  existing `propscoreEnabled` block, additionally gated on `!locked` (both need real
+  PropScore data, which only exists post-unlock); wired `MissingAlternatives` unconditionally
+  right after (public data, no gating), passing the current comparison's slugs.
+- `src/components/catalogue/V2CataloguePage.tsx`: removed the Phase 0 placeholder
+  `weighting_changed` emission from the sort dropdown and the placeholder
+  `alternative_clicked` emission from the alternate-configuration "Add to compare" click —
+  both were semantically mismatched proxies (confirmed against the admin activity-log labels
+  "Adjusted ranking weighting" / "Clicked an alternative match"). The real events now fire
+  from `WeightingStrip` and `MissingAlternatives` above. Also switched to the shared
+  `preferences-storage.ts` constant/type instead of its own local copies.
+
+**Full verification loop passed (both batches):** `tsc --noEmit` clean, `bun run lint` clean,
+`bun run test` 25/25 files · 114/114 tests, `bun run check` clean
+(mapping/polling/brochure/consumer-boundary scripts), production `bun run build` succeeded.
+
+**Still open before Phase 2 is fully closed:**
+- The Part 8 acceptance test (no-session network response has no carpet/room/rate/price
+  fields; deep rows fill in place after phone-only unlock with no navigation; SSR with JS
+  disabled). The live-DB *connectivity* blocker is gone as of the 2026-08-18 migration run
+  above, but the v2 property tables (`configuration_variants`,
+  `property_publication_details`, etc.) are still empty — no property has been loaded through
+  the canonical schema yet. This test needs at least one real property published through
+  Phase 3's workflow before it can run meaningfully; it isn't a DB-access problem anymore, it's
+  a data problem.
+
+---
+
+## Phase 3 — load the 26 and flip (started: diff/classification tooling)
+
+**Diff/classification tool — 2026-08-18.** Before touching live brochures, built the
+exception-only-review machinery §5.1 describes, since it doesn't depend on the OCR service or
+real brochure files being available.
+
+- `src/lib/extraction-diff.ts`: `classifyDiffs(current, response, isFailingValidation?)` runs
+  `brochure-field-mapping.ts`'s existing `buildMergeRows` (the closest existing analog — a
+  saved-vs-incoming row differ already used by the admin merge UI) and layers a classification
+  on top rather than building a second diff engine. Every row lands in one of:
+  `failing` (a Phase 4 cross-field validator rejected it — sorts first regardless of
+  confidence; Phase 4 doesn't exist yet, so this is reachable only via the optional
+  `isFailingValidation` predicate hook, wired for when those validators land) → `conflict` (an
+  existing value the brochure disagrees with — never assumed to be wrong) → `gap_fill` (a
+  genuinely blank field, but confidence too low to trust unattended) → `cosmetic` (a
+  case/whitespace-only difference, deprioritised, not treated as a real conflict) →
+  `silent_accept` (a genuine gap at ≥0.85 extraction confidence — the only category that skips
+  human review). Configuration-variant rows (per-basis areas, room dimensions) don't trace back
+  to a single scalar `ExtractedField`, so they carry `confidence: null` and can never
+  silently auto-accept even when found.
+- `buildReviewReport(diffs)` produces the "N auto-accepted, M need you" card §5.1 describes
+  closing a brochure review with, plus counts for failed-validation and conflicting rows when
+  present.
+- `scripts/check-extraction-diff.ts`: assertion-script coverage in the project's existing
+  narrative-`assert` style (not vitest), wired into `bun run check` right after
+  `check-mapping.ts`. Covers: confident gap fill auto-accepts; low-confidence gap needs review;
+  a disagreeing value is a conflict, not an assumed correction; a case-only difference reads as
+  cosmetic, not a real conflict; a configuration-variant row never auto-accepts regardless of
+  confidence; a field flagged by the `isFailingValidation` hook sorts first ahead of an
+  ordinary conflict; the report card counts line up and auto-accepted rows never also appear in
+  the review queue.
+
+**Full verification loop passed:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+114/114 (unchanged — the new script isn't a vitest file), `bun run check` clean including the
+new script (`review report : 1 auto-accepted, 4 need you, 1 conflicting with a saved value.`),
+production `bun run build` succeeded.
+
+**Still open:** everything else in Phase 3 — re-extracting the 26 real brochures through
+`property-ocr-suite`, running them through this review tool per-brochure, publishing with real
+provenance, the v1-vs-v2 side-by-side render gate, and the flag flip. All of that needs the OCR
+service running and real brochure files, neither exercised yet this session.
+
+---
+
+## Cross-cutting — mobile comparison UX (started 2026-08-18)
+
+**Audit.** `ComparisonMatrixTableV2.tsx`'s property-name header was `hidden md:grid` — fully
+invisible below the `md` breakpoint — so a phone visitor scrolling down through the matrix's
+nine sections lost track of which of the 2–3 columns belonged to which property. Below `md`,
+rows fell back to a plain `flex` row with no minimum column width, so long content (room
+dimension lists, specification lists) clipped or wrapped illegibly in whatever space was left
+after the label. `SectionLabel`, the footnote paragraph, and the gallery row's "Photo" label
+were separate, non-grid markup that would only ever have been viewport-width once horizontal
+scrolling was introduced, leaving a visible gap on the right of those bands once the table
+became wider than the screen.
+
+**Design decision.** Asked the user to choose between three mobile layout patterns: horizontal
+scroll with a sticky label column, stacked per-property cards, or a swipeable single column with
+a field picker. Chose horizontal scroll + sticky label column — closest to the existing grid
+markup, least engineering/interaction novelty, and works cleanly for the product's 2–3-property
+comparisons.
+
+**Implementation** (`src/components/compare/ComparisonMatrixTableV2.tsx`):
+- Replaced the `hidden md:grid` header / flex-below-`md` row fallback with one unconditional
+  CSS grid at every breakpoint: `grid-cols-[130px_minmax(150px,1fr)_minmax(150px,1fr)(_minmax(150px,1fr))]`
+  — fixed minimum column widths so a narrow phone triggers horizontal scroll on the value
+  columns rather than squeezing them unreadable.
+- Label column (`Row`'s first cell) is `sticky left-0` — pinned while the property-value
+  columns scroll underneath it. Per the user's clarification mid-implementation ("just the
+  table should be scrollable"), only the inner `overflow-x-auto` region scrolls; the outer page
+  layout is untouched.
+- Property-name header row is `sticky top-[58px]` — matches `SiteHeader`'s scrolled-state
+  height (`scrolled` flips at `scrollY > 12`, well before the table is in view) — so the header
+  stays visible while scrolling down through the sections, keeping column identity legible the
+  whole way down.
+- `SectionLabel`, the footnote row, and the gallery's "Photo" label now render as
+  `grid ${gridTpl}` with a `col-span-full` inner element, so their background spans the same
+  scrollable width as the data rows instead of stopping at the original viewport edge.
+- Existing global CSS (`src/styles.css` `.compare-row[class*="sticky"]` shadow, scoped to
+  `@media (max-width: 767px)`) already expected this pattern — left as-is; it now shows the
+  scroll-affordance shadow below `md` as originally designed, no changes needed there.
+
+**Verification:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 114/114 unaffected
+(no test touches this component). **Not yet done:** real-device or emulated-viewport visual
+verification — this repo has no component-render test harness (no React Testing
+Library/jsdom; `vitest.config.ts` runs `environment: "node"`) and the live `/compare` v2 route
+needs Phase 3's property data before `V2Comparison` renders with real props. Revisit once
+either lands. The legacy `ComparisonMatrixTable` (v1) was deliberately left untouched per the
+plan — port only if v1 keeps serving traffic past the Phase 3 cutover.
 
 ---
 
