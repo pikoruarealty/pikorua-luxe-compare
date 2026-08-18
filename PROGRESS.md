@@ -145,10 +145,13 @@ since that's a behavior change beyond a cleanup pass.
 
 ### Left open, not part of Phase 0's scope, but real
 
-- The two new SQL migrations above are written but **not executed against the live DB**, and
-  the constraint-name assumption in `20260817130000_expand_customer_activity_events.sql` is
-  still unverified against the live schema — no DB credentials were available in this session
-  to check it. Verify before/during next deploy.
+- ~~The two new SQL migrations above are written but **not executed against the live DB**~~ —
+  resolved 2026-08-18: both ran as part of the 10-migration batch (see "Live DB migration"
+  below). The constraint-name assumption in `20260817130000_expand_customer_activity_events.sql`
+  was also verified directly against the live schema: `pg_constraint` confirms
+  `customer_activity_event_type_check` is still the actual name on `public.customer_activity`,
+  and its definition now lists all 11 event values, so the migration's `DROP CONSTRAINT IF
+  EXISTS` did not silently no-op.
 
 ---
 
@@ -227,6 +230,16 @@ canonical tables plus the 12 pre-existing ones), `drizzle-kit check` clean, and 
 migrations' own seed data populated the catalog tables (`markets`, `configuration_options`,
 `amenity_catalog`, `specification_catalog`, `field_synonyms`), but loading real property rows
 into the new schema is Phase 3's job, not this migration's.
+
+**Follow-up verification — 2026-08-18 (later the same day):** with DB access now routine,
+closed out the one item still flagged as unverified from Phase 0: the constraint-name
+assumption in `20260817130000_expand_customer_activity_events.sql`. Queried `pg_constraint`
+directly — `customer_activity_event_type_check` is confirmed still the real constraint name on
+`public.customer_activity`, and its live definition lists all 11 event values, so the
+migration's `DROP CONSTRAINT IF EXISTS` found and replaced the right constraint rather than
+silently no-op'ing. Also swept the standing rule ("RLS enabled with zero policies") across the
+whole live schema: all 46 `public` tables have `relrowsecurity = true` and `pg_policies` has
+zero rows — holds project-wide, not just on the tables touched this session.
 
 ---
 
