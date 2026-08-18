@@ -80,24 +80,37 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
       with JS disabled. (Not yet manually verified against a live DB this session.)
 
 ## Cross-cutting — Mobile comparison UX (bug fix, not phase-gated)
-**Status: NOT STARTED — flagged 2026-08-18, blocks the Phase 3 cutover regardless of where
+**Status: IN PROGRESS — flagged 2026-08-18, blocks the Phase 3 cutover regardless of where
 Phase 3 itself stands, since the comparison table is the product's core surface**
 
 The comparison table (both the live `ComparisonMatrixTable` and the in-progress
-`ComparisonMatrixTableV2.tsx`) is currently broken on mobile: fields disappear, columns
-overflow off-screen, and the layout is not usable for comparing specs side by side on a
-phone — which is most of this product's actual traffic.
+`ComparisonMatrixTableV2.tsx`) was broken on mobile: the property-name header was entirely
+`hidden` below `md`, so scrolling down 30+ rows lost track of which column belonged to which
+property, and 2–3 columns were squeezed into a flex row with no minimum width, clipping room
+lists and specs.
 
-- [ ] Audit every section of the matrix table at common phone widths (360–430px) and list
-      every field/row that disappears, overflows, or clips
-- [ ] Decide the mobile layout pattern (e.g. horizontal-scroll-with-sticky-label-column vs.
-      stacked per-property cards vs. swipeable single-column) — a real design decision, not
-      a squeeze-the-existing-table fix
-- [ ] Apply it to `ComparisonMatrixTableV2.tsx` first (Phase 2, already built) since it's the
-      one going live at the Phase 3 cutover; port the same pattern back to the legacy
-      `ComparisonMatrixTable` only if v1 keeps serving traffic long enough to be worth it
+- [x] Audit every section of the matrix table at common phone widths (360–430px) and list
+      every field/row that disappears, overflows, or clips — done against
+      `ComparisonMatrixTableV2.tsx`: header row `hidden md:grid` (property names invisible on
+      mobile), `Row`'s flex fallback had no minimum column width (long room-dimension and
+      specification lists clipped), `SectionLabel`/gallery/footnote blocks were viewport-width
+      rather than content-width once scrolling was introduced
+- [x] Decide the mobile layout pattern — user chose horizontal-scroll-with-sticky-label-column
+      over stacked cards or a swipeable single column (closest to existing markup, works for
+      2–3 properties, least novel interaction to learn)
+- [x] Apply it to `ComparisonMatrixTableV2.tsx` first (Phase 2, already built): unconditional
+      CSS grid at every breakpoint (`grid-cols-[130px_minmax(150px,1fr)...]`, no more `hidden
+      md:grid`/flex fallback), label column `sticky left-0`, property-name header row `sticky
+      top-[58px]` (matches `SiteHeader`'s scrolled height) so it stays visible while scrolling
+      down, and `SectionLabel`/the footnote row/gallery label now span the same grid tracks
+      (`col-span-full`) so their background fills the full scrollable width instead of
+      stopping at the viewport edge. Port to legacy `ComparisonMatrixTable` deferred per the
+      original plan (only worth it if v1 keeps serving traffic past the cutover).
 - [ ] Manually verify on a real phone or device emulation, not just a resized desktop browser
-      window — Chrome DevTools mobile emulation misses real touch/viewport quirks
+      window — blocked for now: this repo has no component-render test harness (no
+      React Testing Library/jsdom, `vitest.config.ts` runs `environment: "node"`), and the
+      live v2 comparison route needs Phase 3's property data to render `V2Comparison` with
+      real props. Re-attempt once either lands.
 - [ ] Add this to the Phase 3 cutover gate: v2 must render every row v1 renders **and** be
       usable on mobile, before the flag flip
 

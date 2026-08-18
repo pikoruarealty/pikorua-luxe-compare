@@ -391,6 +391,54 @@ service running and real brochure files, neither exercised yet this session.
 
 ---
 
+## Cross-cutting — mobile comparison UX (started 2026-08-18)
+
+**Audit.** `ComparisonMatrixTableV2.tsx`'s property-name header was `hidden md:grid` — fully
+invisible below the `md` breakpoint — so a phone visitor scrolling down through the matrix's
+nine sections lost track of which of the 2–3 columns belonged to which property. Below `md`,
+rows fell back to a plain `flex` row with no minimum column width, so long content (room
+dimension lists, specification lists) clipped or wrapped illegibly in whatever space was left
+after the label. `SectionLabel`, the footnote paragraph, and the gallery row's "Photo" label
+were separate, non-grid markup that would only ever have been viewport-width once horizontal
+scrolling was introduced, leaving a visible gap on the right of those bands once the table
+became wider than the screen.
+
+**Design decision.** Asked the user to choose between three mobile layout patterns: horizontal
+scroll with a sticky label column, stacked per-property cards, or a swipeable single column with
+a field picker. Chose horizontal scroll + sticky label column — closest to the existing grid
+markup, least engineering/interaction novelty, and works cleanly for the product's 2–3-property
+comparisons.
+
+**Implementation** (`src/components/compare/ComparisonMatrixTableV2.tsx`):
+- Replaced the `hidden md:grid` header / flex-below-`md` row fallback with one unconditional
+  CSS grid at every breakpoint: `grid-cols-[130px_minmax(150px,1fr)_minmax(150px,1fr)(_minmax(150px,1fr))]`
+  — fixed minimum column widths so a narrow phone triggers horizontal scroll on the value
+  columns rather than squeezing them unreadable.
+- Label column (`Row`'s first cell) is `sticky left-0` — pinned while the property-value
+  columns scroll underneath it. Per the user's clarification mid-implementation ("just the
+  table should be scrollable"), only the inner `overflow-x-auto` region scrolls; the outer page
+  layout is untouched.
+- Property-name header row is `sticky top-[58px]` — matches `SiteHeader`'s scrolled-state
+  height (`scrolled` flips at `scrollY > 12`, well before the table is in view) — so the header
+  stays visible while scrolling down through the sections, keeping column identity legible the
+  whole way down.
+- `SectionLabel`, the footnote row, and the gallery's "Photo" label now render as
+  `grid ${gridTpl}` with a `col-span-full` inner element, so their background spans the same
+  scrollable width as the data rows instead of stopping at the original viewport edge.
+- Existing global CSS (`src/styles.css` `.compare-row[class*="sticky"]` shadow, scoped to
+  `@media (max-width: 767px)`) already expected this pattern — left as-is; it now shows the
+  scroll-affordance shadow below `md` as originally designed, no changes needed there.
+
+**Verification:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 114/114 unaffected
+(no test touches this component). **Not yet done:** real-device or emulated-viewport visual
+verification — this repo has no component-render test harness (no React Testing
+Library/jsdom; `vitest.config.ts` runs `environment: "node"`) and the live `/compare` v2 route
+needs Phase 3's property data before `V2Comparison` renders with real props. Revisit once
+either lands. The legacy `ComparisonMatrixTable` (v1) was deliberately left untouched per the
+plan — port only if v1 keeps serving traffic past the Phase 3 cutover.
+
+---
+
 ## Phase 5 — implementation foundation landed dark
 
 Phase 5 now has a deterministic `propscore-v1.0.0` domain, manual RERA discrepancy rules,

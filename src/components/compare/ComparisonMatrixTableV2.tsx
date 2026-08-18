@@ -39,7 +39,14 @@ export function ComparisonMatrixTableV2({
   onSelectConfig: (propertyId: string, configId: string) => void;
 }) {
   const cols = items.length;
-  const gridTpl = cols === 2 ? "md:grid-cols-[220px_1fr_1fr]" : "md:grid-cols-[220px_1fr_1fr_1fr]";
+  // Fixed minimum widths (not 1fr-from-zero) so a narrow phone triggers
+  // horizontal scroll on the value columns instead of squeezing every field
+  // unreadable. The label column is pinned via `sticky left-0` below, so it
+  // stays put while the value columns underneath it scroll.
+  const gridTpl =
+    cols === 2
+      ? "grid-cols-[130px_minmax(150px,1fr)_minmax(150px,1fr)]"
+      : "grid-cols-[130px_minmax(150px,1fr)_minmax(150px,1fr)_minmax(150px,1fr)]";
 
   const configOf = (item: ComparisonProperty) =>
     item.configurations.find((c) => c.id === selectedConfigId[item.property.id]) ??
@@ -52,16 +59,21 @@ export function ComparisonMatrixTableV2({
 
   return (
     <div className="overflow-hidden rounded-card border border-border-strong bg-card">
-      <div className="md:overflow-x-auto">
-        <div className="md:min-w-0">
-          <div className={`hidden md:grid ${gridTpl} border-b-2 border-border-strong bg-muted/30`}>
-            <div className="tracking-luxury border-r border-border-strong px-4 py-3 text-xs text-muted-foreground">
+      {/* Only this inner region scrolls horizontally — the label column
+          pinned inside it via `sticky left-0` never moves. The header row is
+          `sticky top-*` so the property names stay visible while scrolling
+          down through 30+ rows on a phone, matching the site header's fixed
+          height (58–68px depending on scroll state). */}
+      <div className="overflow-x-auto">
+        <div className="min-w-fit">
+          <div className={`sticky top-[58px] z-30 grid ${gridTpl} border-b-2 border-border-strong`}>
+            <div className="tracking-luxury sticky left-0 z-20 border-r border-border-strong bg-muted px-3 py-3 text-xs text-muted-foreground sm:px-4">
               Attribute
             </div>
             {items.map((item, i) => (
               <div
                 key={item.property.id}
-                className={`px-4 py-3 text-center ${i > 0 ? "border-l border-border-strong" : ""}`}
+                className={`bg-muted/95 px-3 py-3 text-center backdrop-blur-sm sm:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
               >
                 <p className="font-display text-sm leading-tight text-foreground line-clamp-1">
                   {item.property.name}
@@ -73,7 +85,7 @@ export function ComparisonMatrixTableV2({
             ))}
           </div>
 
-          <SectionLabel title="IDENTITY" />
+          <SectionLabel title="IDENTITY" gridTpl={gridTpl} />
           <Row
             label="Developer"
             items={items}
@@ -107,7 +119,7 @@ export function ComparisonMatrixTableV2({
             )}
           />
 
-          <SectionLabel title="PROJECT STRUCTURE" />
+          <SectionLabel title="PROJECT STRUCTURE" gridTpl={gridTpl} />
           <Row
             label="Total Towers"
             items={items}
@@ -167,7 +179,7 @@ export function ComparisonMatrixTableV2({
             )}
           />
 
-          <SectionLabel title="CONFIGURATIONS" />
+          <SectionLabel title="CONFIGURATIONS" gridTpl={gridTpl} />
           {items.some((item) => item.configurations.length > 1) && (
             <Row
               label="Layout"
@@ -265,7 +277,7 @@ export function ComparisonMatrixTableV2({
             }}
           />
 
-          <SectionLabel title="ROOM DIMENSIONS" />
+          <SectionLabel title="ROOM DIMENSIONS" gridTpl={gridTpl} />
           <Row
             label="Rooms"
             items={items}
@@ -290,7 +302,7 @@ export function ComparisonMatrixTableV2({
             }}
           />
 
-          <SectionLabel title="CONSTRUCTION & AMENITIES" />
+          <SectionLabel title="CONSTRUCTION & AMENITIES" gridTpl={gridTpl} />
           <Row
             label="Amenities"
             items={items}
@@ -401,7 +413,7 @@ export function ComparisonMatrixTableV2({
             )}
           />
 
-          <SectionLabel title="LOCATION & TIMELINE" />
+          <SectionLabel title="LOCATION & TIMELINE" gridTpl={gridTpl} />
           <Row
             label="Possession Date"
             items={items}
@@ -431,7 +443,7 @@ export function ComparisonMatrixTableV2({
             )}
           />
 
-          <SectionLabel title="DEVELOPER" />
+          <SectionLabel title="DEVELOPER" gridTpl={gridTpl} />
           <Row
             label="Experience (Years)"
             items={items}
@@ -475,7 +487,7 @@ export function ComparisonMatrixTableV2({
             }}
           />
 
-          <SectionLabel title="DISTINCTIONS" />
+          <SectionLabel title="DISTINCTIONS" gridTpl={gridTpl} />
           <Row
             label="Specifications"
             items={items}
@@ -497,22 +509,22 @@ export function ComparisonMatrixTableV2({
               );
             }}
           />
-          <div className="border-t border-border px-4 py-2.5">
-            <p className="text-[10px] text-muted-foreground/60">
+          <div className={`grid ${gridTpl} border-t border-border`}>
+            <p className="col-span-full px-3 py-2.5 text-[10px] text-muted-foreground/60 sm:px-4">
               All areas and dimensions are approximate, as verified by PropCompare from the
               developer's brochure.
             </p>
           </div>
 
-          <SectionLabel title="GALLERY" />
-          <div className={`flex md:grid ${gridTpl}`}>
-            <div className="tracking-luxury hidden items-center border-r border-border px-4 py-3 text-xs text-muted-foreground md:flex">
+          <SectionLabel title="GALLERY" gridTpl={gridTpl} />
+          <div className={`grid ${gridTpl}`}>
+            <div className="tracking-luxury sticky left-0 z-10 flex items-center border-r border-border bg-muted/90 px-3 py-3 text-xs text-muted-foreground backdrop-blur-sm sm:px-4">
               Photo
             </div>
             {items.map((item, i) => (
               <div
                 key={item.property.id}
-                className={`min-w-[160px] flex-1 p-2.5 md:min-w-0 ${i > 0 ? "border-l border-border" : ""}`}
+                className={`min-w-0 p-2.5 ${i > 0 ? "border-l border-border" : ""}`}
               >
                 <div className="aspect-[16/10] overflow-hidden rounded-card ring-1 ring-border">
                   {item.property.heroImageUrl ? (
@@ -549,10 +561,15 @@ function numOrNull(value: number | null): string | null {
   return value === null ? null : String(value);
 }
 
-function SectionLabel({ title }: { title: string }) {
+/** Spans the same grid tracks as the rows below it (`col-span-full`) so its
+ *  background fills the whole scrollable width on a narrow phone instead of
+ *  stopping at the viewport edge while the row content keeps scrolling. */
+function SectionLabel({ title, gridTpl }: { title: string; gridTpl: string }) {
   return (
-    <div className="border-y-2 border-border-strong bg-muted/70 px-4 py-2.5">
-      <span className="tracking-luxury text-xs font-semibold text-foreground/70">{title}</span>
+    <div className={`grid ${gridTpl} border-y-2 border-border-strong bg-muted/70`}>
+      <span className="tracking-luxury col-span-full px-3 py-2.5 text-xs font-semibold text-foreground/70 sm:px-4">
+        {title}
+      </span>
     </div>
   );
 }
@@ -569,22 +586,20 @@ function Row({
   render: (item: ComparisonProperty, index: number) => ReactNode;
 }) {
   return (
-    <div className={`compare-row border-b border-border last:border-b-0 md:grid ${gridTpl}`}>
-      <div className="flex w-full items-center border-b border-border-strong bg-muted/10 px-3 py-1.5 sm:py-2 md:w-auto md:border-b-0 md:border-r md:px-4 md:py-3">
+    <div className={`compare-row grid border-b border-border last:border-b-0 ${gridTpl}`}>
+      <div className="sticky left-0 z-10 flex items-center border-r border-border-strong bg-muted/90 px-3 py-2.5 backdrop-blur-sm sm:px-4 sm:py-3">
         <span className="font-display text-xs font-medium tracking-tight text-champagne/70">
           {label}
         </span>
       </div>
-      <div className="flex md:contents">
-        {items.map((item, i) => (
-          <div
-            key={item.property.id}
-            className={`min-w-0 flex-1 px-2 py-2.5 sm:px-3 sm:py-3 md:px-4 ${i > 0 ? "border-l border-border-strong" : ""}`}
-          >
-            {render(item, i)}
-          </div>
-        ))}
-      </div>
+      {items.map((item, i) => (
+        <div
+          key={item.property.id}
+          className={`min-w-0 px-3 py-2.5 sm:px-4 sm:py-3 ${i > 0 ? "border-l border-border-strong" : ""}`}
+        >
+          {render(item, i)}
+        </div>
+      ))}
     </div>
   );
 }
