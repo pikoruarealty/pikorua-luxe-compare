@@ -41,7 +41,7 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
 - [ ] Push branch / open PR against `main`
 
 ## Phase 2 — Comparison depth on the v2 contract
-**Status: MOSTLY DONE — WeightingStrip/WhyThisWins/MissingAlternatives not started**
+**Status: DONE except the live-DB acceptance test**
 
 - [x] Extend `consumerComparisonPropertySchema` to carry the Phase 1 vectors
 - [x] Add `priceBandLabel` to the public summary (override O2)
@@ -52,11 +52,19 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
       (`ComparisonMatrixTableV2.tsx`)
 - [x] `V2Comparison.tsx` becomes a shell around the matrix table, not a replacement for it
 - [x] Build `UnlockGate` (skeleton bars, D4) — non-blocking banner, user-initiated unlock
-- [ ] Build `WeightingStrip`
-- [ ] Build `WhyThisWins`
-- [ ] Build `MissingAlternatives`
-- [ ] Re-point `alternative_clicked`/`weighting_changed` events at their real Phase 2 UI
-      (currently wired to placeholder call sites from Phase 0)
+- [x] Build `WeightingStrip` — live per-visitor re-ranking from real PropScore dimension
+      scores/weights, never a fabricated composite; shows "Not enough verified data" instead
+      of a number when nothing scoreable is weighted
+- [x] Build `WhyThisWins` — deliberately not a winner card; only surfaces per-dimension leads
+      when every compared property has a `"complete"`-status, sourced score and the gap
+      clears a real margin (5 pts); empty state otherwise
+- [x] Build `MissingAlternatives` — public-tier (no unlock needed), reads the visitor's saved
+      catalogue preference, surfaces up to 3 non-duplicate catalogue matches with an
+      "Add to compare" action
+- [x] Re-point `alternative_clicked`/`weighting_changed` events at their real Phase 2 UI —
+      removed the Phase 0 placeholder emissions from `V2CataloguePage.tsx`'s sort dropdown and
+      alternate-configuration click; now fired from `WeightingStrip`'s slider changes (debounced)
+      and `MissingAlternatives`'s "Add to compare" click
 - [ ] Acceptance test: `/compare` with no session shows no carpet areas, no room dimensions,
       no rate, no prices; `priceBandLabel` present, `baseSalePriceRupees` absent. Deep rows
       fill in place after phone-only unlock, no navigation. `/compare/a-vs-b` renders SSR

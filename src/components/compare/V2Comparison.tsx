@@ -9,7 +9,10 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LocationDistances } from "./LocationDistances";
 import { PropScoreComparison } from "@/components/propscore/PropScorePanel";
 import { ComparisonMatrixTableV2 } from "./ComparisonMatrixTableV2";
+import { MissingAlternatives } from "./MissingAlternatives";
 import { UnlockGate } from "./UnlockGate";
+import { WeightingStrip } from "./WeightingStrip";
+import { WhyThisWins } from "./WhyThisWins";
 
 export function V2Comparison({
   comparison,
@@ -70,6 +73,25 @@ export function V2Comparison({
             }))}
           />
         )}
+        {propscoreEnabled && !locked && (
+          <>
+            <WeightingStrip
+              properties={comparison.properties.map((item) => ({
+                slug: item.property.slug,
+                name: item.property.name,
+              }))}
+            />
+            <WhyThisWins
+              properties={comparison.properties.map((item) => ({
+                slug: item.property.slug,
+                name: item.property.name,
+              }))}
+            />
+          </>
+        )}
+        <MissingAlternatives
+          comparisonSlugs={comparison.properties.map((item) => item.property.slug)}
+        />
         <div className="mt-10 rounded-2xl border border-border p-5">
           <h2 className="font-display text-xl font-bold">Why some values are not compared</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">

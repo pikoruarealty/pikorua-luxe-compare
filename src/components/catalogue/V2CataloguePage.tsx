@@ -12,22 +12,19 @@ import type {
   RecommendationRequest,
 } from "@/contracts/consumer";
 import { BUDGET_BANDS, SELECTABLE_BUDGET_BANDS } from "@/domain/budget";
+import {
+  CATALOGUE_PREFERENCES_STORAGE_KEY,
+  type StoredCataloguePreference,
+} from "@/lib/preferences-storage";
 import { useCompareStore } from "@/stores/compare-store";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useActivityLog } from "@/hooks/use-activity-log";
 
-const STORAGE_KEY = "propcompare:v2-preferences";
 const SESSION_KEY = "propcompare:v2-preferences-confirmed";
 
 type Sort = "recommended" | "rating" | "possession";
-
-interface SavedPreference {
-  marketId: string;
-  configurationOptionIds: string[];
-  budgetBandId: string;
-}
 
 export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
   const { userProfile } = useOnboarding();
@@ -50,9 +47,9 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(CATALOGUE_PREFERENCES_STORAGE_KEY);
       if (!raw) return;
-      const saved = JSON.parse(raw) as SavedPreference;
+      const saved = JSON.parse(raw) as StoredCataloguePreference;
       const market = markets.find((candidate) => candidate.id === saved.marketId);
       const band = BUDGET_BANDS.find((candidate) => candidate.id === saved.budgetBandId);
       if (!market || !band) return;
@@ -112,7 +109,7 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
 
   const confirm = () => {
     if (!request) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(request));
+    localStorage.setItem(CATALOGUE_PREFERENCES_STORAGE_KEY, JSON.stringify(request));
     sessionStorage.setItem(SESSION_KEY, "true");
     setConfirmed(true);
     logActivity("quiz_completed", null, {
@@ -299,11 +296,7 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
                 <select
                   aria-label="Sort catalogue"
                   value={sort}
-                  onChange={(event) => {
-                    const next = event.target.value as Sort;
-                    setSort(next);
-                    logActivity("weighting_changed", null, { sort: next });
-                  }}
+                  onChange={(event) => setSort(event.target.value as Sort)}
                   className="h-10 rounded-full border border-border bg-card px-4 text-sm"
                 >
                   <option value="recommended">Recommended</option>
@@ -449,7 +442,6 @@ function Continue({ disabled, onClick }: { disabled: boolean; onClick: () => voi
 
 function RecommendationRow({ item }: { item: RecommendationItem }) {
   const { toggle, isSelected } = useCompareStore();
-  const logActivity = useActivityLog();
   const selected = isSelected(item.property.slug);
   const fitLabel =
     item.fit === "within"
@@ -514,9 +506,6 @@ function RecommendationRow({ item }: { item: RecommendationItem }) {
         <button
           type="button"
           onClick={() => {
-            if (item.isAlternativeConfiguration) {
-              logActivity("alternative_clicked", item.property.slug);
-            }
             const result = toggle(item.property.slug);
             if (!result.ok) toast.error(result.reason);
           }}

@@ -17,8 +17,8 @@ the remote. **Never commit to `main` directly.**
 
 - [x] **Phase 0 — Merge and stop the live bleeding** — DONE
 - [x] **Phase 1 — The canonical dictionary** — DONE (this session, uncommitted)
-- [x] **Phase 2 — Comparison depth on the v2 contract** — mostly done, uncommitted;
-      `WeightingStrip`/`WhyThisWins`/`MissingAlternatives` and event re-pointing still open
+- [x] **Phase 2 — Comparison depth on the v2 contract** — done, uncommitted; only the
+      live-DB acceptance test remains open
 - [ ] Phase 3 — Load the 26 brochures and flip v1 → v2
 - [ ] Phase 4 — Extraction accuracy
 - [x] Phase 5 — Verification & PropScore — landed dark on `main` by the other developer
@@ -208,12 +208,10 @@ this work is uncommitted; it will pass once committed.
 
 ---
 
-## Phase 2 — comparison depth on the v2 contract (mostly done, uncommitted)
+## Phase 2 — comparison depth on the v2 contract (done except the live-DB acceptance test)
 
-Closes the contract/repository/UI slice of Part 6. `WeightingStrip`, `WhyThisWins`,
-`MissingAlternatives`, and re-pointing `alternative_clicked`/`weighting_changed` at real UI
-are **not** done — those events still fire from their Phase 0 placeholder call sites in
-`V2CataloguePage.tsx`.
+Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `WhyThisWins`,
+`MissingAlternatives`, and re-pointing `alternative_clicked`/`weighting_changed` at real UI.
 
 - `src/contracts/consumer.ts`: `publicPropertySummarySchema` gained `priceBandLabel`
   (override O2); `gatedComparisonPropertySchema` carries the full Phase 1 vector set plus
@@ -271,14 +269,51 @@ are **not** done — those events still fire from their Phase 0 placeholder call
 - `src/contracts/consumer.test.ts`: the leakage-guard fixture needed `priceBandLabel` added
   to stay valid against the widened `publicPropertySummarySchema`.
 
-**Full verification loop passed:** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
-25/25 files · 114/114 tests, `bun run check` clean (mapping/polling/brochure/consumer-boundary
-scripts), production `bun run build` succeeded.
+**Second batch — the three remaining components and event re-pointing:**
+- `src/lib/preferences-storage.ts` (new): pulls the localStorage preference key/shape
+  (`propcompare:v2-preferences`) out of `V2CataloguePage.tsx` into a shared module —
+  `readStoredCataloguePreference()` — so `MissingAlternatives` can read the same preference
+  the catalogue page writes, with defensive JSON/shape validation on read.
+- `src/domain/propscore.ts`: added `SCORE_DIMENSION_LABELS` (display labels for the 5
+  `ScoreDimension` keys), used by both new PropScore-driven components below.
+- `src/components/compare/WeightingStrip.tsx` (new): 5-slider (0–5, default 3) weighting
+  control over the PropScore dimensions. Computes a live weighted average per property from
+  each property's already-fetched `GatedPropScorePayload.dimensions`, skipping null scores
+  and zero-weight dimensions. Shows "Not enough verified data" rather than fabricating a
+  number when nothing scoreable is weighted (guardrail 4). Debounces (600ms) a
+  `weighting_changed` activity-log call carrying the current weights. Only renders once
+  PropScore is unlocked (needs `!locked` — see `V2Comparison.tsx` below).
+- `src/components/compare/WhyThisWins.tsx` (new): deliberately not a "winner" card — the
+  hero copy already commits to "factual differences, without a manufactured winner"
+  (guardrail 2, no claim without a traceable source). For each of the 5 dimensions, only
+  surfaces a lead when every compared property has a `"complete"`-status, non-null score for
+  that dimension AND the top score clears the second-best by 5+ points; each lead cites the
+  dimension's own sourced `why[0].explanation`. Renders an honest empty state when nothing
+  clears the bar, never a fabricated differentiator.
+- `src/components/compare/MissingAlternatives.tsx` (new): public-tier, no unlock required
+  (matches `getRecommendations`, which has no `requireVisitorAuth`). Reads the visitor's
+  saved catalogue preference via `readStoredCataloguePreference()`, calls
+  `getRecommendations`, filters out properties already in the comparison, and shows up to 3
+  alternatives with an "Add to compare" link that appends the slug to `/compare`'s `ids`
+  param and logs `alternative_clicked` with the target slug before navigating. Renders
+  nothing if there's no stored preference, no results, or the comparison is already full (3).
+- `src/components/compare/V2Comparison.tsx`: wired `WeightingStrip`/`WhyThisWins` inside the
+  existing `propscoreEnabled` block, additionally gated on `!locked` (both need real
+  PropScore data, which only exists post-unlock); wired `MissingAlternatives` unconditionally
+  right after (public data, no gating), passing the current comparison's slugs.
+- `src/components/catalogue/V2CataloguePage.tsx`: removed the Phase 0 placeholder
+  `weighting_changed` emission from the sort dropdown and the placeholder
+  `alternative_clicked` emission from the alternate-configuration "Add to compare" click —
+  both were semantically mismatched proxies (confirmed against the admin activity-log labels
+  "Adjusted ranking weighting" / "Clicked an alternative match"). The real events now fire
+  from `WeightingStrip` and `MissingAlternatives` above. Also switched to the shared
+  `preferences-storage.ts` constant/type instead of its own local copies.
+
+**Full verification loop passed (both batches):** `tsc --noEmit` clean, `bun run lint` clean,
+`bun run test` 25/25 files · 114/114 tests, `bun run check` clean
+(mapping/polling/brochure/consumer-boundary scripts), production `bun run build` succeeded.
 
 **Still open before Phase 2 is fully closed:**
-- `WeightingStrip`, `WhyThisWins`, `MissingAlternatives` — not started.
-- `alternative_clicked`/`weighting_changed` events still wired to their Phase 0 placeholder
-  call sites, not the real Phase 2 UI (which doesn't exist yet).
 - The Part 8 acceptance test (no-session network response has no carpet/room/rate/price
   fields; deep rows fill in place after phone-only unlock with no navigation; SSR with JS
   disabled) has not been manually run against a live database this session — no DB was
