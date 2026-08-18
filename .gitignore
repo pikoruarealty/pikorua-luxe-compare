@@ -26,6 +26,10 @@ pnpm-lock.yaml
 .wrangler/
 .dev.vars
 
+# drizzle-kit / supabase CLI local artifacts (introspection snapshots, link cache)
+.drizzle/
+supabase/.temp/
+
 # Vercel
 .vercel
 

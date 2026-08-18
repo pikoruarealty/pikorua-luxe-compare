@@ -174,7 +174,7 @@ writes any of it yet; wiring the live publish path onto these fields is Phase 2'
   `specification_catalog` (6 seeded codes), `field_synonyms` (seeded from the plan's literal
   list). FK'd `property_amenities`/`property_specifications` onto the new catalogs. RLS +
   `service_role` grants on all 6 new tables, same pattern as every other v2 table.
-  **Not run against the live database.**
+  **Run against the live database 2026-08-18** (see "Live DB migration" note below).
 - `src/db/schema.ts` mirrors the migration exactly; `scripts/check-drizzle-schema.ts` updated
   with the new migration filename and 6 table names.
 - `src/domain/units.ts` (+ test): pure `toSqFt` / `fromSqFt` / `convertArea` canonical unit
@@ -199,12 +199,34 @@ regenerates cleanly but currently reports a diff against the last commit — exp
 this work is uncommitted; it will pass once committed.
 
 **Still open before Phase 1 is fully closed:**
-- Run the migration against a real database and confirm `ALTER TYPE ... ADD VALUE` behaves
-  as expected outside a dry read.
 - Decide how/when to reconcile `core-features-addon` with `origin/main`'s Phase 5 commits
   (34 files, dark behind `V2_PROPSCORE`) — plan is to finish Phase 1 first, then merge `main`
   in, since Phase 1 is small and additive and doing it first avoids carrying Phase 5's diff
   through Phase 1 edits.
+
+### Live DB migration — 2026-08-18
+
+First live-database access this project, via the Supabase connection pooler (direct
+`db.<ref>.supabase.co` is IPv6-only and unreachable from this network; used
+`aws-1-ap-southeast-2.pooler.supabase.com:6543` with the `postgres.<project-ref>` username
+format instead — `DATABASE_URL` in `.env` reflects this). The live project had no
+`supabase_migrations.schema_migrations` tracking table at all — migrations had never been
+run through the normal CLI flow — so before touching anything, diffed the live schema
+(`information_schema`) against every migration file to work out what was actually applied.
+
+Result: the first 9 migrations (base schema through `customer_activity_summary`) matched the
+live schema exactly. The 10 migrations from `v2_canonical_foundation` through this session's
+own `canonical_dictionary` had never been applied — this is real, live data (33 properties,
+11 profiles, 192 activity rows), so each of the 10 was applied in its own transaction, in
+order, stopping immediately on any failure. All 10 applied cleanly (the only output was
+harmless `NOTICE`s from `DROP ... IF EXISTS` skipping objects that were never there on a
+schema this far behind). Verified after: 48 tables present (matches the 36 Drizzle-mirrored
+canonical tables plus the 12 pre-existing ones), `drizzle-kit check` clean, and the original
+9 tables' row counts unchanged. The new property-level v2 tables (`configuration_variants`,
+`property_publication_details`, `property_score_versions`) are empty as expected — the
+migrations' own seed data populated the catalog tables (`markets`, `configuration_options`,
+`amenity_catalog`, `specification_catalog`, `field_synonyms`), but loading real property rows
+into the new schema is Phase 3's job, not this migration's.
 
 ---
 
@@ -316,8 +338,12 @@ Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `
 **Still open before Phase 2 is fully closed:**
 - The Part 8 acceptance test (no-session network response has no carpet/room/rate/price
   fields; deep rows fill in place after phone-only unlock with no navigation; SSR with JS
-  disabled) has not been manually run against a live database this session — no DB was
-  touched, same constraint as Phase 1.
+  disabled). The live-DB *connectivity* blocker is gone as of the 2026-08-18 migration run
+  above, but the v2 property tables (`configuration_variants`,
+  `property_publication_details`, etc.) are still empty — no property has been loaded through
+  the canonical schema yet. This test needs at least one real property published through
+  Phase 3's workflow before it can run meaningfully; it isn't a DB-access problem anymore, it's
+  a data problem.
 
 ---
 

@@ -37,7 +37,16 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
 - [x] 3.5 — canonical unit conversion (`src/domain/units.ts`): sq_m, sq_yd, acre, gaj → sq_ft
 - [x] Regenerate both contracts (`schema:generate`); `schema:check` green once committed
 - [x] Drizzle mirror (`src/db/schema.ts`) + `check-drizzle-schema.ts` updated; `db:drift` green
-- [ ] Run the migration against a real database (not done — no live DB touched this session)
+- [x] Run the migration against a real database — all 10 pending migrations
+      (`v2_canonical_foundation` through `canonical_dictionary`) applied cleanly to the live
+      Supabase project via the pooler connection, each in its own transaction; verified via
+      `information_schema` (48 tables now present, matches the 36 mirrored + originals) and
+      `drizzle-kit check`. Zero data loss on the 9 pre-existing tables (33 properties, 11
+      profiles, 192 activity rows all intact). Catalog tables (`markets`,
+      `configuration_options`, `amenity_catalog`, `specification_catalog`, `field_synonyms`)
+      seeded by the migrations themselves; property-level v2 tables
+      (`configuration_variants`, `property_publication_details`, `property_score_versions`)
+      are empty, as expected — populating them is Phase 3's job.
 - [ ] Push branch / open PR against `main`
 
 ## Phase 2 — Comparison depth on the v2 contract
@@ -69,6 +78,28 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
       no rate, no prices; `priceBandLabel` present, `baseSalePriceRupees` absent. Deep rows
       fill in place after phone-only unlock, no navigation. `/compare/a-vs-b` renders SSR
       with JS disabled. (Not yet manually verified against a live DB this session.)
+
+## Cross-cutting — Mobile comparison UX (bug fix, not phase-gated)
+**Status: NOT STARTED — flagged 2026-08-18, blocks the Phase 3 cutover regardless of where
+Phase 3 itself stands, since the comparison table is the product's core surface**
+
+The comparison table (both the live `ComparisonMatrixTable` and the in-progress
+`ComparisonMatrixTableV2.tsx`) is currently broken on mobile: fields disappear, columns
+overflow off-screen, and the layout is not usable for comparing specs side by side on a
+phone — which is most of this product's actual traffic.
+
+- [ ] Audit every section of the matrix table at common phone widths (360–430px) and list
+      every field/row that disappears, overflows, or clips
+- [ ] Decide the mobile layout pattern (e.g. horizontal-scroll-with-sticky-label-column vs.
+      stacked per-property cards vs. swipeable single-column) — a real design decision, not
+      a squeeze-the-existing-table fix
+- [ ] Apply it to `ComparisonMatrixTableV2.tsx` first (Phase 2, already built) since it's the
+      one going live at the Phase 3 cutover; port the same pattern back to the legacy
+      `ComparisonMatrixTable` only if v1 keeps serving traffic long enough to be worth it
+- [ ] Manually verify on a real phone or device emulation, not just a resized desktop browser
+      window — Chrome DevTools mobile emulation misses real touch/viewport quirks
+- [ ] Add this to the Phase 3 cutover gate: v2 must render every row v1 renders **and** be
+      usable on mobile, before the flag flip
 
 ## Phase 3 — Load the 26 and flip
 **Status: NOT STARTED**
@@ -138,6 +169,11 @@ after Phase 3**
 
 - [ ] Ahmedabad to ~100 deeply-covered projects before any second city
 - [ ] Surat and Vadodara as a replicability test
+- [ ] City/place selector UI: design it as a real multi-city switcher from the start (not an
+      Ahmedabad-only control retrofitted later) — flagged 2026-08-18. Selecting any city other
+      than Ahmedabad shows a "coming soon" page rather than an empty/broken catalogue. Keep
+      the actual data-coverage work scoped to Ahmedabad only until this phase; the UI just
+      needs to not misrepresent what's covered.
 
 ---
 
