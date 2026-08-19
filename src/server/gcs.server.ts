@@ -26,6 +26,30 @@ export async function createPrivatePdfUploadUrl(
   return { url, expiresAt: new Date(expiresAt).toISOString() };
 }
 
+export async function createPrivateReviewEvidenceUploadUrl(
+  bucket: string,
+  objectPath: string,
+  sha256: string,
+  contentType: "application/pdf" | "image/jpeg" | "image/png",
+) {
+  const expiresAt = Date.now() + 15 * 60 * 1000;
+  const [url] = await client()
+    .bucket(bucket)
+    .file(objectPath)
+    .getSignedUrl({
+      version: "v4",
+      action: "write",
+      expires: expiresAt,
+      contentType,
+      extensionHeaders: { "x-goog-meta-sha256": sha256 },
+    });
+  return { url, expiresAt: new Date(expiresAt).toISOString() };
+}
+
+export async function deletePrivateObject(bucket: string, objectPath: string) {
+  await client().bucket(bucket).file(objectPath).delete({ ignoreNotFound: true });
+}
+
 export async function getPrivateObjectMetadata(bucket: string, objectPath: string) {
   const [metadata] = await client().bucket(bucket).file(objectPath).getMetadata();
   return {

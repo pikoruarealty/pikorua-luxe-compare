@@ -52,9 +52,9 @@ export function V2ResidenceDetail({ detail }: { detail: Detail }) {
                 {new Date(detail.verificationDate).toLocaleDateString("en-IN")}
               </p>
               <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                <Star className="h-4 w-4" />
-                {detail.property.ratingAverage
-                  ? `${detail.property.ratingAverage.toFixed(1)} from ${detail.property.publishedReviewCount} reviews`
+                <Star className="h-4 w-4" />{" "}
+                {detail.property.publishedReviewCount
+                  ? `${detail.property.publishedReviewCount} structured reviews`
                   : "No published reviews yet"}
               </p>
               <button

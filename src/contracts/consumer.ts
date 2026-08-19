@@ -48,8 +48,18 @@ export const publicPropertySummarySchema = z
     cityName: z.string(),
     possessionDate: z.string().date().nullable(),
     heroImageUrl: z.string().url().nullable(),
-    ratingAverage: z.number().min(1).max(5).nullable(),
     publishedReviewCount: z.number().int().nonnegative(),
+    reviewCategorySummaries: z
+      .array(
+        z
+          .object({
+            dimension: z.string().min(1).max(100),
+            averageRating: z.number().min(1).max(5),
+            reviewCount: z.number().int().min(5),
+          })
+          .strict(),
+      )
+      .max(7),
   })
   .strict();
 

@@ -119,10 +119,9 @@ export function V2Comparison({
                       ? `${configuration?.areaValue} ${areaUnit(configuration?.areaUnit)}`
                       : "Not directly comparable"}
                   </Fact>
-                  <Fact term="User rating">
-                    <Star className="mr-1 inline h-4 w-4" />
-                    {item.property.ratingAverage
-                      ? `${item.property.ratingAverage.toFixed(1)} from ${item.property.publishedReviewCount}`
+                  <Fact term="Structured reviews">
+                    {item.property.publishedReviewCount
+                      ? `${item.property.publishedReviewCount} published`
                       : "No published reviews"}
                   </Fact>
                   <Fact term="Verification">
