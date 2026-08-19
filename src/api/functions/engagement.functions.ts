@@ -7,14 +7,31 @@ import {
   requireModerationAuth,
 } from "@/integrations/supabase/admin-auth-middleware";
 import { requireVisitorAuth } from "@/middleware/visitor-auth";
+import { REVIEW_DIMENSIONS } from "@/domain/structured-reviews";
 
 const slug = z.string().regex(/^[a-z0-9-]{1,200}$/);
 const reviewId = z.string().uuid();
+const structuredDimensionInput = z
+  .object({
+    dimension: z.enum(REVIEW_DIMENSIONS),
+    experienceState: z.enum(["experienced", "not_experienced"]),
+    rating: z.number().int().min(1).max(5).nullable(),
+    note: z.string().trim().max(1000).nullable(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.experienceState === "experienced" && value.rating === null)
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "A rating is required" });
+    if (value.experienceState === "not_experienced" && value.rating !== null)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Unexperienced areas cannot be rated",
+      });
+  });
 const reviewInput = z
   .object({
     slug,
-    rating: z.number().int().min(1).max(5),
-    text: z.string().trim().max(2000).nullable().optional(),
+    dimensions: z.array(structuredDimensionInput).length(REVIEW_DIMENSIONS.length),
   })
   .strict();
 const reportReasons = ["spam", "privacy", "abuse", "misleading", "other"] as const;
@@ -27,6 +44,15 @@ export const getPublicReviews = createServerFn({ method: "GET" })
     setResponseHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     const repository = await import("@/repositories/engagement.repository.server");
     return repository.listPublicReviews(data.slug);
+  });
+
+export const getPublicFieldVerification = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => z.object({ slug }).strict().parse(data))
+  .handler(async ({ data }) => {
+    const { requireFeature } = await import("@/server/feature-flags.server");
+    requireFeature("V2_REVIEWS");
+    const repository = await import("@/repositories/engagement.repository.server");
+    return repository.getPublicFieldVerification(data.slug);
   });
 
 export const saveOwnReview = createServerFn({ method: "POST" })
@@ -185,4 +211,105 @@ export const moderateReview = createServerFn({ method: "POST" })
     requireFeature("V2_REVIEWS");
     const repository = await import("@/repositories/engagement.repository.server");
     return repository.adjudicateReview(context.adminProfile.id, data);
+  });
+
+const evidenceInput = z
+  .object({
+    reviewId,
+    visitDate: z.string().date(),
+    filename: z.string().trim().min(1).max(200),
+    mimeType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
+    sizeBytes: z
+      .number()
+      .int()
+      .positive()
+      .max(10 * 1024 * 1024),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
+
+export const createReviewVisitEvidenceTicket = createServerFn({ method: "POST" })
+  .middleware([requireVisitorAuth])
+  .inputValidator((data: unknown) => evidenceInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { requireFeature } = await import("@/server/feature-flags.server");
+    requireFeature("V2_REVIEWS");
+    const repository = await import("@/repositories/engagement.repository.server");
+    return repository.createReviewVisitEvidenceTicket(context.profileId, data);
+  });
+
+export const confirmReviewVisitEvidence = createServerFn({ method: "POST" })
+  .middleware([requireVisitorAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ evidenceId: z.string().uuid() }).strict().parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const repository = await import("@/repositories/engagement.repository.server");
+    return repository.confirmReviewVisitEvidence(context.profileId, data.evidenceId);
+  });
+
+export const adjudicateReviewVisitEvidence = createServerFn({ method: "POST" })
+  .middleware([requireModerationAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        evidenceId: z.string().uuid(),
+        action: z.enum(["approve", "reject"]),
+        reason: z.string().trim().min(3).max(500),
+      })
+      .strict()
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const repository = await import("@/repositories/engagement.repository.server");
+    return repository.adjudicateReviewVisitEvidence(
+      context.adminProfile.id,
+      data.evidenceId,
+      data.action,
+      data.reason,
+    );
+  });
+
+export const shortlistFieldVerificationProject = createServerFn({ method: "POST" })
+  .middleware([requireModerationAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({ propertyId: z.string().uuid(), note: z.string().trim().max(500).nullable() })
+      .strict()
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const repository = await import("@/repositories/engagement.repository.server");
+    return repository.shortlistFieldVerificationProject(
+      context.adminProfile.id,
+      data.propertyId,
+      data.note,
+    );
+  });
+
+export const recordCompletedFieldVisit = createServerFn({ method: "POST" })
+  .middleware([requireModerationAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        propertyId: z.string().uuid(),
+        visitedOn: z.string().date(),
+        observations: z
+          .array(
+            z
+              .object({
+                dimension: z.enum(REVIEW_DIMENSIONS),
+                observationState: z.enum(["observed", "not_observed"]),
+                observation: z.string().trim().max(1000).nullable(),
+              })
+              .strict(),
+          )
+          .length(REVIEW_DIMENSIONS.length),
+      })
+      .strict()
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const repository = await import("@/repositories/engagement.repository.server");
+    return repository.recordCompletedFieldVisit(context.adminProfile.id, data);
   });
