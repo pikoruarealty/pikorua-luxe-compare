@@ -8,6 +8,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# openai-python reads OPENAI_BASE_URL straight out of os.environ itself,
+# independent of whatever this module passes as base_url — and treats a
+# present-but-empty value as "use this", not "unset", overriding its own
+# api.openai.com default with a blank URL. .env.example ships the var
+# blank (documenting that it's optional), so loading it as-is breaks every
+# call with "Connection error." Drop it from the process environment
+# entirely when empty so the SDK falls through to its real default.
+if not os.environ.get("OPENAI_BASE_URL"):
+    os.environ.pop("OPENAI_BASE_URL", None)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -57,6 +67,13 @@ class Settings:
     # --- extraction tuning ---
     MAX_PAGES_PER_DOC: int = int(os.getenv("MAX_PAGES_PER_DOC", "40"))
     PAGES_PER_LLM_CALL: int = int(os.getenv("PAGES_PER_LLM_CALL", "3"))
+    # How many page-batches to send to the vision LLM at once. Batches
+    # within one file are independent calls (each only ever sees its own
+    # pages), so running several in parallel just shortens wall-clock
+    # time — it doesn't change what gets extracted. Kept modest so a
+    # systemic failure (bad key, no credit) wastes at most this many
+    # in-flight calls before the job stops submitting more.
+    MAX_CONCURRENT_BATCHES: int = int(os.getenv("MAX_CONCURRENT_BATCHES", "4"))
     MIN_TEXT_CHARS_FOR_TEXT_LAYER: int = int(os.getenv("MIN_TEXT_CHARS_FOR_TEXT_LAYER", "40"))
     PAGE_RENDER_DPI: int = int(os.getenv("PAGE_RENDER_DPI", "150"))
     # Vision models downsample internally past this anyway; capping it

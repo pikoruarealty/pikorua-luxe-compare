@@ -6,6 +6,7 @@ happens later in merger.py — this module never sees more than one PDF.
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import logging
 import re
@@ -501,41 +502,81 @@ def extract_from_pages(
     layer) can report page-by-page progress on what's otherwise a
     several-batch, tens-of-seconds-per-batch call.
 
-    `should_cancel()`, if given, is checked before starting each batch.
-    It can't abort a call already in flight, but it stops any further
-    ones from starting once a user asks to stop."""
+    `should_cancel()`, if given, is checked before starting each batch
+    that hasn't been submitted to the pool yet. It can't abort a call
+    already in flight, but it stops any further ones from starting once
+    a user asks to stop.
+
+    Batches run up to `settings.MAX_CONCURRENT_BATCHES` at a time. Each
+    batch only ever sees its own pages, so nothing about correctness
+    depends on the order calls land in: `_merge_batch_into` picks the
+    higher-confidence value for a field regardless of which batch
+    supplied it, and config/amenity/highlight lists just accumulate in
+    whatever order — cosmetic, not a correctness issue. A systemic
+    failure (bad key, no credit) still stops the job early; with several
+    calls in flight when it's detected, a few already-started calls are
+    allowed to finish rather than wasting the whole remaining batch."""
     result = PropertyExtraction(source_files=[file_name])
     batches = batch_pages(pages)
+    if not batches:
+        _validate_room_dimensions(result, pages)
+        _validate_area_fields(result)
+        return result
+
     succeeded = 0
     last_failure: BaseException | None = None
-    for batch in batches:
-        if should_cancel and should_cancel():
-            break
-        page_nums = [p.page_number for p in batch]
-        try:
-            raw = _call_llm(batch)
-        except Exception as exc:  # noqa: BLE001
-            last_failure = exc
-            msg = f"{file_name} pages {page_nums}: extraction call failed ({_describe(exc)})"
-            log.warning(msg)
-            result.warnings.append(msg)
-            if on_batch_done:
-                on_batch_done(file_name, page_nums)
-            # An account-level rejection answers the same for every
-            # remaining call. Stop now rather than spending a minute
-            # proving what the first one already told us.
-            if _is_systemic(exc):
-                raise ExtractionUnavailable(_describe(exc)) from exc
-            continue
-        succeeded += 1
-        try:
-            _merge_batch_into(result, raw, file_name)
-        except Exception as exc:  # noqa: BLE001
-            msg = f"{file_name} pages {page_nums}: could not parse model output ({exc})"
-            log.warning(msg)
-            result.warnings.append(msg)
-        if on_batch_done:
-            on_batch_done(file_name, page_nums)
+    systemic_error: BaseException | None = None
+    pending = list(batches)
+    max_workers = max(1, min(settings.MAX_CONCURRENT_BATCHES, len(batches)))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
+        in_flight: Dict[concurrent.futures.Future, list] = {}
+
+        def submit_next() -> None:
+            if systemic_error is not None or not pending:
+                return
+            if should_cancel and should_cancel():
+                return
+            batch = pending.pop(0)
+            future = pool.submit(_call_llm, batch)
+            in_flight[future] = batch
+
+        for _ in range(max_workers):
+            submit_next()
+
+        while in_flight:
+            done, _pending_futures = concurrent.futures.wait(
+                in_flight, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            for future in done:
+                batch = in_flight.pop(future)
+                page_nums = [p.page_number for p in batch]
+                try:
+                    raw = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    last_failure = exc
+                    msg = f"{file_name} pages {page_nums}: extraction call failed ({_describe(exc)})"
+                    log.warning(msg)
+                    result.warnings.append(msg)
+                    # An account-level rejection answers the same for every
+                    # remaining call. Stop submitting new ones rather than
+                    # spending a minute proving what this one already told us.
+                    if systemic_error is None and _is_systemic(exc):
+                        systemic_error = exc
+                else:
+                    succeeded += 1
+                    try:
+                        _merge_batch_into(result, raw, file_name)
+                    except Exception as exc:  # noqa: BLE001
+                        msg = f"{file_name} pages {page_nums}: could not parse model output ({exc})"
+                        log.warning(msg)
+                        result.warnings.append(msg)
+                if on_batch_done:
+                    on_batch_done(file_name, page_nums)
+                submit_next()
+
+    if systemic_error is not None:
+        raise ExtractionUnavailable(_describe(systemic_error))
 
     # Every single call failing is not "a brochure we struggled with" —
     # it's the service being unusable (no credit, bad key, provider
