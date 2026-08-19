@@ -47,7 +47,8 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
       seeded by the migrations themselves; property-level v2 tables
       (`configuration_variants`, `property_publication_details`, `property_score_versions`)
       are empty, as expected — populating them is Phase 3's job.
-- [ ] Push branch / open PR against `main`
+- [x] Push branch / open PR against `main` — merged directly to `main` 2026-08-19
+      (`a219672`), skipping the PR step per explicit instruction for this one merge
 
 ## Phase 2 — Comparison depth on the v2 contract
 **Status: DONE except the live-DB acceptance test**
@@ -77,7 +78,15 @@ Division of labour (Part 9): **us** = Phase 1–4 (vocabulary, comparison contra
 - [ ] Acceptance test: `/compare` with no session shows no carpet areas, no room dimensions,
       no rate, no prices; `priceBandLabel` present, `baseSalePriceRupees` absent. Deep rows
       fill in place after phone-only unlock, no navigation. `/compare/a-vs-b` renders SSR
-      with JS disabled. (Not yet manually verified against a live DB this session.)
+      with JS disabled. **Actually blocked, not just unattempted** — confirmed 2026-08-19 by
+      running the dev server against the live DB with `V2_CATALOGUE`/`V2_COMPARISON` on and
+      hitting `/compare?ids=pashmina,avant`: `findConsumerComparison`
+      (`comparison.repository.server.ts`) inner-joins `propertyPublicationVersions` and
+      `configurationVariants` on every property, both empty until Phase 3 publishes, so the
+      query returns zero rows and `consumerComparisonSchema`'s `.min(2)` throws
+      ("Array must contain at least 2 element(s)") before anything renders. This test cannot
+      pass before Phase 3 populates those tables — same blocker as the mobile-UX manual
+      verification below, not a separate gap.
 
 ## Cross-cutting — Mobile comparison UX (bug fix, not phase-gated)
 **Status: IN PROGRESS — flagged 2026-08-18, blocks the Phase 3 cutover regardless of where
@@ -111,8 +120,9 @@ lists and specs.
       React Testing Library/jsdom, `vitest.config.ts` runs `environment: "node"`), and the
       live v2 comparison route needs Phase 3's property data to render `V2Comparison` with
       real props. Re-attempt once either lands.
-- [ ] Add this to the Phase 3 cutover gate: v2 must render every row v1 renders **and** be
-      usable on mobile, before the flag flip
+- [x] Add this to the Phase 3 cutover gate: v2 must render every row v1 renders **and** be
+      usable on mobile, before the flag flip — folded into Phase 3's existing gate line below
+      rather than kept as a separate item
 
 ## Phase 3 — Load the 26 and flip
 **Status: STARTED**
@@ -131,8 +141,9 @@ lists and specs.
       diff/classification tool above
 - [ ] Publish all 26; every field carries real provenance and an honest `field_state`
 - [ ] Flip `V2_CATALOGUE`, `V2_COMPARISON`, `V2_REVIEWS` together in staging first
-- [ ] **Gate: v2 must render every row v1 renders before the flip** — side-by-side screenshot
-      diff
+- [ ] **Gate: v2 must render every row v1 renders, and be usable on mobile, before the
+      flip** — side-by-side screenshot diff, plus a real-phone/emulated-viewport pass on the
+      comparison table (see Cross-cutting — Mobile comparison UX above)
 - [ ] Cut over in production; retire the v1 read path
 
 ## Phase 4 — Extraction accuracy

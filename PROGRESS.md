@@ -358,6 +358,15 @@ Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `
   Phase 3's workflow before it can run meaningfully; it isn't a DB-access problem anymore, it's
   a data problem.
 
+  **Confirmed directly, 2026-08-19.** Ran `bun run dev` against the live DB with
+  `V2_CATALOGUE`/`V2_COMPARISON` on and hit `/compare?ids=pashmina,avant` (two real, existing
+  properties). Got a 500: `consumerComparisonSchema`'s `properties: z.array(...).min(2)` threw
+  "Array must contain at least 2 element(s)" because `findConsumerComparison` inner-joins
+  `propertyPublicationVersions` and `configurationVariants` per property and both tables are
+  empty, so the query returned zero rows for both slugs. Confirms the diagnosis above with a
+  real repro rather than just table-emptiness inspection — nothing to fix here, this closes
+  once Phase 3 publishes real properties.
+
 ---
 
 ## Phase 3 — load the 26 and flip (started: diff/classification tooling)
