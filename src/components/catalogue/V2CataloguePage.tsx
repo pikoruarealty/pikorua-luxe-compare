@@ -124,9 +124,7 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
   const sorted = useMemo(() => {
     if (sort === "rating") {
       return [...items].sort(
-        (a, b) =>
-          (b.property.ratingAverage ?? 0) - (a.property.ratingAverage ?? 0) ||
-          b.property.publishedReviewCount - a.property.publishedReviewCount,
+        (a, b) => b.property.publishedReviewCount - a.property.publishedReviewCount,
       );
     }
     if (sort === "possession") {
@@ -486,9 +484,9 @@ function RecommendationRow({ item }: { item: RecommendationItem }) {
             {item.property.locality ?? item.property.cityName}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Star className="h-4 w-4" />
-            {item.property.ratingAverage
-              ? `${item.property.ratingAverage.toFixed(1)} (${item.property.publishedReviewCount})`
+            <Star className="h-4 w-4" />{" "}
+            {item.property.publishedReviewCount
+              ? `${item.property.publishedReviewCount} structured reviews`
               : "No reviews yet"}
           </span>
           <span className="font-semibold">Price on request</span>

@@ -14,8 +14,8 @@ describe("consumer contract leakage guard", () => {
       cityName: "Ahmedabad",
       possessionDate: null,
       heroImageUrl: null,
-      ratingAverage: null,
       publishedReviewCount: 0,
+      reviewCategorySummaries: [],
       priceBandLabel: "₹2.5–3.5 Cr",
     });
     expect(() => assertConsumerPayloadSafe(summary)).not.toThrow();
@@ -42,8 +42,8 @@ describe("consumer contract leakage guard", () => {
         cityName: "Ahmedabad",
         possessionDate: null,
         heroImageUrl: null,
-        ratingAverage: null,
         publishedReviewCount: 0,
+        reviewCategorySummaries: [],
         baseSalePriceRupees: 987654321,
       }),
     ).toThrow();

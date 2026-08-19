@@ -14,9 +14,19 @@ import {
   propertyRatingAggregates,
   propertyReviews,
   propertyReviewVersions,
+  propertyReviewDimensions,
   reviewReports,
+  reviewVisitEvidence,
+  propertyFieldVerificationShortlist,
+  propertyFieldVisits,
+  propertyFieldVisitObservations,
 } from "@/db/schema";
 import { moderateUserText } from "@/domain/review-moderation";
+import {
+  REVIEW_DIMENSIONS,
+  type StructuredReviewDimension,
+  validateDimensions,
+} from "@/domain/structured-reviews";
 
 const CONSENT_VERSION = "price-enquiry-v1";
 
@@ -49,6 +59,7 @@ export async function listPublicReviews(slug: string) {
       publicName: propertyReviews.publicName,
       rating: propertyReviews.rating,
       text: propertyReviews.reviewText,
+      verificationTier: propertyReviews.verificationTier,
       publishedAt: propertyReviews.publishedAt,
       responseText: developerReviewResponses.responseText,
       responseVisibility: developerReviewResponses.visibility,
@@ -60,12 +71,36 @@ export async function listPublicReviews(slug: string) {
     )
     .orderBy(desc(propertyReviews.publishedAt), desc(propertyReviews.createdAt))
     .limit(100);
+  if (rows.length === 0) return [];
+  const dimensions = await db
+    .select({
+      reviewId: propertyReviewDimensions.reviewId,
+      dimension: propertyReviewDimensions.dimension,
+      experienceState: propertyReviewDimensions.experienceState,
+      rating: propertyReviewDimensions.rating,
+      note: propertyReviewDimensions.note,
+    })
+    .from(propertyReviewDimensions)
+    .where(
+      inArray(
+        propertyReviewDimensions.reviewId,
+        rows.map((row) => row.id),
+      ),
+    );
+  const byReview = new Map<string, typeof dimensions>();
+  for (const dimension of dimensions)
+    byReview.set(dimension.reviewId, [...(byReview.get(dimension.reviewId) ?? []), dimension]);
   const response = rows.map((row) => ({
     id: row.id,
     publicName: row.publicName,
     phoneVerified: true as const,
-    rating: row.rating,
-    text: row.text,
+    verificationTier: row.verificationTier,
+    dimensions: (byReview.get(row.id) ?? []).map((value) => ({
+      dimension: value.dimension,
+      experienceState: value.experienceState,
+      rating: value.rating,
+      note: value.note,
+    })),
     publishedAt: row.publishedAt?.toISOString() ?? null,
     developerResponse: row.responseVisibility === "published" ? (row.responseText ?? null) : null,
   }));
@@ -80,8 +115,7 @@ export async function findOwnReview(profileId: string, slug: string) {
   const [review] = await db
     .select({
       id: propertyReviews.id,
-      rating: propertyReviews.rating,
-      text: propertyReviews.reviewText,
+      verificationTier: propertyReviews.verificationTier,
     })
     .from(propertyReviews)
     .where(
@@ -93,8 +127,13 @@ export async function findOwnReview(profileId: string, slug: string) {
     )
     .limit(1);
   if (!review) return null;
-  assertConsumerPayloadSafe(review);
-  return review;
+  const dimensions = await db
+    .select()
+    .from(propertyReviewDimensions)
+    .where(eq(propertyReviewDimensions.reviewId, review.id));
+  const response = { ...review, dimensions };
+  assertConsumerPayloadSafe(response);
+  return response;
 }
 
 async function refreshAggregate(
@@ -130,12 +169,22 @@ async function refreshAggregate(
 
 export async function upsertOwnReview(
   profileId: string,
-  input: { slug: string; rating: number; text?: string | null },
+  input: { slug: string; dimensions: StructuredReviewDimension[] },
 ) {
   const property = await publishedPropertyBySlug(input.slug);
   if (!property) throw new Error("Property not found");
-  const moderation = moderateUserText(input.text);
-  if (!moderation.accepted) throw new Error(`Review blocked: ${moderation.codes.join(", ")}`);
+  validateDimensions(input.dimensions);
+  for (const dimension of input.dimensions) {
+    const moderation = moderateUserText(dimension.note);
+    if (!moderation.accepted)
+      throw new Error(`Review note blocked: ${moderation.codes.join(", ")}`);
+  }
+  const average = Math.round(
+    input.dimensions
+      .filter((item) => item.rating !== null)
+      .reduce((sum, item) => sum + (item.rating ?? 0), 0) /
+      input.dimensions.filter((item) => item.rating !== null).length || 3,
+  );
   const db = getDatabase();
   return db.transaction(async (tx) => {
     const [profile] = await tx
@@ -163,8 +212,8 @@ export async function upsertOwnReview(
       await tx
         .update(propertyReviews)
         .set({
-          rating: input.rating,
-          reviewText: input.text?.trim() || null,
+          rating: average,
+          reviewText: null,
           publicName,
           visibility: "published",
           publishedAt: new Date(),
@@ -178,8 +227,8 @@ export async function upsertOwnReview(
           propertyId: property.id,
           profileId,
           publicName,
-          rating: input.rating,
-          reviewText: input.text?.trim() || null,
+          rating: average,
+          reviewText: null,
           visibility: "published",
           publishedAt: new Date(),
         })
@@ -195,10 +244,22 @@ export async function upsertOwnReview(
     await tx.insert(propertyReviewVersions).values({
       reviewId,
       version: (latest?.version ?? 0) + 1,
-      rating: input.rating,
-      reviewText: input.text?.trim() || null,
-      moderationResult: moderation,
+      rating: average,
+      reviewText: null,
+      moderationResult: { revision: "structured-v1" },
     });
+    await tx
+      .delete(propertyReviewDimensions)
+      .where(eq(propertyReviewDimensions.reviewId, reviewId));
+    await tx.insert(propertyReviewDimensions).values(
+      input.dimensions.map((dimension) => ({
+        reviewId,
+        dimension: dimension.dimension,
+        experienceState: dimension.experienceState,
+        rating: dimension.rating,
+        note: dimension.note?.trim() || null,
+      })),
+    );
     await refreshAggregate(tx, property.id);
     return { id: reviewId, visibility: "published" as const };
   });
@@ -436,5 +497,232 @@ export async function adjudicateReview(
     });
     await refreshAggregate(tx, review.propertyId);
     return { visibility };
+  });
+}
+
+export async function getPublicFieldVerification(slug: string) {
+  const property = await publishedPropertyBySlug(slug);
+  if (!property) return null;
+  const db = getDatabase();
+  const [visit] = await db
+    .select({ id: propertyFieldVisits.id, visitedOn: propertyFieldVisits.visitedOn })
+    .from(propertyFieldVisits)
+    .where(
+      and(
+        eq(propertyFieldVisits.propertyId, property.id),
+        eq(propertyFieldVisits.status, "completed"),
+      ),
+    )
+    .orderBy(desc(propertyFieldVisits.visitedOn))
+    .limit(1);
+  if (!visit) return null;
+  const observations = await db
+    .select({
+      dimension: propertyFieldVisitObservations.dimension,
+      observationState: propertyFieldVisitObservations.observationState,
+      observation: propertyFieldVisitObservations.observation,
+    })
+    .from(propertyFieldVisitObservations)
+    .where(eq(propertyFieldVisitObservations.visitId, visit.id));
+  const response = { visitedOn: visit.visitedOn, observations };
+  assertConsumerPayloadSafe(response);
+  return response;
+}
+
+const REVIEW_EVIDENCE_BUCKET = "review-visit-evidence";
+
+export async function createReviewVisitEvidenceTicket(
+  profileId: string,
+  input: {
+    reviewId: string;
+    visitDate: string;
+    filename: string;
+    mimeType: "application/pdf" | "image/jpeg" | "image/png";
+    sizeBytes: number;
+    sha256: string;
+  },
+) {
+  const db = getDatabase();
+  const [review] = await db
+    .select({ id: propertyReviews.id })
+    .from(propertyReviews)
+    .where(and(eq(propertyReviews.id, input.reviewId), eq(propertyReviews.profileId, profileId)))
+    .limit(1);
+  if (!review) throw new Error("Review not found");
+  const objectPath = `reviews/${review.id}/${crypto.randomUUID()}`;
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  const [evidence] = await db
+    .insert(reviewVisitEvidence)
+    .values({
+      reviewId: review.id,
+      visitDate: input.visitDate,
+      storageBucket: REVIEW_EVIDENCE_BUCKET,
+      storageObjectPath: objectPath,
+      originalFilename: input.filename,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      sha256: input.sha256,
+      expiresAt,
+    })
+    .onConflictDoUpdate({
+      target: reviewVisitEvidence.reviewId,
+      set: {
+        visitDate: input.visitDate,
+        storageBucket: REVIEW_EVIDENCE_BUCKET,
+        storageObjectPath: objectPath,
+        originalFilename: input.filename,
+        mimeType: input.mimeType,
+        sizeBytes: input.sizeBytes,
+        sha256: input.sha256,
+        uploadState: "pending",
+        reviewedBy: null,
+        reviewedAt: null,
+        decisionReason: null,
+        expiresAt,
+        purgedAt: null,
+      },
+    })
+    .returning({
+      id: reviewVisitEvidence.id,
+      storageObjectPath: reviewVisitEvidence.storageObjectPath,
+    });
+  const { createPrivateReviewEvidenceUploadUrl } = await import("@/server/gcs.server");
+  const upload = await createPrivateReviewEvidenceUploadUrl(
+    REVIEW_EVIDENCE_BUCKET,
+    evidence.storageObjectPath,
+    input.sha256,
+    input.mimeType,
+  );
+  return { evidenceId: evidence.id, uploadUrl: upload.url, expiresAt: upload.expiresAt };
+}
+
+export async function confirmReviewVisitEvidence(profileId: string, evidenceId: string) {
+  const db = getDatabase();
+  const [evidence] = await db
+    .select({
+      id: reviewVisitEvidence.id,
+      bucket: reviewVisitEvidence.storageBucket,
+      path: reviewVisitEvidence.storageObjectPath,
+      sha256: reviewVisitEvidence.sha256,
+      sizeBytes: reviewVisitEvidence.sizeBytes,
+      reviewId: reviewVisitEvidence.reviewId,
+    })
+    .from(reviewVisitEvidence)
+    .innerJoin(propertyReviews, eq(propertyReviews.id, reviewVisitEvidence.reviewId))
+    .where(and(eq(reviewVisitEvidence.id, evidenceId), eq(propertyReviews.profileId, profileId)))
+    .limit(1);
+  if (!evidence) throw new Error("Evidence not found");
+  const { getPrivateObjectMetadata } = await import("@/server/gcs.server");
+  const metadata = await getPrivateObjectMetadata(evidence.bucket, evidence.path);
+  if (
+    metadata.sha256 !== evidence.sha256 ||
+    metadata.sizeBytes !== evidence.sizeBytes ||
+    !metadata.contentType
+  )
+    throw new Error("Uploaded proof did not match the upload ticket");
+  await db
+    .update(reviewVisitEvidence)
+    .set({ uploadState: "verified" })
+    .where(eq(reviewVisitEvidence.id, evidence.id));
+  return { verified: true as const };
+}
+
+export async function adjudicateReviewVisitEvidence(
+  actorId: string,
+  evidenceId: string,
+  action: "approve" | "reject",
+  reason: string,
+) {
+  const db = getDatabase();
+  return db.transaction(async (tx) => {
+    const [evidence] = await tx
+      .select({ reviewId: reviewVisitEvidence.reviewId })
+      .from(reviewVisitEvidence)
+      .where(eq(reviewVisitEvidence.id, evidenceId))
+      .for("update")
+      .limit(1);
+    if (!evidence) throw new Error("Evidence not found");
+    await tx
+      .update(reviewVisitEvidence)
+      .set({
+        uploadState: action === "approve" ? "verified" : "rejected",
+        reviewedBy: actorId,
+        reviewedAt: new Date(),
+        decisionReason: reason,
+      })
+      .where(eq(reviewVisitEvidence.id, evidenceId));
+    if (action === "approve")
+      await tx
+        .update(propertyReviews)
+        .set({ verificationTier: "visit_evidence_reviewed" })
+        .where(eq(propertyReviews.id, evidence.reviewId));
+    return { approved: action === "approve" };
+  });
+}
+
+export async function shortlistFieldVerificationProject(
+  actorId: string,
+  propertyId: string,
+  note: string | null,
+) {
+  const db = getDatabase();
+  const active = await db
+    .select({ propertyId: propertyFieldVerificationShortlist.propertyId })
+    .from(propertyFieldVerificationShortlist)
+    .where(sql`${propertyFieldVerificationShortlist.removedAt} is null`);
+  const alreadySelected = active.some((item) => item.propertyId === propertyId);
+  if (!alreadySelected && active.length >= 15)
+    throw new Error("The field-verification shortlist is limited to 15 projects");
+  await db
+    .insert(propertyFieldVerificationShortlist)
+    .values({ propertyId, selectedBy: actorId, note })
+    .onConflictDoUpdate({
+      target: propertyFieldVerificationShortlist.propertyId,
+      set: { selectedBy: actorId, selectedAt: new Date(), removedAt: null, note },
+    });
+  return { selected: true as const };
+}
+
+export async function recordCompletedFieldVisit(
+  actorId: string,
+  input: {
+    propertyId: string;
+    visitedOn: string;
+    observations: Array<{
+      dimension: string;
+      observationState: "observed" | "not_observed";
+      observation: string | null;
+    }>;
+  },
+) {
+  if (input.observations.length !== REVIEW_DIMENSIONS.length)
+    throw new Error("Every field-verification area is required");
+  const db = getDatabase();
+  return db.transaction(async (tx) => {
+    const [property] = await tx
+      .select({ publicationVersionId: properties.currentPublicationVersionId })
+      .from(properties)
+      .where(eq(properties.id, input.propertyId))
+      .limit(1);
+    if (!property) throw new Error("Property not found");
+    const [visit] = await tx
+      .insert(propertyFieldVisits)
+      .values({
+        propertyId: input.propertyId,
+        publicationVersionId: property.publicationVersionId,
+        status: "completed",
+        visitedOn: input.visitedOn,
+        completedBy: actorId,
+      })
+      .returning({ id: propertyFieldVisits.id });
+    await tx.insert(propertyFieldVisitObservations).values(
+      input.observations.map((observation) => ({
+        visitId: visit.id,
+        dimension: observation.dimension,
+        observationState: observation.observationState,
+        observation: observation.observationState === "observed" ? observation.observation : null,
+      })),
+    );
+    return { visitId: visit.id };
   });
 }
