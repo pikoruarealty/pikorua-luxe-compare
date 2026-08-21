@@ -22,6 +22,7 @@ export function BrochureUploadStep({
   onCancel: () => void;
 }) {
   const [files, setFiles] = useState<File[]>([]);
+  const [developerName, setDeveloperName] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState("");
@@ -70,6 +71,11 @@ export function BrochureUploadStep({
       const name = file.name.toLowerCase().endsWith(".pdf") ? file.name : `${file.name}.pdf`;
       form.append("files", file, name);
     }
+    // Optional: lets the service fold in hints from this developer's past
+    // review corrections, and tags the job so corrections from THIS review
+    // feed the next one. Skipped silently if left blank — extraction works
+    // the same either way, it just doesn't learn from this developer yet.
+    if (developerName.trim()) form.append("developer_name", developerName.trim());
 
     let res: Response;
     try {
@@ -139,7 +145,22 @@ export function BrochureUploadStep({
         whatever details are printed in them; you'll confirm each one and fill in the rest.
       </p>
 
-      <label className="mt-6 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-(--rule-strong) px-6 py-10 text-center transition-colors hover:border-champagne/50">
+      <label className="mt-6 block text-xs text-muted-foreground">
+        Developer (optional)
+        <input
+          type="text"
+          value={developerName}
+          onChange={(e) => setDeveloperName(e.target.value)}
+          placeholder="e.g. Prestige Group"
+          className="mt-1 block w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-champagne"
+        />
+        <span className="mt-1 block text-[11px] text-muted-foreground/80">
+          If this developer's brochures have been reviewed before, we'll double-check the
+          fields that were corrected last time.
+        </span>
+      </label>
+
+      <label className="mt-4 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-(--rule-strong) px-6 py-10 text-center transition-colors hover:border-champagne/50">
         <Upload className="h-6 w-6 text-muted-foreground" />
         <span className="text-sm text-foreground">Click to choose PDF files</span>
         <span className="text-xs text-muted-foreground">

@@ -74,6 +74,11 @@ class Settings:
     # systemic failure (bad key, no credit) wastes at most this many
     # in-flight calls before the job stops submitting more.
     MAX_CONCURRENT_BATCHES: int = int(os.getenv("MAX_CONCURRENT_BATCHES", "4"))
+    # A dense floor-plan page under provider load can genuinely take over a
+    # minute to answer; tenacity above still retries transient timeouts, but
+    # too tight a ceiling here just turns a slow page into a guaranteed
+    # failure instead of a slow success.
+    LLM_CALL_TIMEOUT_SECONDS: float = float(os.getenv("LLM_CALL_TIMEOUT_SECONDS", "120"))
     MIN_TEXT_CHARS_FOR_TEXT_LAYER: int = int(os.getenv("MIN_TEXT_CHARS_FOR_TEXT_LAYER", "40"))
     PAGE_RENDER_DPI: int = int(os.getenv("PAGE_RENDER_DPI", "150"))
     # Vision models downsample internally past this anyway; capping it
@@ -136,12 +141,19 @@ class Settings:
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", str(BASE_DIR / "storage" / "uploads")))
     IMAGE_DIR: Path = Path(os.getenv("IMAGE_DIR", str(BASE_DIR / "storage" / "images")))
     JOB_DIR: Path = Path(os.getenv("JOB_DIR", str(BASE_DIR / "storage" / "jobs")))
+    # Per-developer review corrections, used to hint the next brochure from
+    # the same developer — see learning_hints.py.
+    HINTS_DIR: Path = Path(os.getenv("HINTS_DIR", str(BASE_DIR / "storage" / "learning_hints")))
+    # How many of a developer's most recent corrections to fold into the next
+    # extraction's prompt. Bounded so the hint block stays a nudge, not a
+    # second schema the model has to reconcile against the real one.
+    LEARNING_HINTS_LIMIT: int = int(os.getenv("LEARNING_HINTS_LIMIT", "8"))
 
     # --- OCR fallback ---
     TESSERACT_CMD: str = os.getenv("TESSERACT_CMD", "tesseract")
 
     def ensure_dirs(self) -> None:
-        for d in (self.UPLOAD_DIR, self.IMAGE_DIR, self.JOB_DIR):
+        for d in (self.UPLOAD_DIR, self.IMAGE_DIR, self.JOB_DIR, self.HINTS_DIR):
             d.mkdir(parents=True, exist_ok=True)
 
     def check_auth_configured(self) -> None:

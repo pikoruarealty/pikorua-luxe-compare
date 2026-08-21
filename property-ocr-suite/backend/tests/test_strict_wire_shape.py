@@ -68,7 +68,9 @@ def test_present_but_null_strict_shape_is_read_like_omitted_keys(monkeypatch):
     here". A wholly-null configurations row (bhk_type present-but-null,
     a room whose name/dimension are both null) must not produce a
     phantom configuration or room on the result."""
-    monkeypatch.setattr(extractor, "_call_llm", lambda batch: STRICT_SHAPE_MOSTLY_NULL)
+    monkeypatch.setattr(
+        extractor, "_call_llm", lambda batch, extra_instructions="": STRICT_SHAPE_MOSTLY_NULL
+    )
     result = extractor.extract_from_pages([_page(1)], "brochure.pdf")
 
     assert result.basics.property_name.found is False

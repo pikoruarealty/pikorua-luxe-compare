@@ -264,7 +264,58 @@ export const getBrochureExtraction = createServerFn({ method: "POST" })
       return { ...img, image_path: `${absolute}?t=${encodeURIComponent(ticket)}` };
     });
 
-    return { job_id: body.job_id ?? data.jobId, extraction };
+    return {
+      job_id: body.job_id ?? data.jobId,
+      extraction,
+      // Handed to the browser exactly as it already is inside every
+      // image_candidates URL above — not a new exposure, just named so the
+      // review UI can build /page-image URLs for citations on demand instead
+      // of every possible (file, page) pair being pre-resolved server-side.
+      imageBaseUrl: baseUrl,
+      imageTicket: ticket,
+    };
+  });
+
+export interface ExtractionCorrection {
+  field: string;
+  corrected: string;
+  extracted: string | null;
+  page: number | null;
+}
+
+/** Tells the OCR service which of its draft values a reviewer actually
+ *  changed before submitting — Phase 4(e)'s learning loop. Best-effort by
+ *  design: this is telemetry that makes the *next* brochure from the same
+ *  developer better, not something the property submission should ever
+ *  fail over, so callers swallow errors here rather than surfacing them. */
+export const recordExtractionCorrections = createServerFn({ method: "POST" })
+  .middleware([requireAdminAuth])
+  .inputValidator((data: { jobId: string; corrections: ExtractionCorrection[] }) => {
+    if (!data?.jobId || !/^[A-Za-z0-9-]{4,64}$/.test(data.jobId)) {
+      throw new Error("Invalid job id");
+    }
+    return { jobId: data.jobId, corrections: data.corrections ?? [] };
+  })
+  .handler(async ({ data, context }): Promise<{ recorded: number }> => {
+    if (data.corrections.length === 0) return { recorded: 0 };
+    await assertBrochureJobOwner(data.jobId, context.adminProfile.id);
+    const { baseUrl, headers } = serviceConfig();
+    try {
+      const res = await fetch(
+        `${baseUrl}/api/properties/${encodeURIComponent(data.jobId)}/corrections`,
+        {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ corrections: data.corrections }),
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+      if (!res.ok) return { recorded: 0 };
+      const body = (await res.json()) as { recorded?: number };
+      return { recorded: body.recorded ?? 0 };
+    } catch {
+      return { recorded: 0 };
+    }
   });
 
 const IMAGE_SLOTS = ["cover", "livingRoom", "masterBedroom", "pool", "clubhouse"] as const;

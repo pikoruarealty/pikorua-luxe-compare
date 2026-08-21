@@ -72,6 +72,14 @@ export interface PropertyExtraction {
 export interface ExtractionResponse {
   job_id: string;
   extraction: PropertyExtraction;
+  /** Set by getBrochureExtraction, alongside imageTicket, so the review UI can
+   *  build /page-image URLs for arbitrary (file, page) citations itself rather
+   *  than the server pre-resolving every one — most never get opened. Absent
+   *  for any caller that constructs an ExtractionResponse without going
+   *  through that server function (there currently are none, but nothing
+   *  else should assume it's always present). */
+  imageBaseUrl?: string;
+  imageTicket?: string;
 }
 
 /** `<section>.<field>` in the service's payload -> our form field. */
@@ -430,6 +438,28 @@ function roomLabel(raw: string, slot: "living" | "kitchen"): { name: string; gen
   return { name: titleCase(cleaned), generic: false };
 }
 
+export interface RoomCitation {
+  sourceFile: string | null;
+  sourcePage: number | null;
+  snippet: string | null;
+  confidence: number | undefined;
+}
+
+/** Reads a citation off whichever ExtractedField backed a slot. Room-level
+ *  fields (unlike the scalar sections) are never `found: false` placeholders
+ *  by the time they get here — assignRooms only calls this on fields it has
+ *  already used a printed dimension or name from — but the null check stays
+ *  since a citation with no source page is worse than no citation at all. */
+function fieldCitation(field: ExtractedField | undefined): RoomCitation | undefined {
+  if (!field?.source_file) return undefined;
+  return {
+    sourceFile: field.source_file,
+    sourcePage: field.source_page,
+    snippet: field.evidence,
+    confidence: field.confidence,
+  };
+}
+
 /** Matches every room on a plan to the ConfigDetail slot it belongs in.
  *
  *  Two kinds of room live here. Bedrooms, kitchen and the living area are
@@ -438,6 +468,13 @@ function roomLabel(raw: string, slot: "living" | "kitchen"): { name: string; gen
  *  are worth tallying even on a plan that labels them without a dimension. */
 export interface RoomMapping {
   values: Partial<ConfigDetailInput>;
+  /** One citation per filled slot, for the reviewer to check a dimension
+   *  against its source page. A combined slot (two rooms joined into one
+   *  "Living / Dining + Drawing Room" value) cites only the first of the
+   *  two — both almost always come off the same plan sheet, and a review UI
+   *  showing two images for one field would cost more than the edge case
+   *  where they don't is worth. */
+  citations: Partial<Record<keyof ConfigDetailInput, RoomCitation>>;
   /** Rooms the form has no field for — a study, a home theatre, a puja room.
    *  Reported rather than dropped in silence: a brochure whose labels this
    *  module doesn't recognise used to look identical to a brochure that simply
@@ -457,14 +494,28 @@ export interface RoomMapping {
 
 function assignRooms(rooms: RoomDimension[]): RoomMapping {
   const out: Record<string, string | null> = {};
+  const citations: Partial<Record<keyof ConfigDetailInput, RoomCitation>> = {};
   const bedrooms: {
     dimension: string;
     master: boolean;
     slot: number | null;
     failing: boolean;
+    field: ExtractedField;
   }[] = [];
-  const living: { name: string; dimension: string; generic: boolean; failing: boolean }[] = [];
-  const kitchens: { name: string; dimension: string; generic: boolean; failing: boolean }[] = [];
+  const living: {
+    name: string;
+    dimension: string;
+    generic: boolean;
+    failing: boolean;
+    field: ExtractedField;
+  }[] = [];
+  const kitchens: {
+    name: string;
+    dimension: string;
+    generic: boolean;
+    failing: boolean;
+    field: ExtractedField;
+  }[] = [];
   const unplaced: { name: string; dimension: string | null }[] = [];
   const unparsed: { name: string; dimension: string }[] = [];
   const failingSlots = new Set<string>();
@@ -495,21 +546,29 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
 
     if (ROOM_PATTERNS.bathroom.test(name)) {
       bathrooms += 1;
+      // A count comes from every "TOILET-N" on the sheet, not one field — the
+      // first one read is a representative page to check against, not proof
+      // of every one of them.
+      if (!citations.bathrooms) citations.bathrooms = fieldCitation(room.room_name);
       continue;
     }
     if (ROOM_PATTERNS.balcony.test(name)) {
       balconies += 1;
+      if (!citations.balconies) citations.balconies = fieldCitation(room.room_name);
       continue;
     }
     if (ROOM_PATTERNS.servant.test(name)) {
       hasServant = true;
+      if (!citations.servantRoom) citations.servantRoom = fieldCitation(room.room_name);
       continue;
     }
 
     if (ROOM_PATTERNS.kitchen.test(name)) {
-      if (dimension) kitchens.push({ ...roomLabel(raw, "kitchen"), dimension, failing });
+      if (dimension)
+        kitchens.push({ ...roomLabel(raw, "kitchen"), dimension, failing, field: room.dimension });
     } else if (ROOM_PATTERNS.living.test(name)) {
-      if (dimension) living.push({ ...roomLabel(raw, "living"), dimension, failing });
+      if (dimension)
+        living.push({ ...roomLabel(raw, "living"), dimension, failing, field: room.dimension });
     } else if (ROOM_PATTERNS.bedroom.test(name)) {
       if (dimension) {
         const numbered = BEDROOM_NUMBER_RE.exec(raw);
@@ -518,6 +577,7 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
           master: /master|\bmbr\b/.test(name),
           slot: numbered ? Number(numbered[1]) : null,
           failing,
+          field: room.dimension,
         });
       }
     } else if (!ROOM_PATTERNS.ignorable.test(name)) {
@@ -527,8 +587,10 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
 
   out.livingArea = combineRooms(living);
   if (living.some((r) => r.failing)) failingSlots.add("livingArea");
+  if (living.length) citations.livingArea = fieldCitation(living[0].field);
   out.kitchen = combineRooms(kitchens);
   if (kitchens.some((r) => r.failing)) failingSlots.add("kitchen");
+  if (kitchens.length) citations.kitchen = fieldCitation(kitchens[0].field);
 
   // A plan that numbers its bedrooms decides its own slots — "M.BED-1" is
   // bedroom1 even when the drawing happens to place M.BED-2 first, which is
@@ -536,34 +598,41 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
   // unnumbered ones fall back to order, master first: bedroom1 is the master
   // on every listing already saved, and plans routinely draw it last.
   const placed = new Map<number, string>();
+  const placedField = new Map<number, ExtractedField>();
   const placedFailing = new Set<number>();
-  const spare: { dimension: string; failing: boolean }[] = [];
+  const spare: { dimension: string; failing: boolean; field: ExtractedField }[] = [];
   const ordered = [...bedrooms.filter((b) => b.master), ...bedrooms.filter((b) => !b.master)];
   for (const b of ordered) {
     if (b.slot && b.slot >= 1 && b.slot <= 5 && !placed.has(b.slot)) {
       placed.set(b.slot, b.dimension);
+      placedField.set(b.slot, b.field);
       if (b.failing) placedFailing.add(b.slot);
-    } else spare.push({ dimension: b.dimension, failing: b.failing });
+    } else spare.push({ dimension: b.dimension, failing: b.failing, field: b.field });
   }
   let next = 1;
-  for (const { dimension, failing } of spare) {
+  for (const { dimension, failing, field } of spare) {
     while (next <= 5 && placed.has(next)) next += 1;
     // The form stops at five bedrooms; a sixth has nowhere to go, and saying so
     // is the whole point of `unplaced`.
     if (next > 5) unplaced.push({ name: "Bedroom (no free slot)", dimension });
     else {
       placed.set(next, dimension);
+      placedField.set(next, field);
       if (failing) placedFailing.add(next);
     }
   }
   for (const [slot, dimension] of placed) out[`bedroom${slot}`] = formatRoom(dimension, null);
   for (const slot of placedFailing) failingSlots.add(`bedroom${slot}`);
+  for (const [slot, field] of placedField) {
+    const citation = fieldCitation(field);
+    if (citation) citations[`bedroom${slot}` as keyof ConfigDetailInput] = citation;
+  }
 
   if (bathrooms) out.bathrooms = String(bathrooms);
   if (balconies) out.balconies = String(balconies);
   if (hasServant) out.servantRoom = "Yes";
 
-  return { values: out, unplaced, unparsed, failingSlots };
+  return { values: out, citations, unplaced, unparsed, failingSlots };
 }
 
 /** What an extraction lost on its way into the form.
@@ -761,6 +830,9 @@ export interface ApprovalItem {
   snippet?: string | null;
   sourceFile?: string | null;
   sourcePage?: number | null;
+  /** Non-null when a backend consistency check flagged this specific value —
+   *  see `ExtractedField.validation_warning`. */
+  validationWarning?: string | null;
 }
 
 /** A titled run of items — e.g. one configuration variant's measurements. */
@@ -775,6 +847,10 @@ export interface ApprovalGroup {
   /** What the brochure itself called this layout, shown so a reviewer can tie
    *  the renamed "Type A" back to the page it was read from. */
   sourceLabel?: string | null;
+  /** Set when this variant's own printed label collided with another
+   *  variant's in the same file (a mirrored block) — shown once by the
+   *  group header rather than repeated per measurement. */
+  labelWarning?: string | null;
 }
 
 /** Reviewer corrections to the OCR's own bucketing, keyed by the variant's
@@ -843,6 +919,7 @@ export function buildApprovalSections(
             snippet: f.snippet,
             sourceFile: f.sourceFile,
             sourcePage: f.sourcePage,
+            validationWarning: f.validationWarning,
           })),
         },
       ],
@@ -861,6 +938,7 @@ export function buildApprovalSections(
       label: `Amenities (${amenities.length})`,
       value: amenities.join(" · "),
       values: amenities,
+      formField: "amenities",
     });
   }
   if (highlights.length) {
@@ -869,6 +947,7 @@ export function buildApprovalSections(
       label: `Highlights (${highlights.length})`,
       value: highlights.join(" · "),
       values: highlights,
+      formField: "advantages",
     });
   }
   if (listItems.length) {
@@ -886,20 +965,45 @@ export function buildApprovalSections(
     if (!bucket) return;
 
     const items: ApprovalItem[] = [];
-    const push = (label: string, value: string) => {
-      if (value) items.push({ key: `config-${bucket}-${index}-${items.length}`, label, value });
+    const push = (label: string, field: ExtractedField | undefined) => {
+      const value = text(field);
+      if (!value) return;
+      items.push({
+        key: `config-${bucket}-${index}-${items.length}`,
+        label,
+        value,
+        confidence: field?.confidence,
+        snippet: field?.evidence ?? null,
+        sourceFile: field?.source_file ?? null,
+        sourcePage: field?.source_page ?? null,
+        validationWarning: field?.validation_warning ?? null,
+      });
     };
-    push("Super built-up area", text(variant.super_built_up_area));
-    push("Carpet area", text(variant.carpet_area));
-    push("Built-up area", text(variant.built_up_area));
-    push("Price", text(variant.price));
-    push("Rate (per sq ft)", text(variant.rate_per_sqft));
-    push("Floor range", text(variant.floor_range));
+    push("Super built-up area", variant.super_built_up_area);
+    push("Carpet area", variant.carpet_area);
+    push("Built-up area", variant.built_up_area);
+    push("Price", variant.price);
+    push("Rate (per sq ft)", variant.rate_per_sqft);
+    push("Floor range", variant.floor_range);
 
-    const rooms = assignRooms(variant.rooms ?? []).values;
+    const roomMapping = assignRooms(variant.rooms ?? []);
+    const rooms = roomMapping.values;
     for (const slot of ROOM_SLOTS) {
       const value = rooms[slot.key];
-      if (value) push(slot.label, String(value));
+      if (!value) continue;
+      const citation = roomMapping.citations[slot.key];
+      items.push({
+        key: `config-${bucket}-${index}-${items.length}`,
+        label: slot.label,
+        value: String(value),
+        confidence: citation?.confidence,
+        snippet: citation?.snippet ?? null,
+        sourceFile: citation?.sourceFile ?? null,
+        sourcePage: citation?.sourcePage ?? null,
+        validationWarning: roomMapping.failingSlots.has(slot.key)
+          ? "This measurement disagrees with a consistency check — verify it against the plan before trusting it."
+          : null,
+      });
     }
     if (!items.length) return;
 
@@ -911,6 +1015,7 @@ export function buildApprovalSections(
       configIndex: index,
       bucket,
       sourceLabel: text(variant.variant_label) || null,
+      labelWarning: variant.variant_label?.validation_warning ?? null,
     });
     byBucket.set(bucket, groups);
   });

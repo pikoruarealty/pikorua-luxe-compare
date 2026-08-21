@@ -26,6 +26,10 @@ Endpoints:
   GET  /api/images/{job_id}/{filename}
       Serve an embedded image candidate pulled from a brochure page.
 
+  GET  /api/properties/{job_id}/page-image?file=&page=
+      Render one page of a source PDF on demand, for a reviewer checking
+      a citation's snippet against the actual page.
+
 Auth: every request under /api needs header `X-Service-Key` matching
 SERVICE_API_KEY from .env. This is a shared secret between this
 service and whatever calls it (the developer portal) — it is NOT the
@@ -41,7 +45,9 @@ has to reach them directly and must never hold the shared key:
       bodies at a few MB, so the file cannot be relayed through it.
 
   GET  /api/images/{job_id}/{filename}
+  GET  /api/properties/{job_id}/page-image
       `?t=<expiry>.<hmac>`, because an <img> tag cannot send a header.
+      Both share the same ticket scope.
 
 The scope is part of the signed message, so the two kinds of ticket are
 not interchangeable and neither opens anything else.
@@ -66,21 +72,23 @@ from fastapi import (
     Depends,
     FastAPI,
     File,
+    Form,
     Header,
     HTTPException,
     Query,
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
+from . import learning_hints
 from .config import settings
 from .cross_field_validators import validate_cross_field
 from .extractor import ExtractionUnavailable, batch_pages, extract_from_pages
 from .merger import merge_extractions
 from .normalizer import normalize
-from .pdf_reader import extract_embedded_images, read_pdf
+from .pdf_reader import extract_embedded_images, read_pdf, render_page_jpeg
 from .schema import ImageCandidate, PropertyExtraction
 
 log = logging.getLogger("api")
@@ -182,6 +190,51 @@ def _load_job(job_id: str) -> PropertyExtraction:
     return PropertyExtraction.model_validate_json(path.read_text(encoding="utf-8"))
 
 
+def _job_meta_path(job_id: str) -> Path:
+    return settings.JOB_DIR / f"{job_id}.meta.json"
+
+
+def _save_job_meta(job_id: str, developer_name: str, fingerprint: str) -> None:
+    # Sidecar rather than a PropertyExtraction field: this is bookkeeping for
+    # the learning loop (which developer/format this job belongs to), not
+    # part of the extracted record itself.
+    _job_meta_path(job_id).write_text(
+        json.dumps({"developer_name": developer_name, "format_fingerprint": fingerprint}),
+        encoding="utf-8",
+    )
+
+
+def _load_job_meta(job_id: str) -> dict | None:
+    path = _job_meta_path(job_id)
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+
+def _resolve_source_pdf(job_id: str, source_file: str) -> Path | None:
+    """Finds the PDF a citation's `source_file` label names.
+
+    Uploads through /api/properties/extract land at
+    UPLOAD_DIR/{job_id}/{random-hex}.pdf — the human-readable name is kept
+    only as a label, never as the on-disk filename (see extract_property's
+    comment on why). Jobs seeded outside that endpoint (a batch/manual run)
+    instead keep the original filename under UPLOAD_DIR/manual/, which is
+    tried first since it needs no per-job disambiguation."""
+    original = Path(source_file).name
+    manual = (settings.UPLOAD_DIR / "manual" / original).resolve()
+    if manual.is_relative_to(settings.UPLOAD_DIR.resolve()) and manual.is_file():
+        return manual
+    job_dir = settings.UPLOAD_DIR / job_id
+    if job_dir.is_dir():
+        pdfs = sorted(p for p in job_dir.iterdir() if p.suffix.lower() == ".pdf")
+        if len(pdfs) == 1:
+            return pdfs[0]
+    return None
+
+
 # job_id -> {"status": "queued"|"processing"|"done"|"error", "batches_done": int,
 #            "batches_total": int, "current_file": str, "error": str}
 # Plain dict + lock, not a queue/db: one process, low volume, and it
@@ -229,7 +282,10 @@ def _summarise_pages(numbers: List[int]) -> str:
 
 
 def _run_extraction(
-    job_id: str, saved_paths: List[tuple[Path, str]], job_image_dir: Path
+    job_id: str,
+    saved_paths: List[tuple[Path, str]],
+    job_image_dir: Path,
+    developer_name: str | None = None,
 ) -> None:
     """`saved_paths` pairs each stored file with the name the uploader gave it.
 
@@ -259,6 +315,12 @@ def _run_extraction(
         batches_total = sum(len(batch_pages(pages)) for _, _, pages in pages_by_file)
         _set_progress(job_id, status="processing", batches_done=0, batches_total=batches_total)
 
+        total_pages = sum(len(pages) for _, _, pages in pages_by_file)
+        fingerprint = learning_hints.format_fingerprint(len(pages_by_file), total_pages)
+        hint_text = learning_hints.get_hint_text(developer_name) or ""
+        if developer_name:
+            _save_job_meta(job_id, developer_name, fingerprint)
+
         progress_state = {"done": 0}
         should_cancel = lambda: _is_cancelled(job_id)  # noqa: E731
 
@@ -276,7 +338,11 @@ def _run_extraction(
             if should_cancel():
                 break
             result = extract_from_pages(
-                pages, label, on_batch_done=on_batch_done, should_cancel=should_cancel
+                pages,
+                label,
+                on_batch_done=on_batch_done,
+                should_cancel=should_cancel,
+                extra_instructions=hint_text,
             )
             result.image_candidates = [
                 ImageCandidate(
@@ -334,6 +400,10 @@ async def extract_property(
     background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
     job_id: str | None = None,
+    # Optional: when given, this developer's past review corrections (if
+    # any) are folded into the extraction prompt, and this job is tagged so
+    # a later POST .../corrections call can record new ones against it.
+    developer_name: str | None = Form(default=None),
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Upload at least one PDF file")
@@ -368,7 +438,9 @@ async def extract_property(
         saved_paths.append((dest, original))
 
     _set_progress(job_id, status="queued", batches_done=0, batches_total=0)
-    background_tasks.add_task(_run_extraction, job_id, saved_paths, job_image_dir)
+    background_tasks.add_task(
+        _run_extraction, job_id, saved_paths, job_image_dir, developer_name
+    )
     return {"job_id": job_id}
 
 
@@ -412,6 +484,38 @@ async def save_property(job_id: str, payload: SavePayload):
     return {"job_id": job_id, "status": "saved"}
 
 
+class Correction(BaseModel):
+    field: str
+    corrected: str
+    extracted: str | None = None
+    page: int | None = None
+
+
+class CorrectionsPayload(BaseModel):
+    corrections: List[Correction]
+
+
+@app.post("/api/properties/{job_id}/corrections", dependencies=[Depends(require_service_key)])
+async def record_corrections(job_id: str, payload: CorrectionsPayload):
+    """Called once a reviewer's final, human-approved values are known —
+    the developer portal diffs what it showed the reviewer against what
+    they actually submitted and posts the differences here. Silently a
+    no-op for a job that was never tagged with a developer_name (extracted
+    before this feature, or the uploader left the field blank): there's
+    nothing to learn from an anonymous job, and that isn't the caller's
+    fault, so this returns success with recorded=0 rather than a 404."""
+    meta = _load_job_meta(job_id)
+    if not meta:
+        return {"job_id": job_id, "recorded": 0}
+    recorded = learning_hints.record_corrections(
+        meta["developer_name"],
+        meta["format_fingerprint"],
+        job_id,
+        [c.model_dump() for c in payload.corrections],
+    )
+    return {"job_id": job_id, "recorded": recorded}
+
+
 IMAGE_TICKET_SCOPE = "img:"
 
 
@@ -444,6 +548,25 @@ async def get_image(job_id: str, filename: str):
     if not path.is_relative_to(root) or not path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(path)
+
+
+@app.get("/api/properties/{job_id}/page-image", dependencies=[Depends(require_image_auth)])
+async def get_page_image(job_id: str, file: str, page: int):
+    """Renders one brochure page on demand, for a reviewer checking a
+    citation against the source — not saved anywhere, since it's cheap to
+    re-render and would otherwise be one more file per page per job."""
+    pdf_path = _resolve_source_pdf(job_id, file)
+    if pdf_path is None:
+        raise HTTPException(status_code=404, detail="Source PDF not found")
+    try:
+        image_bytes = render_page_jpeg(pdf_path, page)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return Response(
+        content=image_bytes,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
 
 
 @app.get("/api/health")

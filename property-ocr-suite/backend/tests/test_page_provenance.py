@@ -27,7 +27,7 @@ def test_config_row_with_a_page_outside_the_batch_is_demoted(monkeypatch):
     monkeypatch.setattr(
         extractor,
         "_call_llm",
-        lambda batch: {
+        lambda batch, extra_instructions="": {
             "configurations": [
                 {
                     "variant_label": {
@@ -71,7 +71,7 @@ def test_config_row_with_pages_inside_the_batch_is_untouched(monkeypatch):
     monkeypatch.setattr(
         extractor,
         "_call_llm",
-        lambda batch: {
+        lambda batch, extra_instructions="": {
             "configurations": [
                 {
                     "variant_label": {
@@ -113,7 +113,7 @@ def test_provenance_check_does_not_flag_an_earlier_batchs_row(monkeypatch):
     concurrently, so the fake keys its response off the page it was
     actually given rather than call order."""
 
-    def per_batch(batch):
+    def per_batch(batch, extra_instructions=""):
         page = batch[0].page_number
         label = "Unit A" if page == 1 else "Unit B"
         return {

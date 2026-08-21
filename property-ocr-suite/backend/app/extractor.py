@@ -619,7 +619,13 @@ def batch_pages(pages: List[PageContent]) -> List[List[PageContent]]:
     wait=wait_exponential(multiplier=1, min=2, max=20),
     retry=retry_if_exception(_is_retryable),
 )
-def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
+def _system_prompt(extra_instructions: str) -> str:
+    if not extra_instructions:
+        return SYSTEM_PROMPT
+    return f"{SYSTEM_PROMPT}\n\n{extra_instructions}"
+
+
+def _call_openai(pages: List[PageContent], extra_instructions: str = "") -> Dict[str, Any]:
     from openai import OpenAI
 
     # timeout+max_retries=0: tenacity above already retries the whole
@@ -628,7 +634,7 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
     client = OpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL or None,
-        timeout=60.0,
+        timeout=settings.LLM_CALL_TIMEOUT_SECONDS,
         max_retries=0,
     )
     content = [{"type": "text", "text": build_user_prompt(_pages_meta_block(pages))}]
@@ -646,7 +652,7 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
         temperature=0,
         response_format=openai_response_format(),
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": _system_prompt(extra_instructions)},
             {"role": "user", "content": content},
         ],
     )
@@ -659,10 +665,14 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
     wait=wait_exponential(multiplier=1, min=2, max=20),
     retry=retry_if_exception(_is_retryable),
 )
-def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
+def _call_anthropic(pages: List[PageContent], extra_instructions: str = "") -> Dict[str, Any]:
     import anthropic
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=60.0, max_retries=0)
+    client = anthropic.Anthropic(
+        api_key=settings.ANTHROPIC_API_KEY,
+        timeout=settings.LLM_CALL_TIMEOUT_SECONDS,
+        max_retries=0,
+    )
     content = [{"type": "text", "text": build_user_prompt(_pages_meta_block(pages))}]
     for _, b64 in _page_images(pages):
         content.append(
@@ -675,7 +685,7 @@ def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
         model=settings.ANTHROPIC_MODEL,
         max_tokens=4000,
         temperature=0,
-        system=SYSTEM_PROMPT + "\nRespond with raw JSON only, no markdown fences.",
+        system=_system_prompt(extra_instructions) + "\nRespond with raw JSON only, no markdown fences.",
         messages=[{"role": "user", "content": content}],
     )
     text = "".join(block.text for block in resp.content if block.type == "text")
@@ -686,10 +696,10 @@ def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
     return json.loads(text)
 
 
-def _call_llm(pages: List[PageContent]) -> Dict[str, Any]:
+def _call_llm(pages: List[PageContent], extra_instructions: str = "") -> Dict[str, Any]:
     if settings.LLM_PROVIDER == "anthropic":
-        return _call_anthropic(pages)
-    return _call_openai(pages)
+        return _call_anthropic(pages, extra_instructions)
+    return _call_openai(pages, extra_instructions)
 
 
 def extract_from_pages(
@@ -697,6 +707,7 @@ def extract_from_pages(
     file_name: str,
     on_batch_done=None,
     should_cancel=None,
+    extra_instructions: str = "",
 ) -> PropertyExtraction:
     """Run the full batched extraction for one PDF's pages and return
     a PropertyExtraction populated with whatever was found.
@@ -743,7 +754,7 @@ def extract_from_pages(
             if should_cancel and should_cancel():
                 return
             batch = pending.pop(0)
-            future = pool.submit(_call_llm, batch)
+            future = pool.submit(_call_llm, batch, extra_instructions)
             in_flight[future] = batch
 
         for _ in range(max_workers):
