@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { throwSafeError } from "@/lib/safe-error";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+export { setDeveloperIntelligenceEntitlement } from "./developer-intelligence.functions";
 
 export interface DeveloperAccount {
   id: string;
@@ -10,6 +11,13 @@ export interface DeveloperAccount {
   createdAt: string;
   pendingSubmissions: number;
   totalSubmissions: number;
+  intelligence: {
+    accessLevel: "trial" | "paid" | null;
+    status: "active" | "suspended" | "missing";
+    startsAt: string | null;
+    endsAt: string | null;
+    active: boolean;
+  };
 }
 
 /** Owner-only: every developer account, with a submission-count summary so the
@@ -43,8 +51,41 @@ export const listDevelopers = createServerFn({ method: "GET" })
     }
     const countsByDeveloper = new Map((counts ?? []).map((row) => [row.developer_id, row]));
 
+    type EntitlementRow = {
+      developer_id: string;
+      access_level: "trial" | "paid";
+      status: "active" | "suspended";
+      starts_at: string;
+      ends_at: string | null;
+    };
+    const { data: entitlementRows, error: entitlementError } = await (
+      supabaseAdmin as unknown as {
+        from: (table: string) => {
+          select: (columns: string) => Promise<{ data: EntitlementRow[] | null; error: unknown }>;
+        };
+      }
+    )
+      .from("developer_intelligence_entitlements")
+      .select("developer_id, access_level, status, starts_at, ends_at");
+    if (entitlementError) {
+      throwSafeError(
+        "listDevelopers.entitlements",
+        entitlementError,
+        "Could not load intelligence access",
+      );
+    }
+    const entitlements = new Map((entitlementRows ?? []).map((row) => [row.developer_id, row]));
+    const now = Date.now();
+
     return (devs ?? []).map((d) => {
       const counts = countsByDeveloper.get(d.id);
+      const entitlement = entitlements.get(d.id);
+      const active = Boolean(
+        entitlement &&
+        entitlement.status === "active" &&
+        new Date(entitlement.starts_at).getTime() <= now &&
+        (!entitlement.ends_at || new Date(entitlement.ends_at).getTime() > now),
+      );
       return {
         id: d.id,
         email: d.email,
@@ -53,6 +94,13 @@ export const listDevelopers = createServerFn({ method: "GET" })
         createdAt: d.created_at,
         pendingSubmissions: Number(counts?.pending_submissions ?? 0),
         totalSubmissions: Number(counts?.total_submissions ?? 0),
+        intelligence: {
+          accessLevel: entitlement?.access_level ?? null,
+          status: entitlement?.status ?? "missing",
+          startsAt: entitlement?.starts_at ?? null,
+          endsAt: entitlement?.ends_at ?? null,
+          active,
+        },
       };
     });
   });

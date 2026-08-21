@@ -90,7 +90,6 @@ export const ocrJobState = pgEnum("ocr_job_state", [
   "failed",
   "cancelled",
 ]);
-
 // Legacy identity tables are declared only for typed foreign keys. Their SQL
 // remains in the earlier Supabase migrations.
 export const properties = pgTable("properties", {
@@ -108,6 +107,36 @@ export const adminProfiles = pgTable("admin_profiles", {
   id: uuid("id").primaryKey(),
   role: text("role").notNull(),
 });
+
+export const developerIntelligenceEntitlements = pgTable(
+  "developer_intelligence_entitlements",
+  {
+    developerId: uuid("developer_id")
+      .primaryKey()
+      .references(() => adminProfiles.id, { onDelete: "cascade" }),
+    accessLevel: text("access_level").notNull(),
+    status: text("status").notNull().default("active"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull().defaultNow(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    managedBy: uuid("managed_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    note: text("note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "developer_intelligence_access_level_check",
+      sql`${table.accessLevel} in ('trial', 'paid')`,
+    ),
+    check("developer_intelligence_status_check", sql`${table.status} in ('active', 'suspended')`),
+    check(
+      "developer_intelligence_dates_check",
+      sql`${table.endsAt} is null or ${table.endsAt} > ${table.startsAt}`,
+    ),
+  ],
+);
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   phone: text("phone").notNull(),

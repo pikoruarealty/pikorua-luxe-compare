@@ -29,5 +29,6 @@ export const getV2ComparisonPage = createServerFn({ method: "POST" })
     return {
       comparison: await findConsumerComparison(profileId, data.slugs),
       propscoreEnabled: isFeatureEnabled("V2_PROPSCORE"),
+      intelligenceFeedbackEnabled: isFeatureEnabled("V2_DEVELOPER_INTELLIGENCE"),
     };
   });

@@ -13,7 +13,8 @@ export type ActivityEvent =
   | "gate_shown"
   | "gate_unlocked"
   | "alternative_clicked"
-  | "weighting_changed";
+  | "weighting_changed"
+  | "comparison_feedback";
 
 const EVENTS: ActivityEvent[] = [
   "signup",
@@ -27,7 +28,29 @@ const EVENTS: ActivityEvent[] = [
   "gate_unlocked",
   "alternative_clicked",
   "weighting_changed",
+  "comparison_feedback",
 ];
+
+export const COMPARISON_REASON_CODES = [
+  "space",
+  "location",
+  "privacy_density",
+  "specification",
+  "developer_confidence",
+  "possession_timeline",
+  "price_band",
+] as const;
+
+const SLUG_RE = /^[a-z0-9-]{1,200}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function approvedComparisonSlugs(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length < 2 || value.length > 3) return null;
+  const slugs = value.filter((item): item is string => typeof item === "string");
+  if (slugs.length !== value.length || slugs.some((item) => !SLUG_RE.test(item))) return null;
+  const normalized = [...new Set(slugs)].sort();
+  return normalized.length === slugs.length ? normalized : null;
+}
 
 const MAX_METADATA_BYTES = 8_192;
 const MAX_METADATA_DEPTH = 5;
@@ -77,6 +100,43 @@ function validatedMetadata(value: unknown): Record<string, unknown> {
 }
 
 export function approvedMetadata(event: ActivityEvent, value: Record<string, unknown>) {
+  if (event === "compare_open") {
+    const propertySlugs = approvedComparisonSlugs(value.propertySlugs);
+    if (!propertySlugs) return {};
+    const approved: Record<string, unknown> = { propertySlugs };
+    if (typeof value.marketId === "string") approved.marketId = value.marketId.slice(0, 100);
+    if (typeof value.budgetBandId === "string")
+      approved.budgetBandId = value.budgetBandId.slice(0, 50);
+    return approved;
+  }
+  if (event === "comparison_feedback") {
+    const propertySlugs = approvedComparisonSlugs(value.propertySlugs);
+    if (!propertySlugs || typeof value.feedbackId !== "string" || !UUID_RE.test(value.feedbackId))
+      return {};
+    if (
+      value.selectedPropertySlug !== null &&
+      (typeof value.selectedPropertySlug !== "string" ||
+        !propertySlugs.includes(value.selectedPropertySlug))
+    )
+      return {};
+    if (!Array.isArray(value.reasonCodes) || value.reasonCodes.length > 3) return {};
+    const reasonCodes = value.reasonCodes.filter(
+      (item): item is (typeof COMPARISON_REASON_CODES)[number] =>
+        typeof item === "string" &&
+        COMPARISON_REASON_CODES.includes(item as (typeof COMPARISON_REASON_CODES)[number]),
+    );
+    if (
+      reasonCodes.length !== value.reasonCodes.length ||
+      new Set(reasonCodes).size !== reasonCodes.length
+    )
+      return {};
+    return {
+      feedbackId: value.feedbackId,
+      propertySlugs,
+      selectedPropertySlug: value.selectedPropertySlug,
+      reasonCodes,
+    };
+  }
   if (event !== "quiz_completed") return {};
   const approved: Record<string, unknown> = {};
   if (typeof value.marketId === "string") approved.marketId = value.marketId.slice(0, 100);
