@@ -21,6 +21,7 @@
     "dev:all": "concurrently -n web,ocr -c cyan,magenta \"bun run dev\" \"bun run dev:ocr\""
   },
   "dependencies": {
+    "@google-cloud/bigquery": "^8.1.1",
     "@google-cloud/pubsub": "^5.0.0",
     "@google-cloud/storage": "^8.0.0",
     "@hookform/resolvers": "^5.2.2",

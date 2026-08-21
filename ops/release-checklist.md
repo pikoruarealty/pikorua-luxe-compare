@@ -24,6 +24,8 @@ is incomplete. Never use this checklist to infer that an external service has be
       holds/reports, enquiries, OCR failures, cache/Redis failures and commercial leakage alerts.
 - [ ] Support and moderation workload has named coverage and escalation times.
 - [ ] Users understand stale pricing notices and “Verified by PropCompare” in moderated research.
+- [ ] Developer-intelligence queries return aggregates only, enforce the five-session privacy
+      floor, and an entitlement change leaves PropScore and catalogue ordering unchanged.
 - [ ] No critical trust, authentication, privacy or moderation defect remains open.
 
 ## Public release

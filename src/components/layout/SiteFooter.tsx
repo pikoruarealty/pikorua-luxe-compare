@@ -125,6 +125,9 @@ export function SiteFooter() {
             <Link to="/methodology/propscore" className="hover:text-foreground">
               PropScore methodology
             </Link>
+            <Link to="/methodology/developer-intelligence" className="hover:text-foreground">
+              Intelligence policy
+            </Link>
           </nav>
         </div>
       </div>

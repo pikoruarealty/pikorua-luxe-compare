@@ -5,6 +5,7 @@ export const FEATURE_FLAGS = [
   "V2_ENQUIRIES",
   "V2_OCR",
   "V2_PROPSCORE",
+  "V2_DEVELOPER_INTELLIGENCE",
 ] as const;
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];

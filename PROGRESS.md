@@ -7,9 +7,8 @@ them or accidentally undo something deliberate.
 **Full plan (source of truth for scope/ordering):** `okay-so-we-have-declarative-waterfall.md`
 — ask whoever wrote it for a copy if you don't have one; it's not checked into this repo.
 
-**Branch:** `core-features-addon`, based on `main` (which is itself `security-and-cosmetics`
-fast-forwarded in). Nothing here is pushed to `origin` yet — this branch does not exist on
-the remote. **Never commit to `main` directly.**
+**Current implementation branch:** `phase-7-developer-intelligence`, based on the Phase 6
+merge on `main` (`0bdd28f`). **Never commit to `main` directly.**
 
 ---
 
@@ -25,8 +24,9 @@ the remote. **Never commit to `main` directly.**
       (PR `phase-5-verification-propscore`, commit `0e1762a`), behind `V2_PROPSCORE=0`. See
       note below — it was built ahead of schedule, against Phase 1's not-yet-existent
       tables, and stays off until Phase 1 + Phase 3 + their own migration are all in.
-- [ ] Phase 6 — Reviews with real content & site-visit verification
-- [ ] Phase 7 — Developer intelligence (first real revenue)
+- [x] Phase 6 — Reviews with real content & site-visit verification — merged to `main`
+- [x] Phase 7 — Developer intelligence — implementation landed dark on
+      `phase-7-developer-intelligence`; migration/IAM rollout and pilot data remain
 - [ ] Phase 8 — Depth then breadth
 
 Each phase ships independently and is worth shipping on its own; v1 keeps serving real
@@ -151,7 +151,7 @@ since that's a behavior change beyond a cleanup pass.
   was also verified directly against the live schema: `pg_constraint` confirms
   `customer_activity_event_type_check` is still the actual name on `public.customer_activity`,
   and its definition now lists all 11 event values, so the migration's `DROP CONSTRAINT IF
-  EXISTS` did not silently no-op.
+EXISTS` did not silently no-op.
 
 ---
 
@@ -202,6 +202,7 @@ regenerates cleanly but currently reports a diff against the last commit — exp
 this work is uncommitted; it will pass once committed.
 
 **Still open before Phase 1 is fully closed:**
+
 - Decide how/when to reconcile `core-features-addon` with `origin/main`'s Phase 5 commits
   (34 files, dark behind `V2_PROPSCORE`) — plan is to finish Phase 1 first, then merge `main`
   in, since Phase 1 is small and additive and doing it first avoids carrying Phase 5's diff
@@ -305,6 +306,7 @@ Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `
   to stay valid against the widened `publicPropertySummarySchema`.
 
 **Second batch — the three remaining components and event re-pointing:**
+
 - `src/lib/preferences-storage.ts` (new): pulls the localStorage preference key/shape
   (`propcompare:v2-preferences`) out of `V2CataloguePage.tsx` into a shared module —
   `readStoredCataloguePreference()` — so `MissingAlternatives` can read the same preference
@@ -349,9 +351,10 @@ Closes the contract/repository/UI slice of Part 6, including `WeightingStrip`, `
 (mapping/polling/brochure/consumer-boundary scripts), production `bun run build` succeeded.
 
 **Still open before Phase 2 is fully closed:**
+
 - The Part 8 acceptance test (no-session network response has no carpet/room/rate/price
   fields; deep rows fill in place after phone-only unlock with no navigation; SSR with JS
-  disabled). The live-DB *connectivity* blocker is gone as of the 2026-08-18 migration run
+  disabled). The live-DB _connectivity_ blocker is gone as of the 2026-08-18 migration run
   above, but the v2 property tables (`configuration_variants`,
   `property_publication_details`, etc.) are still empty — no property has been loaded through
   the canonical schema yet. This test needs at least one real property published through
@@ -432,6 +435,7 @@ markup, least engineering/interaction novelty, and works cleanly for the product
 comparisons.
 
 **Implementation** (`src/components/compare/ComparisonMatrixTableV2.tsx`):
+
 - Replaced the `hidden md:grid` header / flex-below-`md` row fallback with one unconditional
   CSS grid at every breakpoint: `grid-cols-[130px_minmax(150px,1fr)_minmax(150px,1fr)(_minmax(150px,1fr))]`
   — fixed minimum column widths so a narrow phone triggers horizontal scroll on the value
@@ -473,6 +477,22 @@ The canonical-field adapter intentionally targets Phase 1's additive
 enable the flag until Phase 1 has landed, Phase 3 has published the source-backed catalogue, the
 Phase 5 migration has run, Ahmedabad landmarks are curated, and every score explanation has passed
 manual evidence review. Automatic RERA scraping remains prohibited.
+
+---
+
+## Phase 7 — developer intelligence implementation landed dark
+
+Phase 7 adds an isolated, manually managed trial/paid entitlement, aggregate-only BigQuery and
+local analytics adapters, a five-session privacy floor, explicit structured comparison feedback,
+30-day per-project developer dashboards, owner access controls and the permanent
+`/methodology/developer-intelligence` independence policy. `V2_DEVELOPER_INTELLIGENCE` defaults
+off. Payment cannot change PropScore, recommendations, verification, moderation or catalogue
+order.
+
+The Phase 7 migration and Terraform IAM changes have not been applied to production. Deploy in
+the documented order: migration and IAM with the flag off, telemetry validation, flag enablement
+with no active entitlements, then one time-bound pilot entitlement after a project reaches the
+five-session reporting floor.
 
 ---
 

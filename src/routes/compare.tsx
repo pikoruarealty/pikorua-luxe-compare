@@ -22,6 +22,7 @@ import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.funct
 import { getV2ComparisonPage } from "@/api/functions/comparison-page.functions";
 import { V2Comparison } from "@/components/compare/V2Comparison";
 import { useActivityLog } from "@/hooks/use-activity-log";
+import { readStoredCataloguePreference } from "@/lib/preferences-storage";
 
 const searchSchema = z.object({
   ids: z.string().optional().default(""),
@@ -48,7 +49,11 @@ export const Route = createFileRoute("/compare")({
         bootstrap:
           slugs.length > 0
             ? await getV2ComparisonPage({ data: { slugs } })
-            : { comparison: null, propscoreEnabled: false },
+            : {
+                comparison: null,
+                propscoreEnabled: false,
+                intelligenceFeedbackEnabled: false,
+              },
       };
     }
     return {
@@ -83,6 +88,7 @@ function ComparePage() {
       <V2ComparePage
         comparison={loaderData.bootstrap.comparison}
         propscoreEnabled={loaderData.bootstrap.propscoreEnabled}
+        intelligenceFeedbackEnabled={loaderData.bootstrap.intelligenceFeedbackEnabled}
       />
     );
   }
@@ -231,9 +237,11 @@ function LegacyComparePage({ loaderData }: { loaderData: LegacyLoaderData }) {
 function V2ComparePage({
   comparison,
   propscoreEnabled,
+  intelligenceFeedbackEnabled,
 }: {
   comparison: ConsumerComparison | null;
   propscoreEnabled: boolean;
+  intelligenceFeedbackEnabled: boolean;
 }) {
   const { userProfile } = useOnboarding();
   const router = useRouter();
@@ -244,7 +252,14 @@ function V2ComparePage({
     comparison && comparison.properties.some((property) => property.gated === null),
   );
   useEffect(() => {
-    if (compareOpen) logActivity("compare_open");
+    if (compareOpen && comparison) {
+      const stored = readStoredCataloguePreference();
+      logActivity("compare_open", null, {
+        propertySlugs: comparison.properties.map((item) => item.property.slug).sort(),
+        marketId: stored?.marketId,
+        budgetBandId: stored?.budgetBandId,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compareOpen]);
   useEffect(() => {
@@ -270,7 +285,13 @@ function V2ComparePage({
     );
   }
 
-  return <V2Comparison comparison={comparison} propscoreEnabled={propscoreEnabled} />;
+  return (
+    <V2Comparison
+      comparison={comparison}
+      propscoreEnabled={propscoreEnabled}
+      intelligenceFeedbackEnabled={intelligenceFeedbackEnabled}
+    />
+  );
 }
 
 function ComparisonDisabled() {
