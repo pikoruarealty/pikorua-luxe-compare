@@ -147,23 +147,34 @@ lists and specs.
 - [ ] Cut over in production; retire the v1 read path
 
 ## Phase 4 — Extraction accuracy
-**Status: NOT STARTED — runs in parallel with Phases 1–3, is the constraint on everything
-after Phase 3**
+**Status: (a), forced-review, (e) and the pytest requirement are DONE. (b) and (c) are
+deliberately deferred — see notes below. Runs in parallel with Phases 1–3, is the
+constraint on everything after Phase 3**
 
-- [ ] (a) Cross-field arithmetic validators: `price ÷ super_built_up ≈ rate` (±5%);
+- [x] (a) Cross-field arithmetic validators: `price ÷ super_built_up ≈ rate` (±5%);
       `carpet < built_up < super_built_up`; `carpet ÷ super_built_up` ∈ 0.50–0.80;
       `Σ room areas ≤ carpet`; `totalUnits ≈ towers × floors × unitsPerFloor` (±15%);
       `unitsPerAcre ≈ totalUnits ÷ plot-in-acres`; area increases 3→4→5 BHK;
       `possession > proposedStartDateRera`; RERA ID format; sanity envelopes
-- [ ] A failed rule forces review regardless of model confidence
+      (`property-ocr-suite/backend/app/cross_field_validators.py`, plus duplicate-label
+      detection in `extractor.py`)
+- [x] A failed rule forces review regardless of model confidence — a flagged field is never
+      pre-ticked in `ExtractedFieldsReview.tsx`, confidence notwithstanding; its warning
+      surfaces next to the specific field/dimension it's about, not as a global dump
 - [ ] (b) Golden set: 10–15 hand-verified brochures across formats, committed as ground
-      truth, with a per-field accuracy report; record baseline before changing anything
+      truth, with a per-field accuracy report; record baseline before changing anything —
+      **deferred**: overlaps with the Phase 3 26-brochure verification pass, start after that
 - [ ] (c) Two-pass consensus on a single document (different chunk boundaries; agree+valid
-      → auto-accept, disagree → review with both candidates)
-- [ ] (e) Learning loop: store `(developer, format fingerprint, field, extracted, corrected,
+      → auto-accept, disagree → review with both candidates) — **skipped for now**: roughly
+      doubles LLM API cost per brochure going forward, not just for re-extraction. Revisit if
+      the golden set's per-field accuracy shows it's actually needed
+- [x] (e) Learning loop: store `(developer, format fingerprint, field, extracted, corrected,
       page)` per correction; format-specific hints for the same developer's next brochure
-- [ ] `pytest`: every validation rule has a passing and a failing case; deliberately corrupt
-      a fixture (6.57 → 65.7) and confirm the rate-check catches it
+      (`app/learning_hints.py`, corrections captured by diffing OCR defaults against the
+      final submitted form in `AddPropertyFlow.tsx`, optional developer name at upload)
+- [x] `pytest`: every validation rule has a passing and a failing case; deliberately corrupt
+      a fixture (6.57 → 65.7) and confirm the rate-check catches it (`test_cross_field_validators.py`
+      and friends); `test_learning_hints.py` covers the (e) module
 
 ## Phase 5 — Verification & PropScore
 **Status: DONE (landed dark on `main` ahead of schedule, by the other developer)**

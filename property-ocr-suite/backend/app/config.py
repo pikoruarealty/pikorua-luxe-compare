@@ -8,6 +8,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# openai-python reads OPENAI_BASE_URL straight out of os.environ itself,
+# independent of whatever this module passes as base_url — and treats a
+# present-but-empty value as "use this", not "unset", overriding its own
+# api.openai.com default with a blank URL. .env.example ships the var
+# blank (documenting that it's optional), so loading it as-is breaks every
+# call with "Connection error." Drop it from the process environment
+# entirely when empty so the SDK falls through to its real default.
+if not os.environ.get("OPENAI_BASE_URL"):
+    os.environ.pop("OPENAI_BASE_URL", None)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -57,6 +67,18 @@ class Settings:
     # --- extraction tuning ---
     MAX_PAGES_PER_DOC: int = int(os.getenv("MAX_PAGES_PER_DOC", "40"))
     PAGES_PER_LLM_CALL: int = int(os.getenv("PAGES_PER_LLM_CALL", "3"))
+    # How many page-batches to send to the vision LLM at once. Batches
+    # within one file are independent calls (each only ever sees its own
+    # pages), so running several in parallel just shortens wall-clock
+    # time — it doesn't change what gets extracted. Kept modest so a
+    # systemic failure (bad key, no credit) wastes at most this many
+    # in-flight calls before the job stops submitting more.
+    MAX_CONCURRENT_BATCHES: int = int(os.getenv("MAX_CONCURRENT_BATCHES", "4"))
+    # A dense floor-plan page under provider load can genuinely take over a
+    # minute to answer; tenacity above still retries transient timeouts, but
+    # too tight a ceiling here just turns a slow page into a guaranteed
+    # failure instead of a slow success.
+    LLM_CALL_TIMEOUT_SECONDS: float = float(os.getenv("LLM_CALL_TIMEOUT_SECONDS", "120"))
     MIN_TEXT_CHARS_FOR_TEXT_LAYER: int = int(os.getenv("MIN_TEXT_CHARS_FOR_TEXT_LAYER", "40"))
     PAGE_RENDER_DPI: int = int(os.getenv("PAGE_RENDER_DPI", "150"))
     # Vision models downsample internally past this anyway; capping it
@@ -99,16 +121,39 @@ class Settings:
     # blank for manual entry rather than shown pre-ticked.
     CONFIDENCE_FLOOR: float = float(os.getenv("CONFIDENCE_FLOOR", "0.55"))
 
+    # --- cross-field consistency tolerances ---
+    # How far price ÷ super_built_up_area is allowed to drift from the
+    # printed rate_per_sqft before it's flagged — absorbs rounding, not
+    # a misplaced decimal.
+    RATE_TOLERANCE_PCT: float = float(os.getenv("RATE_TOLERANCE_PCT", "0.05"))
+    # How far total_units is allowed to drift from towers × floors ×
+    # units_per_floor (and, separately, from total_units ÷ plot acres
+    # vs. the printed density) before it's flagged.
+    UNIT_COUNT_TOLERANCE_PCT: float = float(os.getenv("UNIT_COUNT_TOLERANCE_PCT", "0.15"))
+    # Plausible band for carpet_area ÷ super_built_up_area — the
+    # "efficiency ratio" real estate listings run at. Outside this band
+    # one of the two areas was likely misread even though neither looks
+    # individually absurd.
+    CARPET_RATIO_MIN: float = float(os.getenv("CARPET_RATIO_MIN", "0.50"))
+    CARPET_RATIO_MAX: float = float(os.getenv("CARPET_RATIO_MAX", "0.80"))
+
     # --- storage ---
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", str(BASE_DIR / "storage" / "uploads")))
     IMAGE_DIR: Path = Path(os.getenv("IMAGE_DIR", str(BASE_DIR / "storage" / "images")))
     JOB_DIR: Path = Path(os.getenv("JOB_DIR", str(BASE_DIR / "storage" / "jobs")))
+    # Per-developer review corrections, used to hint the next brochure from
+    # the same developer — see learning_hints.py.
+    HINTS_DIR: Path = Path(os.getenv("HINTS_DIR", str(BASE_DIR / "storage" / "learning_hints")))
+    # How many of a developer's most recent corrections to fold into the next
+    # extraction's prompt. Bounded so the hint block stays a nudge, not a
+    # second schema the model has to reconcile against the real one.
+    LEARNING_HINTS_LIMIT: int = int(os.getenv("LEARNING_HINTS_LIMIT", "8"))
 
     # --- OCR fallback ---
     TESSERACT_CMD: str = os.getenv("TESSERACT_CMD", "tesseract")
 
     def ensure_dirs(self) -> None:
-        for d in (self.UPLOAD_DIR, self.IMAGE_DIR, self.JOB_DIR):
+        for d in (self.UPLOAD_DIR, self.IMAGE_DIR, self.JOB_DIR, self.HINTS_DIR):
             d.mkdir(parents=True, exist_ok=True)
 
     def check_auth_configured(self) -> None:

@@ -188,6 +188,20 @@ def _render_page_image_b64(page: "fitz.Page", dpi: int, detailed: bool = False) 
     return _encode(pix, long_cap, quality)
 
 
+def render_page_jpeg(pdf_path: Path, page_number: int) -> bytes:
+    """One 1-indexed page, rendered for a human reviewer rather than the
+    model. Always at the floor-plan detail budget — a reviewer is looking
+    at this page precisely because a number on it needs checking, on
+    marketing pages as much as plan sheets, so it stays legible either
+    way."""
+    with fitz.open(pdf_path) as doc:
+        if not 1 <= page_number <= doc.page_count:
+            raise ValueError(f"page {page_number} out of range (1-{doc.page_count})")
+        page = doc[page_number - 1]
+        b64, _, _ = _render_page_image_b64(page, settings.PAGE_RENDER_DPI, detailed=True)
+    return base64.b64decode(b64)
+
+
 def _encode(pix: "fitz.Pixmap", long_cap: int, quality: int) -> tuple[str, int, int]:
     img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
     long_side = max(img.width, img.height)

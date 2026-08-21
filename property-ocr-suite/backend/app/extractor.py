@@ -6,16 +6,18 @@ happens later in merger.py — this module never sees more than one PDF.
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from tenacity import RetryError, retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from .config import settings
 from .pdf_reader import PageContent
 from .prompts import SYSTEM_PROMPT, build_user_prompt
+from .wire_schema import openai_response_format
 from .schema import (
     BasicsSection,
     ConfigVariant,
@@ -204,8 +206,16 @@ def _merge_batch_into(target: PropertyExtraction, raw: Dict[str, Any], file_name
 
 def _squash(text: str) -> str:
     """Strip whitespace and case so 4'3"X5'0" and 4'3" X 5'0" compare
-    equal — brochures are inconsistent about spacing around the X."""
-    return re.sub(r"\s+", "", text or "").upper()
+    equal — brochures are inconsistent about spacing around the X. Also
+    fold the inch mark to one glyph: the same brochure will print 6'1''
+    (two apostrophes) right next to 6'1" (a real quote) for no reason,
+    so treating them as different characters manufactures a mismatch
+    out of a formatting quirk rather than a misread value."""
+    normalized = re.sub(r"''|[“”]", '"', text or "")
+    return re.sub(r"\s+", "", normalized).upper()
+
+
+_DIM_HINT_RE = re.compile(r"\d['\"]|\d\s*[xX×]\s*\d")
 
 
 def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageContent]) -> None:
@@ -219,7 +229,13 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
     needs to see it — but we drop its confidence and name it in
     warnings, so it surfaces for review instead of passing as verified
     fact. Pages with no text layer (labels drawn as artwork) can't be
-    checked this way and are left alone rather than penalised."""
+    checked this way and are left alone rather than penalised — and
+    neither can a page that has SOME text (a title, a floor list) but
+    none of it dimension-shaped, which happens when the dimensions
+    themselves are baked into the plan graphic rather than typed as
+    PDF text. Treating that page as checkable would falsely demote
+    every room on it — a title-only page has no ground truth to compare
+    against, so its rooms are left alone rather than penalised."""
     text_by_page = {p.page_number: _squash(p.text) for p in pages if p.text}
     if not text_by_page:
         return
@@ -230,7 +246,7 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
             if not field.found or field.source_page is None:
                 continue
             page_text = text_by_page.get(field.source_page)
-            if not page_text:
+            if not page_text or not _DIM_HINT_RE.search(page_text):
                 continue
             if _squash(str(field.value)) in page_text:
                 continue
@@ -243,6 +259,7 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
             log.warning(msg)
             result.warnings.append(msg)
             field.confidence = min(field.confidence, 0.35)
+            field.validation_warning = msg
 
 
 _NUMBER_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
@@ -251,6 +268,12 @@ _NUMBER_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
 _SQ_FT_PER_SQ_M = 10.7639
 
 _AREA_FIELDS = ("carpet_area", "built_up_area", "super_built_up_area")
+
+_SQM_HINT_RE = re.compile(r"sq\.?\s*m(?:t|eter|etre)?s?\b", re.IGNORECASE)
+
+
+def _looks_like_sqm(value: str) -> bool:
+    return bool(_SQM_HINT_RE.search(value or ""))
 
 
 def _numbers(text: str) -> List[float]:
@@ -267,6 +290,7 @@ def _demote(field, result: PropertyExtraction, message: str) -> None:
     log.warning(message)
     result.warnings.append(message)
     field.confidence = min(field.confidence, 0.35)
+    field.validation_warning = message
 
 
 def _validate_area_fields(result: PropertyExtraction) -> None:
@@ -301,7 +325,14 @@ def _validate_area_fields(result: PropertyExtraction) -> None:
                     f'quoted from ("{field.evidence}") — check it against the brochure',
                 )
 
-        pairs = [("carpet_area", "built_up_area"), ("built_up_area", "super_built_up_area")]
+        pairs = [
+            ("carpet_area", "built_up_area"),
+            ("built_up_area", "super_built_up_area"),
+            # Not adjacent in the printed table, but many brochures only
+            # ever give carpet + super (no built-up row), so this is the
+            # only pair that ever gets compared for those.
+            ("carpet_area", "super_built_up_area"),
+        ]
         for smaller_name, larger_name in pairs:
             smaller = getattr(variant, smaller_name)
             larger = getattr(variant, larger_name)
@@ -343,6 +374,180 @@ def _validate_area_fields(result: PropertyExtraction) -> None:
                     f"{label}: {larger_name} ({larger.value}) is smaller than "
                     f"{smaller_name} ({smaller.value}), which cannot be right",
                 )
+            elif (
+                smaller_name == "carpet_area"
+                and larger_name == "super_built_up_area"
+                and not (settings.CARPET_RATIO_MIN <= a[0] / b[0] <= settings.CARPET_RATIO_MAX)
+            ):
+                _demote(
+                    smaller,
+                    result,
+                    f"{label}: carpet_area ({smaller.value}) is {a[0] / b[0]:.0%} of "
+                    f"super_built_up_area ({larger.value}) — outside the "
+                    f"{settings.CARPET_RATIO_MIN:.0%}-{settings.CARPET_RATIO_MAX:.0%} range "
+                    f"a carpet-to-super efficiency ratio normally falls in, check both "
+                    f"against the brochure",
+                )
+
+
+_FEET_INCHES_RE = re.compile(r"(\d+)'\s*(\d+)?\"")
+
+
+def _parse_feet_inches_dimension(value: str) -> Optional[float]:
+    """Parse a printed room size like 11'9" X 14'3" into an area in
+    square feet (11.75 × 14.25). Anything that isn't clearly two
+    feet-inches measurements separated by an X — passage widths
+    ("3'6\" WIDE"), decimals, metric strings — is left alone rather
+    than guessed at."""
+    if not value:
+        return None
+    sides = re.split(r"[xX×]", value)
+    if len(sides) != 2:
+        return None
+    dims = []
+    for side in sides:
+        m = _FEET_INCHES_RE.search(side)
+        if not m:
+            return None
+        feet = int(m.group(1))
+        inches = int(m.group(2) or 0)
+        dims.append(feet + inches / 12)
+    return dims[0] * dims[1]
+
+
+def _validate_room_area_sum(result: PropertyExtraction) -> None:
+    """A unit's rooms, summed, cannot exceed its own carpet area —
+    carpet area is by definition the sum of a unit's usable room areas
+    (plus wall-thickness allowance no single room claims), so a sum
+    that exceeds it means a room's size or the carpet figure itself
+    was misread. We don't know which, so both get flagged.
+
+    Skipped when carpet_area is printed in sq m: room dimensions are
+    always feet-and-inches (per the extraction rules), so a sq m
+    carpet figure isn't comparable without a conversion this check
+    deliberately doesn't attempt."""
+    for variant in result.configurations:
+        carpet = variant.carpet_area
+        if not carpet.found or _looks_like_sqm(str(carpet.value)):
+            continue
+        carpet_values = _numbers(str(carpet.value))
+        if not carpet_values or carpet_values[0] <= 0:
+            continue
+        carpet_sqft = carpet_values[0]
+
+        total = 0.0
+        parsed_any = False
+        for room in variant.rooms:
+            if not room.dimension.found:
+                continue
+            area = _parse_feet_inches_dimension(str(room.dimension.value))
+            if area is None:
+                continue
+            parsed_any = True
+            total += area
+        if not parsed_any or total <= carpet_sqft:
+            continue
+
+        label = str(variant.variant_label.value or variant.bhk_type.value or "layout")
+        msg = (
+            f"{label}: this unit's rooms add up to {total:.0f} sq ft, more than its "
+            f"carpet area of {carpet_sqft:.0f} sq ft — a room size or the carpet "
+            f"area itself was misread, check both against the plan"
+        )
+        _demote(carpet, result, msg)
+        for room in variant.rooms:
+            if room.dimension.found:
+                room.dimension.confidence = min(room.dimension.confidence, 0.35)
+                room.dimension.validation_warning = room.dimension.validation_warning or msg
+
+
+def _validate_duplicate_labels(result: PropertyExtraction) -> None:
+    """Flag configurations within one file that share a printed unit label.
+
+    Brochures routinely mirror a tower block, so the same on-page number
+    ("101") can legitimately belong to two physically different units. A
+    vision LLM reading such a page sometimes does the opposite of what we
+    want: instead of reporting them as two rows, it merges their rooms into
+    one row that matches neither real unit. No check here can tell which
+    room belongs to which physical unit — that needs the plan in front of a
+    human — so every configuration sharing a label with another one in the
+    same file is demoted and named in warnings, rather than trusted as read.
+    This is deliberately mechanical (label string equality, per file) so it
+    works the same way regardless of a brochure's own layout conventions."""
+    seen: Dict[tuple, List[ConfigVariant]] = {}
+    for variant in result.configurations:
+        label = str(variant.variant_label.value or "").strip().lower()
+        if not label:
+            continue
+        key = (variant.variant_label.source_file, label)
+        seen.setdefault(key, []).append(variant)
+
+    for (source_file, label), variants in seen.items():
+        if len(variants) < 2:
+            continue
+        msg = (
+            f'{source_file or ""}: unit label "{label}" appears on '
+            f"{len(variants)} separate configurations — likely a mirrored "
+            f"block where the same number is printed on more than one "
+            f"physical unit; room measurements may have been merged across "
+            f"them. Verify each of these against the plan before trusting it."
+        ).strip()
+        for variant in variants:
+            _demote(variant.variant_label, result, msg)
+            for room in variant.rooms:
+                if room.dimension.found:
+                    room.dimension.confidence = min(room.dimension.confidence, 0.35)
+                    room.dimension.validation_warning = (
+                        room.dimension.validation_warning or msg
+                    )
+
+
+def _check_provenance(field: ExtractedField, page_nums: List[int], file_name: str, result: PropertyExtraction) -> None:
+    if not field.found or field.source_page is None or field.source_page in page_nums:
+        return
+    _demote(
+        field,
+        result,
+        f'{file_name} page {field.source_page}: "{field.value}" was attributed to a page '
+        f"this batch never saw (it was shown pages {page_nums}) — likely a made-up page "
+        f"number rather than the real source, check it against the brochure",
+    )
+
+
+def _validate_page_provenance(
+    raw: Dict[str, Any], page_nums: List[int], file_name: str, result: PropertyExtraction
+) -> None:
+    """A batch only ever sees `page_nums` — if the model reports a
+    `"page"` outside that set for a row this SAME batch just produced,
+    the number is invented, not read. This is how one brochure produced
+    a duplicate unit config carrying a page it was never shown: the
+    model repeated an earlier row's fields with a fabricated page.
+
+    Scoped to `configurations` (the rows `_merge_batch_into` always
+    appends fresh, one raw row in, one row out) rather than every
+    section: `basics`/`project_structure`/etc. use keep-if-better, so
+    the field now sitting in `result` may belong to an earlier batch
+    with its own, correctly-sourced page — there is no way to tell
+    post-merge whether THIS batch's value was the one that stuck."""
+    new_rows = raw.get("configurations") or []
+    if not new_rows:
+        return
+    appended = result.configurations[len(result.configurations) - len(new_rows) :]
+    for variant in appended:
+        for field in (
+            variant.bhk_type,
+            variant.variant_label,
+            variant.floor_range,
+            variant.carpet_area,
+            variant.built_up_area,
+            variant.super_built_up_area,
+            variant.price,
+            variant.rate_per_sqft,
+        ):
+            _check_provenance(field, page_nums, file_name, result)
+        for room in variant.rooms:
+            _check_provenance(room.room_name, page_nums, file_name, result)
+            _check_provenance(room.dimension, page_nums, file_name, result)
 
 
 def _pages_meta_block(pages: List[PageContent]) -> str:
@@ -414,7 +619,13 @@ def batch_pages(pages: List[PageContent]) -> List[List[PageContent]]:
     wait=wait_exponential(multiplier=1, min=2, max=20),
     retry=retry_if_exception(_is_retryable),
 )
-def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
+def _system_prompt(extra_instructions: str) -> str:
+    if not extra_instructions:
+        return SYSTEM_PROMPT
+    return f"{SYSTEM_PROMPT}\n\n{extra_instructions}"
+
+
+def _call_openai(pages: List[PageContent], extra_instructions: str = "") -> Dict[str, Any]:
     from openai import OpenAI
 
     # timeout+max_retries=0: tenacity above already retries the whole
@@ -423,7 +634,7 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
     client = OpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL or None,
-        timeout=60.0,
+        timeout=settings.LLM_CALL_TIMEOUT_SECONDS,
         max_retries=0,
     )
     content = [{"type": "text", "text": build_user_prompt(_pages_meta_block(pages))}]
@@ -439,9 +650,9 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
     resp = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         temperature=0,
-        response_format={"type": "json_object"},
+        response_format=openai_response_format(),
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": _system_prompt(extra_instructions)},
             {"role": "user", "content": content},
         ],
     )
@@ -454,10 +665,14 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
     wait=wait_exponential(multiplier=1, min=2, max=20),
     retry=retry_if_exception(_is_retryable),
 )
-def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
+def _call_anthropic(pages: List[PageContent], extra_instructions: str = "") -> Dict[str, Any]:
     import anthropic
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=60.0, max_retries=0)
+    client = anthropic.Anthropic(
+        api_key=settings.ANTHROPIC_API_KEY,
+        timeout=settings.LLM_CALL_TIMEOUT_SECONDS,
+        max_retries=0,
+    )
     content = [{"type": "text", "text": build_user_prompt(_pages_meta_block(pages))}]
     for _, b64 in _page_images(pages):
         content.append(
@@ -470,7 +685,7 @@ def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
         model=settings.ANTHROPIC_MODEL,
         max_tokens=4000,
         temperature=0,
-        system=SYSTEM_PROMPT + "\nRespond with raw JSON only, no markdown fences.",
+        system=_system_prompt(extra_instructions) + "\nRespond with raw JSON only, no markdown fences.",
         messages=[{"role": "user", "content": content}],
     )
     text = "".join(block.text for block in resp.content if block.type == "text")
@@ -481,10 +696,10 @@ def _call_anthropic(pages: List[PageContent]) -> Dict[str, Any]:
     return json.loads(text)
 
 
-def _call_llm(pages: List[PageContent]) -> Dict[str, Any]:
+def _call_llm(pages: List[PageContent], extra_instructions: str = "") -> Dict[str, Any]:
     if settings.LLM_PROVIDER == "anthropic":
-        return _call_anthropic(pages)
-    return _call_openai(pages)
+        return _call_anthropic(pages, extra_instructions)
+    return _call_openai(pages, extra_instructions)
 
 
 def extract_from_pages(
@@ -492,6 +707,7 @@ def extract_from_pages(
     file_name: str,
     on_batch_done=None,
     should_cancel=None,
+    extra_instructions: str = "",
 ) -> PropertyExtraction:
     """Run the full batched extraction for one PDF's pages and return
     a PropertyExtraction populated with whatever was found.
@@ -501,41 +717,83 @@ def extract_from_pages(
     layer) can report page-by-page progress on what's otherwise a
     several-batch, tens-of-seconds-per-batch call.
 
-    `should_cancel()`, if given, is checked before starting each batch.
-    It can't abort a call already in flight, but it stops any further
-    ones from starting once a user asks to stop."""
+    `should_cancel()`, if given, is checked before starting each batch
+    that hasn't been submitted to the pool yet. It can't abort a call
+    already in flight, but it stops any further ones from starting once
+    a user asks to stop.
+
+    Batches run up to `settings.MAX_CONCURRENT_BATCHES` at a time. Each
+    batch only ever sees its own pages, so nothing about correctness
+    depends on the order calls land in: `_merge_batch_into` picks the
+    higher-confidence value for a field regardless of which batch
+    supplied it, and config/amenity/highlight lists just accumulate in
+    whatever order — cosmetic, not a correctness issue. A systemic
+    failure (bad key, no credit) still stops the job early; with several
+    calls in flight when it's detected, a few already-started calls are
+    allowed to finish rather than wasting the whole remaining batch."""
     result = PropertyExtraction(source_files=[file_name])
     batches = batch_pages(pages)
+    if not batches:
+        _validate_room_dimensions(result, pages)
+        _validate_area_fields(result)
+        _validate_duplicate_labels(result)
+        return result
+
     succeeded = 0
     last_failure: BaseException | None = None
-    for batch in batches:
-        if should_cancel and should_cancel():
-            break
-        page_nums = [p.page_number for p in batch]
-        try:
-            raw = _call_llm(batch)
-        except Exception as exc:  # noqa: BLE001
-            last_failure = exc
-            msg = f"{file_name} pages {page_nums}: extraction call failed ({_describe(exc)})"
-            log.warning(msg)
-            result.warnings.append(msg)
-            if on_batch_done:
-                on_batch_done(file_name, page_nums)
-            # An account-level rejection answers the same for every
-            # remaining call. Stop now rather than spending a minute
-            # proving what the first one already told us.
-            if _is_systemic(exc):
-                raise ExtractionUnavailable(_describe(exc)) from exc
-            continue
-        succeeded += 1
-        try:
-            _merge_batch_into(result, raw, file_name)
-        except Exception as exc:  # noqa: BLE001
-            msg = f"{file_name} pages {page_nums}: could not parse model output ({exc})"
-            log.warning(msg)
-            result.warnings.append(msg)
-        if on_batch_done:
-            on_batch_done(file_name, page_nums)
+    systemic_error: BaseException | None = None
+    pending = list(batches)
+    max_workers = max(1, min(settings.MAX_CONCURRENT_BATCHES, len(batches)))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
+        in_flight: Dict[concurrent.futures.Future, list] = {}
+
+        def submit_next() -> None:
+            if systemic_error is not None or not pending:
+                return
+            if should_cancel and should_cancel():
+                return
+            batch = pending.pop(0)
+            future = pool.submit(_call_llm, batch, extra_instructions)
+            in_flight[future] = batch
+
+        for _ in range(max_workers):
+            submit_next()
+
+        while in_flight:
+            done, _pending_futures = concurrent.futures.wait(
+                in_flight, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            for future in done:
+                batch = in_flight.pop(future)
+                page_nums = [p.page_number for p in batch]
+                try:
+                    raw = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    last_failure = exc
+                    msg = f"{file_name} pages {page_nums}: extraction call failed ({_describe(exc)})"
+                    log.warning(msg)
+                    result.warnings.append(msg)
+                    # An account-level rejection answers the same for every
+                    # remaining call. Stop submitting new ones rather than
+                    # spending a minute proving what this one already told us.
+                    if systemic_error is None and _is_systemic(exc):
+                        systemic_error = exc
+                else:
+                    succeeded += 1
+                    try:
+                        _merge_batch_into(result, raw, file_name)
+                        _validate_page_provenance(raw, page_nums, file_name, result)
+                    except Exception as exc:  # noqa: BLE001
+                        msg = f"{file_name} pages {page_nums}: could not parse model output ({exc})"
+                        log.warning(msg)
+                        result.warnings.append(msg)
+                if on_batch_done:
+                    on_batch_done(file_name, page_nums)
+                submit_next()
+
+    if systemic_error is not None:
+        raise ExtractionUnavailable(_describe(systemic_error))
 
     # Every single call failing is not "a brochure we struggled with" —
     # it's the service being unusable (no credit, bad key, provider
@@ -546,4 +804,6 @@ def extract_from_pages(
 
     _validate_room_dimensions(result, pages)
     _validate_area_fields(result)
+    _validate_room_area_sum(result)
+    _validate_duplicate_labels(result)
     return result

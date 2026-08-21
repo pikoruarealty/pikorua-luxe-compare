@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 
 from .config import settings
+from .cross_field_validators import validate_cross_field
 from .durable_jobs import GcsPrivateStorage, PostgresJobStore, sha256_file, validate_extraction
 from .extractor import batch_pages, extract_from_pages
 from .merger import merge_extractions
@@ -66,6 +67,7 @@ def process_job(store: PostgresJobStore, objects: GcsPrivateStorage, job) -> Non
                 )
             )
         normalized = normalize(merge_extractions([extraction]))
+        validate_cross_field(normalized)
         payload = normalized.model_dump(mode="json")
         validation = validate_extraction(payload)
         if not validation.can_continue:

@@ -7,6 +7,7 @@ from tenacity import Future, RetryError
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import extractor
+from app.config import settings
 from app.extractor import (
     ExtractionUnavailable,
     _describe,
@@ -101,19 +102,25 @@ def test_all_batches_failing_raises_rather_than_returning_a_blank_form(monkeypat
     brochure was hard to parse". It wasn't — the service was unusable."""
     monkeypatch.setattr(
         extractor, "_call_llm",
-        lambda batch: (_ for _ in ()).throw(FakeAPIError(402, "Insufficient credits")),
+        lambda batch, extra_instructions="": (_ for _ in ()).throw(
+            FakeAPIError(402, "Insufficient credits")
+        ),
     )
     with pytest.raises(ExtractionUnavailable) as err:
         extractor.extract_from_pages([_page(1), _page(2)], "brochure.pdf")
     assert "Insufficient credits" in str(err.value)
 
 
-def test_systemic_failure_aborts_on_the_first_batch(monkeypatch):
+def test_systemic_failure_aborts_without_walking_every_batch(monkeypatch):
     """With no credit, batch 1 already knows the answer for batch 13.
-    Walking the rest costs a minute to prove what we were told."""
+    Batches run concurrently, so up to MAX_CONCURRENT_BATCHES calls may
+    already be in flight when the first failure lands and is recognised
+    as systemic — those are allowed to finish rather than wasting the
+    whole remaining batch — but no further ones should be submitted
+    after that."""
     calls = {"n": 0}
 
-    def always_402(batch):
+    def always_402(batch, extra_instructions=""):
         calls["n"] += 1
         raise FakeAPIError(402, "Insufficient credits")
 
@@ -121,7 +128,7 @@ def test_systemic_failure_aborts_on_the_first_batch(monkeypatch):
     pages = [_page(i, plan=True) for i in range(1, 14)]  # 13 separate batches
     with pytest.raises(ExtractionUnavailable):
         extractor.extract_from_pages(pages, "brochure.pdf")
-    assert calls["n"] == 1
+    assert calls["n"] <= settings.MAX_CONCURRENT_BATCHES
 
 
 def test_page_specific_failure_does_not_abort_the_whole_job(monkeypatch):
@@ -129,7 +136,7 @@ def test_page_specific_failure_does_not_abort_the_whole_job(monkeypatch):
     brochure whose other pages read fine."""
     calls = {"n": 0}
 
-    def first_page_bad(batch):
+    def first_page_bad(batch, extra_instructions=""):
         calls["n"] += 1
         if calls["n"] == 1:
             raise FakeAPIError(400, "that page upset the model")
@@ -148,7 +155,7 @@ def test_partial_failure_still_returns_what_was_read(monkeypatch):
     """One bad page must not throw away the other eighteen."""
     calls = {"n": 0}
 
-    def flaky(batch):
+    def flaky(batch, extra_instructions=""):
         calls["n"] += 1
         if calls["n"] == 1:
             raise FakeAPIError(500, "hiccup")
