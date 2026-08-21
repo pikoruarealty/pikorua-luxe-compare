@@ -77,6 +77,19 @@ def test_page_without_text_layer_is_not_penalised():
     assert e.configurations[0].rooms[0].dimension.confidence == 0.9
 
 
+def test_page_with_title_only_text_is_not_penalised():
+    """A page can have a text layer (a title, a floor list) without any
+    of it being dimension-shaped — the dimensions themselves are baked
+    into the plan graphic. That page has no ground truth to check
+    against either, same as a fully blank one; treating "has some text"
+    as "checkable" would falsely demote every room on it."""
+    e = _with_room("BEDROOM", "11'9\" X 11'9\"")
+    title_only = "TYPICAL FLOOR PLAN\n(2nd to 5th, 7th to 9th)\nN"
+    _validate_room_dimensions(e, [_page(13, title_only)])
+    assert e.warnings == []
+    assert e.configurations[0].rooms[0].dimension.confidence == 0.9
+
+
 def test_floor_plan_detected_by_dimension_density():
     dims_only = "KITCHEN\n11'9\" X 14'3\"\n" * 6
     assert looks_like_floor_plan(dims_only) is True

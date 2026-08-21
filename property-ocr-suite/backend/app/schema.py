@@ -47,6 +47,13 @@ class ExtractedField(BaseModel):
     # bedrooms on a plan). The UI labels these differently so a human
     # never mistakes a derivation for something the brochure stated.
     derived: bool = False
+    # Set only by a cross-field consistency check (room size vs. the
+    # plan's own text layer, carpet vs. built-up vs. super-built-up
+    # area ratios) that actively caught this value looking wrong — not
+    # merely low-confidence. Lets a reviewer see "unable to attach
+    # provenance" and "this specific number failed a sanity check" as
+    # two different things instead of both just reading as a low number.
+    validation_warning: Optional[str] = None
 
     @classmethod
     def empty(cls) -> "ExtractedField":

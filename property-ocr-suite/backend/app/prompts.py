@@ -58,6 +58,17 @@ settle it before answering, rather than reporting the lopsided result.
    a3. Only report a layout that actually details rooms. Pages that merely mark \
 where units sit on a floor (a "Typical Plan" showing "A-101", "B-102" as labels \
 on a site drawing) are NOT unit layouts — skip them entirely.
+   a4. A plan can print the SAME unit number twice for two genuinely different \
+physical units — a block mirrored left-right across a corridor or lift lobby, \
+each half stamped "101" because each is that block's own ground-floor unit. \
+Two blocks sharing a number is not the same case as a2's mirrored series: here \
+the drawings themselves are different, drawn side by side. If you see the same \
+label appear over two distinct drawings on a page, report TWO separate rows \
+(the "variant_label" will legitimately repeat) — never combine their rooms \
+into one row, and never let a room from one drawing's "101" appear in the \
+other drawing's "101" row just because the label matches. When you cannot \
+tell which of the two drawings a room belongs to, leave it out (see e) rather \
+than guessing which "101" it goes with.
    b. In that row's "rooms", list EVERY labelled room on that unit's plan — \
 bedrooms, toilets, kitchen, living/dining, drawing, balcony, wash, store, \
 foyer, vestibule, waiting area, passage, dress areas. Do not stop at the main \

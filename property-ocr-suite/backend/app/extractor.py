@@ -205,8 +205,16 @@ def _merge_batch_into(target: PropertyExtraction, raw: Dict[str, Any], file_name
 
 def _squash(text: str) -> str:
     """Strip whitespace and case so 4'3"X5'0" and 4'3" X 5'0" compare
-    equal — brochures are inconsistent about spacing around the X."""
-    return re.sub(r"\s+", "", text or "").upper()
+    equal — brochures are inconsistent about spacing around the X. Also
+    fold the inch mark to one glyph: the same brochure will print 6'1''
+    (two apostrophes) right next to 6'1" (a real quote) for no reason,
+    so treating them as different characters manufactures a mismatch
+    out of a formatting quirk rather than a misread value."""
+    normalized = re.sub(r"''|[“”]", '"', text or "")
+    return re.sub(r"\s+", "", normalized).upper()
+
+
+_DIM_HINT_RE = re.compile(r"\d['\"]|\d\s*[xX×]\s*\d")
 
 
 def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageContent]) -> None:
@@ -220,7 +228,13 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
     needs to see it — but we drop its confidence and name it in
     warnings, so it surfaces for review instead of passing as verified
     fact. Pages with no text layer (labels drawn as artwork) can't be
-    checked this way and are left alone rather than penalised."""
+    checked this way and are left alone rather than penalised — and
+    neither can a page that has SOME text (a title, a floor list) but
+    none of it dimension-shaped, which happens when the dimensions
+    themselves are baked into the plan graphic rather than typed as
+    PDF text. Treating that page as checkable would falsely demote
+    every room on it — a title-only page has no ground truth to compare
+    against, so its rooms are left alone rather than penalised."""
     text_by_page = {p.page_number: _squash(p.text) for p in pages if p.text}
     if not text_by_page:
         return
@@ -231,7 +245,7 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
             if not field.found or field.source_page is None:
                 continue
             page_text = text_by_page.get(field.source_page)
-            if not page_text:
+            if not page_text or not _DIM_HINT_RE.search(page_text):
                 continue
             if _squash(str(field.value)) in page_text:
                 continue
@@ -244,6 +258,7 @@ def _validate_room_dimensions(result: PropertyExtraction, pages: List[PageConten
             log.warning(msg)
             result.warnings.append(msg)
             field.confidence = min(field.confidence, 0.35)
+            field.validation_warning = msg
 
 
 _NUMBER_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
@@ -268,6 +283,7 @@ def _demote(field, result: PropertyExtraction, message: str) -> None:
     log.warning(message)
     result.warnings.append(message)
     field.confidence = min(field.confidence, 0.35)
+    field.validation_warning = message
 
 
 def _validate_area_fields(result: PropertyExtraction) -> None:
@@ -344,6 +360,47 @@ def _validate_area_fields(result: PropertyExtraction) -> None:
                     f"{label}: {larger_name} ({larger.value}) is smaller than "
                     f"{smaller_name} ({smaller.value}), which cannot be right",
                 )
+
+
+def _validate_duplicate_labels(result: PropertyExtraction) -> None:
+    """Flag configurations within one file that share a printed unit label.
+
+    Brochures routinely mirror a tower block, so the same on-page number
+    ("101") can legitimately belong to two physically different units. A
+    vision LLM reading such a page sometimes does the opposite of what we
+    want: instead of reporting them as two rows, it merges their rooms into
+    one row that matches neither real unit. No check here can tell which
+    room belongs to which physical unit — that needs the plan in front of a
+    human — so every configuration sharing a label with another one in the
+    same file is demoted and named in warnings, rather than trusted as read.
+    This is deliberately mechanical (label string equality, per file) so it
+    works the same way regardless of a brochure's own layout conventions."""
+    seen: Dict[tuple, List[ConfigVariant]] = {}
+    for variant in result.configurations:
+        label = str(variant.variant_label.value or "").strip().lower()
+        if not label:
+            continue
+        key = (variant.variant_label.source_file, label)
+        seen.setdefault(key, []).append(variant)
+
+    for (source_file, label), variants in seen.items():
+        if len(variants) < 2:
+            continue
+        msg = (
+            f'{source_file or ""}: unit label "{label}" appears on '
+            f"{len(variants)} separate configurations — likely a mirrored "
+            f"block where the same number is printed on more than one "
+            f"physical unit; room measurements may have been merged across "
+            f"them. Verify each of these against the plan before trusting it."
+        ).strip()
+        for variant in variants:
+            _demote(variant.variant_label, result, msg)
+            for room in variant.rooms:
+                if room.dimension.found:
+                    room.dimension.confidence = min(room.dimension.confidence, 0.35)
+                    room.dimension.validation_warning = (
+                        room.dimension.validation_warning or msg
+                    )
 
 
 def _pages_meta_block(pages: List[PageContent]) -> str:
@@ -521,6 +578,7 @@ def extract_from_pages(
     if not batches:
         _validate_room_dimensions(result, pages)
         _validate_area_fields(result)
+        _validate_duplicate_labels(result)
         return result
 
     succeeded = 0
@@ -587,4 +645,5 @@ def extract_from_pages(
 
     _validate_room_dimensions(result, pages)
     _validate_area_fields(result)
+    _validate_duplicate_labels(result)
     return result

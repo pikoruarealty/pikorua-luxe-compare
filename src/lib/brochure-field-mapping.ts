@@ -21,6 +21,11 @@ export interface ExtractedField {
   source_page: number | null;
   evidence: string | null;
   verified: boolean;
+  /** Set only when a cross-field consistency check (room size vs. the plan's
+   *  own text layer, area-ratio sanity) actively caught this value looking
+   *  wrong — distinct from a plain low confidence, which just means the OCR
+   *  itself wasn't sure. Null on every field a check didn't touch. */
+  validation_warning: string | null;
 }
 
 interface RoomDimension {
@@ -162,6 +167,9 @@ export interface ExtractedFieldInfo {
   snippet: string | null;
   sourceFile: string | null;
   sourcePage: number | null;
+  /** Non-null when a backend consistency check flagged this specific value —
+   *  see `ExtractedField.validation_warning`. */
+  validationWarning: string | null;
 }
 
 /** Plan books name layouts however they like — "TYPE - 4 SUB UNIT TYPE - 4.2",
@@ -440,15 +448,26 @@ export interface RoomMapping {
    *  is a plan style the parser doesn't handle yet, and the value reaches the
    *  form verbatim with no area computed. */
   unparsed: { name: string; dimension: string }[];
+  /** Form slot keys (bedroom1-5, livingArea, kitchen) built from at least one
+   *  room whose dimension a backend consistency check actively flagged. A
+   *  combined slot (e.g. "Living & Dining + Drawing Room") is failing if
+   *  either half is. */
+  failingSlots: Set<string>;
 }
 
 function assignRooms(rooms: RoomDimension[]): RoomMapping {
   const out: Record<string, string | null> = {};
-  const bedrooms: { dimension: string; master: boolean; slot: number | null }[] = [];
-  const living: { name: string; dimension: string; generic: boolean }[] = [];
-  const kitchens: { name: string; dimension: string; generic: boolean }[] = [];
+  const bedrooms: {
+    dimension: string;
+    master: boolean;
+    slot: number | null;
+    failing: boolean;
+  }[] = [];
+  const living: { name: string; dimension: string; generic: boolean; failing: boolean }[] = [];
+  const kitchens: { name: string; dimension: string; generic: boolean; failing: boolean }[] = [];
   const unplaced: { name: string; dimension: string | null }[] = [];
   const unparsed: { name: string; dimension: string }[] = [];
+  const failingSlots = new Set<string>();
   let bathrooms = 0;
   let balconies = 0;
   let hasServant = false;
@@ -458,6 +477,7 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
     const name = raw.toLowerCase();
     if (!name) continue;
     const dimension = textOrNull(room.dimension);
+    const failing = Boolean(room.dimension?.validation_warning);
     // Only sizes that were going to reach the form matter here. A passage
     // labelled 3'6" WIDE is not a W×H and never had a field to land in, so
     // reporting it would just train the reader to skim past real problems.
@@ -487,9 +507,9 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
     }
 
     if (ROOM_PATTERNS.kitchen.test(name)) {
-      if (dimension) kitchens.push({ ...roomLabel(raw, "kitchen"), dimension });
+      if (dimension) kitchens.push({ ...roomLabel(raw, "kitchen"), dimension, failing });
     } else if (ROOM_PATTERNS.living.test(name)) {
-      if (dimension) living.push({ ...roomLabel(raw, "living"), dimension });
+      if (dimension) living.push({ ...roomLabel(raw, "living"), dimension, failing });
     } else if (ROOM_PATTERNS.bedroom.test(name)) {
       if (dimension) {
         const numbered = BEDROOM_NUMBER_RE.exec(raw);
@@ -497,6 +517,7 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
           dimension,
           master: /master|\bmbr\b/.test(name),
           slot: numbered ? Number(numbered[1]) : null,
+          failing,
         });
       }
     } else if (!ROOM_PATTERNS.ignorable.test(name)) {
@@ -505,7 +526,9 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
   }
 
   out.livingArea = combineRooms(living);
+  if (living.some((r) => r.failing)) failingSlots.add("livingArea");
   out.kitchen = combineRooms(kitchens);
+  if (kitchens.some((r) => r.failing)) failingSlots.add("kitchen");
 
   // A plan that numbers its bedrooms decides its own slots — "M.BED-1" is
   // bedroom1 even when the drawing happens to place M.BED-2 first, which is
@@ -513,28 +536,34 @@ function assignRooms(rooms: RoomDimension[]): RoomMapping {
   // unnumbered ones fall back to order, master first: bedroom1 is the master
   // on every listing already saved, and plans routinely draw it last.
   const placed = new Map<number, string>();
-  const spare: string[] = [];
+  const placedFailing = new Set<number>();
+  const spare: { dimension: string; failing: boolean }[] = [];
   const ordered = [...bedrooms.filter((b) => b.master), ...bedrooms.filter((b) => !b.master)];
   for (const b of ordered) {
-    if (b.slot && b.slot >= 1 && b.slot <= 5 && !placed.has(b.slot))
+    if (b.slot && b.slot >= 1 && b.slot <= 5 && !placed.has(b.slot)) {
       placed.set(b.slot, b.dimension);
-    else spare.push(b.dimension);
+      if (b.failing) placedFailing.add(b.slot);
+    } else spare.push({ dimension: b.dimension, failing: b.failing });
   }
   let next = 1;
-  for (const dimension of spare) {
+  for (const { dimension, failing } of spare) {
     while (next <= 5 && placed.has(next)) next += 1;
     // The form stops at five bedrooms; a sixth has nowhere to go, and saying so
     // is the whole point of `unplaced`.
     if (next > 5) unplaced.push({ name: "Bedroom (no free slot)", dimension });
-    else placed.set(next, dimension);
+    else {
+      placed.set(next, dimension);
+      if (failing) placedFailing.add(next);
+    }
   }
   for (const [slot, dimension] of placed) out[`bedroom${slot}`] = formatRoom(dimension, null);
+  for (const slot of placedFailing) failingSlots.add(`bedroom${slot}`);
 
   if (bathrooms) out.bathrooms = String(bathrooms);
   if (balconies) out.balconies = String(balconies);
   if (hasServant) out.servantRoom = "Yes";
 
-  return { values: out, unplaced, unparsed };
+  return { values: out, unplaced, unparsed, failingSlots };
 }
 
 /** What an extraction lost on its way into the form.
@@ -622,6 +651,19 @@ export function findMappingGaps(
   return gaps;
 }
 
+/** Which VARIANT_FIELDS slots on one config variant a backend consistency
+ *  check flagged — area-ratio checks for carpet/built-up/super-built-up,
+ *  the plan-text cross-check for room dimensions (via assignRooms). Kept
+ *  separate from the ConfigDetailInput values themselves, which are plain
+ *  form-serializable data with no room for provenance flags. */
+function variantFailingFields(variant: ConfigVariant): Set<string> {
+  const failing = assignRooms(variant.rooms ?? []).failingSlots;
+  if (variant.super_built_up_area?.validation_warning) failing.add("area");
+  if (variant.carpet_area?.validation_warning) failing.add("carpet");
+  if (variant.built_up_area?.validation_warning) failing.add("builtUpArea");
+  return failing;
+}
+
 /** Turns an extraction into a partial PropertyFormValues the developer's form
  *  is pre-filled with. Nothing here is authoritative — every value is still
  *  reviewed and ticked by a human before it can be submitted. */
@@ -680,6 +722,25 @@ export function mapExtractedPayload(
     if (matched) out.configs = configs;
   }
 
+  return out;
+}
+
+/** Parallel to mapExtractedPayload's `configs`, index-aligned per bucket:
+ *  which VARIANT_FIELDS slots on each pushed variant were flagged by a
+ *  backend consistency check. Computed separately so the form values stay
+ *  plain data. */
+function mapExtractedFailingFields(
+  extraction: PropertyExtraction,
+  overrides: VariantOverrides = {},
+): Partial<Record<ConfigBucket, Set<string>[]>> {
+  const out: Partial<Record<ConfigBucket, Set<string>[]>> = {};
+  (extraction.configurations ?? []).forEach((variant, index) => {
+    const bucket =
+      overrides[index]?.bucket ??
+      bucketFor(text(variant.bhk_type), text(variant.variant_label), variant.rooms ?? []);
+    if (!bucket) return;
+    (out[bucket] ??= []).push(variantFailingFields(variant));
+  });
   return out;
 }
 
@@ -871,6 +932,9 @@ export interface MergeRow {
   incoming: string;
   /** A blank field is a gap to fill; a different value is a conflict to decide. */
   conflict: boolean;
+  /** True when a backend consistency check actively flagged this incoming
+   *  value (not merely low confidence) — see `ExtractedField.validation_warning`. */
+  failing: boolean;
   apply: (into: PropertyFormValues) => void;
 }
 
@@ -903,12 +967,14 @@ function matchIndex(
 function configRows(
   current: PropertyFormValues,
   incoming: PropertyFormValues["configs"] | undefined,
+  failing: Partial<Record<ConfigBucket, Set<string>[]>> = {},
 ): MergeRow[] {
   if (!incoming) return [];
   const out: MergeRow[] = [];
 
   for (const bucket of Object.keys(BUCKET_LABELS) as ConfigBucket[]) {
     const existingVariants = current.configs?.[bucket] ?? [];
+    const failingByPosition = failing[bucket] ?? [];
 
     (incoming[bucket] ?? []).forEach((variant, position) => {
       const index = matchIndex(existingVariants, variant, position);
@@ -931,6 +997,7 @@ function configRows(
         return created;
       };
 
+      const variantFailing = failingByPosition[position];
       for (const field of VARIANT_FIELDS) {
         const value = cell(variant[field.name]);
         if (!value) continue;
@@ -942,6 +1009,7 @@ function configRows(
           current: isNew ? "not on this listing" : existing,
           incoming: value,
           conflict: existing !== "",
+          failing: variantFailing?.has(field.name) ?? false,
           apply: (into) => {
             const target = reach(into);
             if (target) (target as Record<string, unknown>)[field.name] = value;
@@ -973,6 +1041,7 @@ export function buildMergeRows(
       current: existing,
       incoming: f.value,
       conflict: existing !== "",
+      failing: Boolean(f.validationWarning),
       apply: (into) => {
         (into as unknown as Record<string, unknown>)[f.formField] = f.value;
       },
@@ -980,6 +1049,7 @@ export function buildMergeRows(
   }
 
   const mapped = mapExtractedPayload(response.extraction);
+  const mappedFailing = mapExtractedFailingFields(response.extraction);
 
   const incomingAmenities = mapped.amenities ?? [];
   if (incomingAmenities.length) {
@@ -993,6 +1063,7 @@ export function buildMergeRows(
         incoming: fresh.join(" · "),
         // Adding to a list never destroys anything, so this is a gap, not a clash.
         conflict: false,
+        failing: false,
         apply: (into) => {
           into.amenities = [...existing, ...fresh];
         },
@@ -1000,7 +1071,7 @@ export function buildMergeRows(
     }
   }
 
-  out.push(...configRows(current, mapped.configs));
+  out.push(...configRows(current, mapped.configs, mappedFailing));
 
   return out;
 }
@@ -1039,6 +1110,7 @@ export function extractedFieldList(response: ExtractionResponse): ExtractedField
       snippet: field.evidence,
       sourceFile: field.source_file,
       sourcePage: field.source_page,
+      validationWarning: field.validation_warning,
     });
   }
 

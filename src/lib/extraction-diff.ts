@@ -10,12 +10,11 @@ import type { PropertyFormValues } from "@/lib/property-schema";
  *  a human look, even when the field it's proposing is a genuine gap. */
 const SILENT_ACCEPT_CONFIDENCE = 0.85;
 
-/** §5.1's review order: a failed cross-field validator would sort first, but
- *  Phase 4's validators don't exist yet — `failing` stays reachable via
- *  `classifyDiffs`'s `isFailingValidation` hook for when they land. Conflicts
- *  next (an existing value the brochure disagrees with — never assume which
- *  one is right), then genuine gaps too uncertain to silently fill, cosmetic
- *  differences last. */
+/** §5.1's review order: a row a backend consistency check actively flagged
+ *  (`MergeRow.failing`, from `ExtractedField.validation_warning`) sorts first.
+ *  Conflicts next (an existing value the brochure disagrees with — never
+ *  assume which one is right), then genuine gaps too uncertain to silently
+ *  fill, cosmetic differences last. */
 export type DiffCategory = "failing" | "conflict" | "gap_fill" | "cosmetic" | "silent_accept";
 
 const REVIEW_ORDER: DiffCategory[] = ["failing", "conflict", "gap_fill", "cosmetic"];
@@ -38,10 +37,10 @@ function isCosmeticDifference(current: string, incoming: string): boolean {
  * Classifies every difference `buildMergeRows` finds between a saved listing
  * and a fresh re-extraction as a fix candidate or a conflict to review —
  * never assumes the incoming value is correct just because it's newer.
- * `isFailingValidation` is an optional Phase 4 hook: when the cross-field
- * arithmetic validators exist, pass a predicate that flags a row's field as
- * failing one, and it sorts first in the review queue regardless of
- * confidence.
+ * A row whose `MergeRow.failing` is true (a backend consistency check
+ * actively caught the incoming value looking wrong) sorts first by default.
+ * `isFailingValidation` is an optional override for a caller that wants a
+ * different predicate instead.
  */
 export function classifyDiffs(
   current: PropertyFormValues,
@@ -56,7 +55,7 @@ export function classifyDiffs(
   return rows.map((row) => {
     const confidence = confidenceByField.get(row.key as keyof PropertyFormValues) ?? null;
 
-    if (isFailingValidation?.(row)) {
+    if (isFailingValidation ? isFailingValidation(row) : row.failing) {
       return { row, category: "failing", confidence };
     }
     if (!row.conflict) {
