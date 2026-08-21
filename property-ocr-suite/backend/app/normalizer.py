@@ -33,6 +33,30 @@ _DATE_TEXT_RE = re.compile(
     r"(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\s+(\d{4})", re.IGNORECASE
 )
 _DATE_SLASH_RE = re.compile(r"(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})")
+_MONTH_YEAR_RE = re.compile(r"([A-Za-z]{3,9})\s+(\d{4})", re.IGNORECASE)
+
+
+def extract_year_month(raw: str) -> Optional[tuple[int, int]]:
+    """Best-effort (year, month) out of free text like "15th Jan 2025"
+    or the month-year-only "Jan 2025" possession/RERA dates print as —
+    for comparing which of two dates comes first, not for display
+    (normalize_date already owns that). None for anything without a
+    recognisable month name and year, e.g. a possession countdown like
+    "9 Months" or "RTMI"."""
+    if not raw:
+        return None
+    m = _DATE_TEXT_RE.search(raw)
+    if m:
+        _, month_name, year = m.groups()
+    else:
+        m = _MONTH_YEAR_RE.search(raw)
+        if not m:
+            return None
+        month_name, year = m.groups()
+    month = _MONTHS.get(month_name.strip().lower()[:3])
+    if not month:
+        return None
+    return (int(year), int(month))
 
 
 def normalize_date(raw: str) -> str:

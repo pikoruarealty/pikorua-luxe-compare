@@ -116,6 +116,22 @@ class Settings:
     # blank for manual entry rather than shown pre-ticked.
     CONFIDENCE_FLOOR: float = float(os.getenv("CONFIDENCE_FLOOR", "0.55"))
 
+    # --- cross-field consistency tolerances ---
+    # How far price ÷ super_built_up_area is allowed to drift from the
+    # printed rate_per_sqft before it's flagged — absorbs rounding, not
+    # a misplaced decimal.
+    RATE_TOLERANCE_PCT: float = float(os.getenv("RATE_TOLERANCE_PCT", "0.05"))
+    # How far total_units is allowed to drift from towers × floors ×
+    # units_per_floor (and, separately, from total_units ÷ plot acres
+    # vs. the printed density) before it's flagged.
+    UNIT_COUNT_TOLERANCE_PCT: float = float(os.getenv("UNIT_COUNT_TOLERANCE_PCT", "0.15"))
+    # Plausible band for carpet_area ÷ super_built_up_area — the
+    # "efficiency ratio" real estate listings run at. Outside this band
+    # one of the two areas was likely misread even though neither looks
+    # individually absurd.
+    CARPET_RATIO_MIN: float = float(os.getenv("CARPET_RATIO_MIN", "0.50"))
+    CARPET_RATIO_MAX: float = float(os.getenv("CARPET_RATIO_MAX", "0.80"))
+
     # --- storage ---
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", str(BASE_DIR / "storage" / "uploads")))
     IMAGE_DIR: Path = Path(os.getenv("IMAGE_DIR", str(BASE_DIR / "storage" / "images")))

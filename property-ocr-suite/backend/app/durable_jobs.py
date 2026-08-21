@@ -10,10 +10,54 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+# Plausible absolute bounds, in rupees / rupees-per-sqft — wide enough to
+# span budget housing to ultra-luxury without being a realism filter, just
+# a catch for a misplaced decimal or an OCR digit that flipped a value by
+# an order of magnitude.
+_RATE_PER_SQFT_BOUNDS = (500, 100_000)
+_PRICE_BOUNDS = (500_000, 5_000_000_000)
+
+_NUMBER_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
+_CR_RE = re.compile(r"\bcr\b|\bcrore", re.IGNORECASE)
+_LAKH_RE = re.compile(r"\blakh\b|\blac\b", re.IGNORECASE)
+
+
+def _as_number(value: Any) -> float | None:
+    """Loose numeric coercion for a payload value that may already be a
+    number or may still be a string like "9,800/sq ft" — this module
+    works off plain JSON, not ExtractedField objects, so there's no
+    upstream guarantee of which."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        m = _NUMBER_RE.search(value)
+        if m:
+            try:
+                return float(m.group().replace(",", ""))
+            except ValueError:
+                return None
+    return None
+
+
+def _price_in_rupees(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    number = _as_number(value)
+    if number is None:
+        return None
+    if _CR_RE.search(value):
+        return number * 1_00_00_000
+    if _LAKH_RE.search(value):
+        return number * 1_00_000
+    return number
 
 try:
     import psycopg
@@ -88,6 +132,18 @@ def validate_extraction(payload: dict[str, Any]) -> ValidationResult:
         carpet = scalar(configuration.get("carpet_area"))
         if isinstance(area, (int, float)) and isinstance(carpet, (int, float)) and carpet > area:
             soft.append(f"configuration_{index}_carpet_exceeds_super_area")
+
+        rate_number = _as_number(scalar(configuration.get("rate_per_sqft")))
+        if rate_number is not None and not (
+            _RATE_PER_SQFT_BOUNDS[0] <= rate_number <= _RATE_PER_SQFT_BOUNDS[1]
+        ):
+            soft.append(f"configuration_{index}_rate_per_sqft_implausible")
+
+        price_rupees = _price_in_rupees(scalar(configuration.get("price")))
+        if price_rupees is not None and not (
+            _PRICE_BOUNDS[0] <= price_rupees <= _PRICE_BOUNDS[1]
+        ):
+            soft.append(f"configuration_{index}_price_implausible")
 
     basics = payload.get("basics")
     if not isinstance(basics, dict):

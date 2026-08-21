@@ -76,6 +76,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .config import settings
+from .cross_field_validators import validate_cross_field
 from .extractor import ExtractionUnavailable, batch_pages, extract_from_pages
 from .merger import merge_extractions
 from .normalizer import normalize
@@ -295,6 +296,7 @@ def _run_extraction(
 
         merged = merge_extractions(per_file_extractions)
         merged = normalize(merged)
+        validate_cross_field(merged)
         merged.warnings.extend(read_warnings)
         _save_job(job_id, merged)
         _set_progress(job_id, status="done")

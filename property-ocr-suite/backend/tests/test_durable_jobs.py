@@ -32,3 +32,50 @@ def test_soft_validation_flags_area_ordering_without_guessing():
     )
     assert result == ValidationResult((), ("configuration_0_carpet_exceeds_super_area",))
     assert result.can_continue
+
+
+def test_soft_validation_flags_implausible_rate_per_sqft():
+    result = validate_extraction(
+        {
+            "basics": {},
+            "configurations": [{"rate_per_sqft": {"value": "9,800,000/sqft"}}],
+        }
+    )
+    assert result.can_continue
+    assert "configuration_0_rate_per_sqft_implausible" in result.soft_anomalies
+
+
+def test_soft_validation_does_not_flag_a_plausible_rate_per_sqft():
+    result = validate_extraction(
+        {
+            "basics": {},
+            "configurations": [{"rate_per_sqft": {"value": "9,800/sqft"}}],
+        }
+    )
+    assert result.soft_anomalies == ()
+
+
+def test_soft_validation_flags_implausible_price_from_misplaced_decimal():
+    """The 6.57 Cr -> 65.7 Cr regression, at the job-gate level: 65.7 Cr
+    (~657,000,000) is still inside plausible bounds for a single unit,
+    so this envelope is deliberately wide — it's the cross-field rate
+    check (see test_cross_field_validators.py) that catches THAT case.
+    This one only catches values an order further off still."""
+    result = validate_extraction(
+        {
+            "basics": {},
+            "configurations": [{"price": {"value": "657 Cr"}}],
+        }
+    )
+    assert result.can_continue
+    assert "configuration_0_price_implausible" in result.soft_anomalies
+
+
+def test_soft_validation_does_not_flag_a_plausible_price():
+    result = validate_extraction(
+        {
+            "basics": {},
+            "configurations": [{"price": {"value": "6.57 Cr"}}],
+        }
+    )
+    assert result.soft_anomalies == ()

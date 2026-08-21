@@ -10,7 +10,7 @@ import concurrent.futures
 import json
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from tenacity import RetryError, retry, retry_if_exception, stop_after_attempt, wait_exponential
 
@@ -269,6 +269,12 @@ _SQ_FT_PER_SQ_M = 10.7639
 
 _AREA_FIELDS = ("carpet_area", "built_up_area", "super_built_up_area")
 
+_SQM_HINT_RE = re.compile(r"sq\.?\s*m(?:t|eter|etre)?s?\b", re.IGNORECASE)
+
+
+def _looks_like_sqm(value: str) -> bool:
+    return bool(_SQM_HINT_RE.search(value or ""))
+
 
 def _numbers(text: str) -> List[float]:
     out = []
@@ -319,7 +325,14 @@ def _validate_area_fields(result: PropertyExtraction) -> None:
                     f'quoted from ("{field.evidence}") — check it against the brochure',
                 )
 
-        pairs = [("carpet_area", "built_up_area"), ("built_up_area", "super_built_up_area")]
+        pairs = [
+            ("carpet_area", "built_up_area"),
+            ("built_up_area", "super_built_up_area"),
+            # Not adjacent in the printed table, but many brochures only
+            # ever give carpet + super (no built-up row), so this is the
+            # only pair that ever gets compared for those.
+            ("carpet_area", "super_built_up_area"),
+        ]
         for smaller_name, larger_name in pairs:
             smaller = getattr(variant, smaller_name)
             larger = getattr(variant, larger_name)
@@ -361,6 +374,91 @@ def _validate_area_fields(result: PropertyExtraction) -> None:
                     f"{label}: {larger_name} ({larger.value}) is smaller than "
                     f"{smaller_name} ({smaller.value}), which cannot be right",
                 )
+            elif (
+                smaller_name == "carpet_area"
+                and larger_name == "super_built_up_area"
+                and not (settings.CARPET_RATIO_MIN <= a[0] / b[0] <= settings.CARPET_RATIO_MAX)
+            ):
+                _demote(
+                    smaller,
+                    result,
+                    f"{label}: carpet_area ({smaller.value}) is {a[0] / b[0]:.0%} of "
+                    f"super_built_up_area ({larger.value}) — outside the "
+                    f"{settings.CARPET_RATIO_MIN:.0%}-{settings.CARPET_RATIO_MAX:.0%} range "
+                    f"a carpet-to-super efficiency ratio normally falls in, check both "
+                    f"against the brochure",
+                )
+
+
+_FEET_INCHES_RE = re.compile(r"(\d+)'\s*(\d+)?\"")
+
+
+def _parse_feet_inches_dimension(value: str) -> Optional[float]:
+    """Parse a printed room size like 11'9" X 14'3" into an area in
+    square feet (11.75 × 14.25). Anything that isn't clearly two
+    feet-inches measurements separated by an X — passage widths
+    ("3'6\" WIDE"), decimals, metric strings — is left alone rather
+    than guessed at."""
+    if not value:
+        return None
+    sides = re.split(r"[xX×]", value)
+    if len(sides) != 2:
+        return None
+    dims = []
+    for side in sides:
+        m = _FEET_INCHES_RE.search(side)
+        if not m:
+            return None
+        feet = int(m.group(1))
+        inches = int(m.group(2) or 0)
+        dims.append(feet + inches / 12)
+    return dims[0] * dims[1]
+
+
+def _validate_room_area_sum(result: PropertyExtraction) -> None:
+    """A unit's rooms, summed, cannot exceed its own carpet area —
+    carpet area is by definition the sum of a unit's usable room areas
+    (plus wall-thickness allowance no single room claims), so a sum
+    that exceeds it means a room's size or the carpet figure itself
+    was misread. We don't know which, so both get flagged.
+
+    Skipped when carpet_area is printed in sq m: room dimensions are
+    always feet-and-inches (per the extraction rules), so a sq m
+    carpet figure isn't comparable without a conversion this check
+    deliberately doesn't attempt."""
+    for variant in result.configurations:
+        carpet = variant.carpet_area
+        if not carpet.found or _looks_like_sqm(str(carpet.value)):
+            continue
+        carpet_values = _numbers(str(carpet.value))
+        if not carpet_values or carpet_values[0] <= 0:
+            continue
+        carpet_sqft = carpet_values[0]
+
+        total = 0.0
+        parsed_any = False
+        for room in variant.rooms:
+            if not room.dimension.found:
+                continue
+            area = _parse_feet_inches_dimension(str(room.dimension.value))
+            if area is None:
+                continue
+            parsed_any = True
+            total += area
+        if not parsed_any or total <= carpet_sqft:
+            continue
+
+        label = str(variant.variant_label.value or variant.bhk_type.value or "layout")
+        msg = (
+            f"{label}: this unit's rooms add up to {total:.0f} sq ft, more than its "
+            f"carpet area of {carpet_sqft:.0f} sq ft — a room size or the carpet "
+            f"area itself was misread, check both against the plan"
+        )
+        _demote(carpet, result, msg)
+        for room in variant.rooms:
+            if room.dimension.found:
+                room.dimension.confidence = min(room.dimension.confidence, 0.35)
+                room.dimension.validation_warning = room.dimension.validation_warning or msg
 
 
 def _validate_duplicate_labels(result: PropertyExtraction) -> None:
@@ -695,5 +793,6 @@ def extract_from_pages(
 
     _validate_room_dimensions(result, pages)
     _validate_area_fields(result)
+    _validate_room_area_sum(result)
     _validate_duplicate_labels(result)
     return result
