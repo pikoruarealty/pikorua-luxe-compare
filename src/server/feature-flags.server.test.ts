@@ -22,4 +22,11 @@ describe("server feature flags", () => {
     expect(isFeatureEnabled("V2_PROPSCORE", {})).toBe(false);
     expect(isFeatureEnabled("V2_PROPSCORE", { V2_PROPSCORE: "1" })).toBe(true);
   });
+
+  it("keeps developer intelligence dark unless explicitly enabled", () => {
+    expect(isFeatureEnabled("V2_DEVELOPER_INTELLIGENCE", {})).toBe(false);
+    expect(isFeatureEnabled("V2_DEVELOPER_INTELLIGENCE", { V2_DEVELOPER_INTELLIGENCE: "1" })).toBe(
+      true,
+    );
+  });
 });

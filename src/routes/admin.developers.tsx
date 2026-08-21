@@ -13,12 +13,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Download, Plus, Power, Search, Users } from "lucide-react";
+import { BarChart3, Download, Plus, Power, Search, Users } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { FilterSelect } from "@/components/admin/FilterSelect";
 import { developersQueryOptions, DEVELOPERS_KEY } from "@/api/queries/developers.queries";
 import {
   createDeveloper,
+  setDeveloperIntelligenceEntitlement,
   setDeveloperActive,
   type DeveloperAccount,
 } from "@/api/functions/admin-developers.functions";
@@ -74,6 +75,17 @@ function AdminDevelopers() {
       { label: "Total submissions", value: (d) => d.totalSubmissions },
       { label: "Pending submissions", value: (d) => d.pendingSubmissions },
       { label: "Status", value: (d) => (d.isActive ? "Active" : "Disabled") },
+      {
+        label: "Intelligence access",
+        value: (d) =>
+          d.intelligence.active
+            ? d.intelligence.accessLevel === "paid"
+              ? "Paid"
+              : "Trial"
+            : d.intelligence.status === "suspended"
+              ? "Suspended"
+              : "None",
+      },
     ]);
     downloadCsv(`propcompare-developers-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
@@ -87,8 +99,63 @@ function AdminDevelopers() {
     onError: (e: Error) => toast.error(e.message || "Could not update"),
   });
 
+  const intelligenceMutation = useMutation({
+    mutationFn: (vars: {
+      developerId: string;
+      accessLevel: "trial" | "paid";
+      status: "active" | "suspended";
+      endsAt: string | null;
+    }) =>
+      setDeveloperIntelligenceEntitlement({
+        data: {
+          ...vars,
+          startsAt: new Date().toISOString(),
+          note: null,
+        },
+      }),
+    onSuccess: async () => {
+      await refresh();
+      toast.success("Intelligence access updated");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not update intelligence access"),
+  });
+
   const list = developers ?? [];
   const busy = (id: string) => toggleMutation.isPending && toggleMutation.variables?.id === id;
+  const intelligenceBusy = (id: string) =>
+    intelligenceMutation.isPending && intelligenceMutation.variables?.developerId === id;
+  const updateIntelligence = (developer: DeveloperAccount) => {
+    const current = developer.intelligence;
+    if (!current.active && current.status !== "suspended") {
+      const end = new Date();
+      end.setDate(end.getDate() + 30);
+      intelligenceMutation.mutate({
+        developerId: developer.id,
+        accessLevel: "trial",
+        status: "active",
+        endsAt: end.toISOString(),
+      });
+    } else if (current.active && current.accessLevel === "trial") {
+      intelligenceMutation.mutate({
+        developerId: developer.id,
+        accessLevel: "paid",
+        status: "active",
+        endsAt: null,
+      });
+    } else {
+      const resumeEnd = new Date();
+      resumeEnd.setDate(resumeEnd.getDate() + 30);
+      intelligenceMutation.mutate({
+        developerId: developer.id,
+        accessLevel: current.accessLevel ?? "trial",
+        status: current.active ? "suspended" : "active",
+        endsAt:
+          !current.active && (current.accessLevel ?? "trial") === "trial"
+            ? resumeEnd.toISOString()
+            : current.endsAt,
+      });
+    }
+  };
 
   return (
     <AdminLayout title="Developers" requireOwner>
@@ -200,6 +267,20 @@ function AdminDevelopers() {
                     {busy(d.id) ? "…" : d.isActive ? "Revoke" : "Re-enable"}
                   </button>
                 </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-(--rule) pt-3">
+                  <p className="text-xs text-muted-foreground">
+                    Intelligence · {developerIntelligenceLabel(d)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => updateIntelligence(d)}
+                    disabled={intelligenceBusy(d.id)}
+                    className={toggleBtnClass}
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    {intelligenceBusy(d.id) ? "…" : developerIntelligenceAction(d)}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -212,6 +293,7 @@ function AdminDevelopers() {
                 <Th>Added</Th>
                 <Th>Submissions</Th>
                 <Th>Status</Th>
+                <Th>Intelligence</Th>
                 <Th className="text-right">Actions</Th>
               </tr>
             </thead>
@@ -239,23 +321,42 @@ function AdminDevelopers() {
                       {d.isActive ? "Active" : "Disabled"}
                     </StatusBadge>
                   </Td>
+                  <Td>
+                    <p className="text-xs text-foreground">{developerIntelligenceLabel(d)}</p>
+                    {d.intelligence.endsAt && d.intelligence.accessLevel === "trial" && (
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        Ends {dateFmt.format(new Date(d.intelligence.endsAt))}
+                      </p>
+                    )}
+                  </Td>
                   <Td className="text-right">
-                    <button
-                      type="button"
-                      title={d.isActive ? "Revoke access" : "Re-enable access"}
-                      onClick={() => toggleMutation.mutate({ id: d.id, isActive: !d.isActive })}
-                      disabled={busy(d.id)}
-                      className={toggleBtnClass}
-                    >
-                      <Power className="h-3.5 w-3.5" />
-                      {busy(d.id) ? "…" : d.isActive ? "Revoke" : "Re-enable"}
-                    </button>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => updateIntelligence(d)}
+                        disabled={intelligenceBusy(d.id)}
+                        className={toggleBtnClass}
+                      >
+                        <BarChart3 className="h-3.5 w-3.5" />
+                        {intelligenceBusy(d.id) ? "…" : developerIntelligenceAction(d)}
+                      </button>
+                      <button
+                        type="button"
+                        title={d.isActive ? "Revoke access" : "Re-enable access"}
+                        onClick={() => toggleMutation.mutate({ id: d.id, isActive: !d.isActive })}
+                        disabled={busy(d.id)}
+                        className={toggleBtnClass}
+                      >
+                        <Power className="h-3.5 w-3.5" />
+                        {busy(d.id) ? "…" : d.isActive ? "Revoke" : "Re-enable"}
+                      </button>
+                    </div>
                   </Td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                     {(developers ?? []).length === 0
                       ? "No developer accounts yet."
                       : "No developers match the current search and filters."}
@@ -270,6 +371,20 @@ function AdminDevelopers() {
       {open && <AddDeveloperDialog onClose={() => setOpen(false)} onCreated={refresh} />}
     </AdminLayout>
   );
+}
+
+function developerIntelligenceLabel(developer: DeveloperAccount) {
+  if (developer.intelligence.active)
+    return developer.intelligence.accessLevel === "paid" ? "Paid" : "Trial";
+  return developer.intelligence.status === "suspended" ? "Suspended" : "Not enabled";
+}
+
+function developerIntelligenceAction(developer: DeveloperAccount) {
+  if (!developer.intelligence.active && developer.intelligence.status !== "suspended")
+    return "Start trial";
+  if (developer.intelligence.active && developer.intelligence.accessLevel === "trial")
+    return "Mark paid";
+  return developer.intelligence.active ? "Suspend" : "Resume";
 }
 
 function AddDeveloperDialog({

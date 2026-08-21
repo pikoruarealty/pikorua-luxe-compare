@@ -13,13 +13,16 @@ import { MissingAlternatives } from "./MissingAlternatives";
 import { UnlockGate } from "./UnlockGate";
 import { WeightingStrip } from "./WeightingStrip";
 import { WhyThisWins } from "./WhyThisWins";
+import { ComparisonFeedback } from "./ComparisonFeedback";
 
 export function V2Comparison({
   comparison,
   propscoreEnabled = false,
+  intelligenceFeedbackEnabled = false,
 }: {
   comparison: ConsumerComparison;
   propscoreEnabled?: boolean;
+  intelligenceFeedbackEnabled?: boolean;
 }) {
   const { requestGatedAuth } = useOnboarding();
   const [selectedConfigId, setSelectedConfigId] = useState<Record<string, string | null>>(() =>
@@ -92,6 +95,14 @@ export function V2Comparison({
         <MissingAlternatives
           comparisonSlugs={comparison.properties.map((item) => item.property.slug)}
         />
+        {intelligenceFeedbackEnabled && (
+          <ComparisonFeedback
+            properties={comparison.properties.map((item) => ({
+              slug: item.property.slug,
+              name: item.property.name,
+            }))}
+          />
+        )}
         <div className="mt-10 rounded-2xl border border-border p-5">
           <h2 className="font-display text-xl font-bold">Why some values are not compared</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">

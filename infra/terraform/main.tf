@@ -7,6 +7,7 @@ locals {
   }
   runtime_roles = toset([
     "roles/artifactregistry.reader",
+    "roles/bigquery.jobUser",
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/pubsub.publisher",
@@ -246,6 +247,12 @@ resource "google_bigquery_table" "raw_events" {
   }
   clustering = ["eventName", "profileId"]
   labels     = local.labels
+}
+
+resource "google_bigquery_dataset_iam_member" "runtime_analytics_reader" {
+  dataset_id = google_bigquery_dataset.analytics.dataset_id
+  role       = "roles/bigquery.dataViewer"
+  member     = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 data "google_project" "current" { project_id = var.project_id }

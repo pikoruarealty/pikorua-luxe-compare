@@ -20,6 +20,7 @@ import { Route as DeveloperIndexRouteImport } from './routes/developer.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ResidenceIdRouteImport } from './routes/residence.$id'
 import { Route as MethodologyPropscoreRouteImport } from './routes/methodology.propscore'
+import { Route as MethodologyDeveloperIntelligenceRouteImport } from './routes/methodology.developer-intelligence'
 import { Route as DeveloperReviewsRouteImport } from './routes/developer.reviews'
 import { Route as DeveloperEnquiriesRouteImport } from './routes/developer.enquiries'
 import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
@@ -29,10 +30,12 @@ import { Route as AdminMfaRouteImport } from './routes/admin.mfa'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as DeveloperIntelligenceIndexRouteImport } from './routes/developer.intelligence.index'
 import { Route as AdminPropertiesIndexRouteImport } from './routes/admin.properties.index'
 import { Route as DeveloperSubmissionsIdRouteImport } from './routes/developer.submissions.$id'
 import { Route as DeveloperPropertiesNewRouteImport } from './routes/developer.properties.new'
 import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.properties.$id'
+import { Route as DeveloperIntelligencePropertyIdRouteImport } from './routes/developer.intelligence.$propertyId'
 import { Route as AdminPropertiesNewRouteImport } from './routes/admin.properties.new'
 import { Route as AdminPropertiesPropertyIdRouteImport } from './routes/admin.properties.$propertyId'
 
@@ -91,6 +94,12 @@ const MethodologyPropscoreRoute = MethodologyPropscoreRouteImport.update({
   path: '/methodology/propscore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MethodologyDeveloperIntelligenceRoute =
+  MethodologyDeveloperIntelligenceRouteImport.update({
+    id: '/methodology/developer-intelligence',
+    path: '/methodology/developer-intelligence',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DeveloperReviewsRoute = DeveloperReviewsRouteImport.update({
   id: '/developer/reviews',
   path: '/developer/reviews',
@@ -136,6 +145,12 @@ const AdminCustomersRoute = AdminCustomersRouteImport.update({
   path: '/admin/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeveloperIntelligenceIndexRoute =
+  DeveloperIntelligenceIndexRouteImport.update({
+    id: '/developer/intelligence/',
+    path: '/developer/intelligence/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminPropertiesIndexRoute = AdminPropertiesIndexRouteImport.update({
   id: '/admin/properties/',
   path: '/admin/properties/',
@@ -156,6 +171,12 @@ const DeveloperPropertiesIdRoute = DeveloperPropertiesIdRouteImport.update({
   path: '/developer/properties/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeveloperIntelligencePropertyIdRoute =
+  DeveloperIntelligencePropertyIdRouteImport.update({
+    id: '/developer/intelligence/$propertyId',
+    path: '/developer/intelligence/$propertyId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminPropertiesNewRoute = AdminPropertiesNewRouteImport.update({
   id: '/admin/properties/new',
   path: '/admin/properties/new',
@@ -185,16 +206,19 @@ export interface FileRoutesByFullPath {
   '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
   '/developer/reviews': typeof DeveloperReviewsRoute
+  '/methodology/developer-intelligence': typeof MethodologyDeveloperIntelligenceRoute
   '/methodology/propscore': typeof MethodologyPropscoreRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
   '/developer/': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
   '/developer/submissions/$id': typeof DeveloperSubmissionsIdRoute
   '/admin/properties/': typeof AdminPropertiesIndexRoute
+  '/developer/intelligence/': typeof DeveloperIntelligenceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,16 +237,19 @@ export interface FileRoutesByTo {
   '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
   '/developer/reviews': typeof DeveloperReviewsRoute
+  '/methodology/developer-intelligence': typeof MethodologyDeveloperIntelligenceRoute
   '/methodology/propscore': typeof MethodologyPropscoreRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin': typeof AdminIndexRoute
   '/developer': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
   '/developer/submissions/$id': typeof DeveloperSubmissionsIdRoute
   '/admin/properties': typeof AdminPropertiesIndexRoute
+  '/developer/intelligence': typeof DeveloperIntelligenceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -242,16 +269,19 @@ export interface FileRoutesById {
   '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
   '/developer/reviews': typeof DeveloperReviewsRoute
+  '/methodology/developer-intelligence': typeof MethodologyDeveloperIntelligenceRoute
   '/methodology/propscore': typeof MethodologyPropscoreRoute
   '/residence/$id': typeof ResidenceIdRoute
   '/admin/': typeof AdminIndexRoute
   '/developer/': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
   '/developer/submissions/$id': typeof DeveloperSubmissionsIdRoute
   '/admin/properties/': typeof AdminPropertiesIndexRoute
+  '/developer/intelligence/': typeof DeveloperIntelligenceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -272,16 +302,19 @@ export interface FileRouteTypes {
     | '/admin/verification'
     | '/developer/enquiries'
     | '/developer/reviews'
+    | '/methodology/developer-intelligence'
     | '/methodology/propscore'
     | '/residence/$id'
     | '/admin/'
     | '/developer/'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
     | '/developer/submissions/$id'
     | '/admin/properties/'
+    | '/developer/intelligence/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -300,16 +333,19 @@ export interface FileRouteTypes {
     | '/admin/verification'
     | '/developer/enquiries'
     | '/developer/reviews'
+    | '/methodology/developer-intelligence'
     | '/methodology/propscore'
     | '/residence/$id'
     | '/admin'
     | '/developer'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
     | '/developer/submissions/$id'
     | '/admin/properties'
+    | '/developer/intelligence'
   id:
     | '__root__'
     | '/'
@@ -328,16 +364,19 @@ export interface FileRouteTypes {
     | '/admin/verification'
     | '/developer/enquiries'
     | '/developer/reviews'
+    | '/methodology/developer-intelligence'
     | '/methodology/propscore'
     | '/residence/$id'
     | '/admin/'
     | '/developer/'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
     | '/developer/submissions/$id'
     | '/admin/properties/'
+    | '/developer/intelligence/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -357,16 +396,19 @@ export interface RootRouteChildren {
   AdminVerificationRoute: typeof AdminVerificationRoute
   DeveloperEnquiriesRoute: typeof DeveloperEnquiriesRoute
   DeveloperReviewsRoute: typeof DeveloperReviewsRoute
+  MethodologyDeveloperIntelligenceRoute: typeof MethodologyDeveloperIntelligenceRoute
   MethodologyPropscoreRoute: typeof MethodologyPropscoreRoute
   ResidenceIdRoute: typeof ResidenceIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DeveloperIndexRoute: typeof DeveloperIndexRoute
   AdminPropertiesPropertyIdRoute: typeof AdminPropertiesPropertyIdRoute
   AdminPropertiesNewRoute: typeof AdminPropertiesNewRoute
+  DeveloperIntelligencePropertyIdRoute: typeof DeveloperIntelligencePropertyIdRoute
   DeveloperPropertiesIdRoute: typeof DeveloperPropertiesIdRoute
   DeveloperPropertiesNewRoute: typeof DeveloperPropertiesNewRoute
   DeveloperSubmissionsIdRoute: typeof DeveloperSubmissionsIdRoute
   AdminPropertiesIndexRoute: typeof AdminPropertiesIndexRoute
+  DeveloperIntelligenceIndexRoute: typeof DeveloperIntelligenceIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -448,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MethodologyPropscoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/methodology/developer-intelligence': {
+      id: '/methodology/developer-intelligence'
+      path: '/methodology/developer-intelligence'
+      fullPath: '/methodology/developer-intelligence'
+      preLoaderRoute: typeof MethodologyDeveloperIntelligenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/developer/reviews': {
       id: '/developer/reviews'
       path: '/developer/reviews'
@@ -511,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/developer/intelligence/': {
+      id: '/developer/intelligence/'
+      path: '/developer/intelligence'
+      fullPath: '/developer/intelligence/'
+      preLoaderRoute: typeof DeveloperIntelligenceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/properties/': {
       id: '/admin/properties/'
       path: '/admin/properties'
@@ -537,6 +593,13 @@ declare module '@tanstack/react-router' {
       path: '/developer/properties/$id'
       fullPath: '/developer/properties/$id'
       preLoaderRoute: typeof DeveloperPropertiesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer/intelligence/$propertyId': {
+      id: '/developer/intelligence/$propertyId'
+      path: '/developer/intelligence/$propertyId'
+      fullPath: '/developer/intelligence/$propertyId'
+      preLoaderRoute: typeof DeveloperIntelligencePropertyIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/properties/new': {
@@ -573,16 +636,19 @@ const rootRouteChildren: RootRouteChildren = {
   AdminVerificationRoute: AdminVerificationRoute,
   DeveloperEnquiriesRoute: DeveloperEnquiriesRoute,
   DeveloperReviewsRoute: DeveloperReviewsRoute,
+  MethodologyDeveloperIntelligenceRoute: MethodologyDeveloperIntelligenceRoute,
   MethodologyPropscoreRoute: MethodologyPropscoreRoute,
   ResidenceIdRoute: ResidenceIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   DeveloperIndexRoute: DeveloperIndexRoute,
   AdminPropertiesPropertyIdRoute: AdminPropertiesPropertyIdRoute,
   AdminPropertiesNewRoute: AdminPropertiesNewRoute,
+  DeveloperIntelligencePropertyIdRoute: DeveloperIntelligencePropertyIdRoute,
   DeveloperPropertiesIdRoute: DeveloperPropertiesIdRoute,
   DeveloperPropertiesNewRoute: DeveloperPropertiesNewRoute,
   DeveloperSubmissionsIdRoute: DeveloperSubmissionsIdRoute,
   AdminPropertiesIndexRoute: AdminPropertiesIndexRoute,
+  DeveloperIntelligenceIndexRoute: DeveloperIntelligenceIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

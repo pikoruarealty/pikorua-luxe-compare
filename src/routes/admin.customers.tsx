@@ -33,6 +33,7 @@ const EVENT_LABEL: Record<ActivityEvent, string> = {
   gate_unlocked: "Unlocked the full comparison",
   alternative_clicked: "Clicked an alternative match",
   weighting_changed: "Adjusted ranking weighting",
+  comparison_feedback: "Shared comparison feedback",
 };
 
 const fmtDate = (iso: string | null) =>

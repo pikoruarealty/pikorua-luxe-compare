@@ -90,7 +90,6 @@ export const ocrJobState = pgEnum("ocr_job_state", [
   "failed",
   "cancelled",
 ]);
-
 // Legacy identity tables are declared only for typed foreign keys. Their SQL
 // remains in the earlier Supabase migrations.
 export const properties = pgTable("properties", {
@@ -108,6 +107,36 @@ export const adminProfiles = pgTable("admin_profiles", {
   id: uuid("id").primaryKey(),
   role: text("role").notNull(),
 });
+
+export const developerIntelligenceEntitlements = pgTable(
+  "developer_intelligence_entitlements",
+  {
+    developerId: uuid("developer_id")
+      .primaryKey()
+      .references(() => adminProfiles.id, { onDelete: "cascade" }),
+    accessLevel: text("access_level").notNull(),
+    status: text("status").notNull().default("active"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull().defaultNow(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    managedBy: uuid("managed_by")
+      .notNull()
+      .references(() => adminProfiles.id, { onDelete: "restrict" }),
+    note: text("note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "developer_intelligence_access_level_check",
+      sql`${table.accessLevel} in ('trial', 'paid')`,
+    ),
+    check("developer_intelligence_status_check", sql`${table.status} in ('active', 'suspended')`),
+    check(
+      "developer_intelligence_dates_check",
+      sql`${table.endsAt} is null or ${table.endsAt} > ${table.startsAt}`,
+    ),
+  ],
+);
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   phone: text("phone").notNull(),
@@ -467,10 +496,81 @@ export const propertyReviews = pgTable("property_reviews", {
   publicName: text("public_name").notNull(),
   rating: smallint("rating").notNull(),
   reviewText: text("review_text"),
+  verificationTier: text("verification_tier").notNull().default("phone_verified"),
+  structuredReviewVersion: integer("structured_review_version").notNull().default(1),
   visibility: reviewVisibility("visibility").notNull().default("published"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+});
+
+export const propertyReviewDimensions = pgTable("property_review_dimensions", {
+  reviewId: uuid("review_id")
+    .notNull()
+    .references(() => propertyReviews.id, { onDelete: "cascade" }),
+  dimension: text("dimension").notNull(),
+  experienceState: text("experience_state").notNull(),
+  rating: smallint("rating"),
+  note: text("note"),
+});
+
+export const reviewVisitEvidence = pgTable("review_visit_evidence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reviewId: uuid("review_id")
+    .notNull()
+    .references(() => propertyReviews.id, { onDelete: "cascade" })
+    .unique(),
+  visitDate: date("visit_date").notNull(),
+  storageBucket: text("storage_bucket").notNull(),
+  storageObjectPath: text("storage_object_path").notNull().unique(),
+  originalFilename: text("original_filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+  sha256: text("sha256").notNull(),
+  uploadState: text("upload_state").notNull().default("pending"),
+  reviewedBy: uuid("reviewed_by").references(() => adminProfiles.id, { onDelete: "restrict" }),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  decisionReason: text("decision_reason"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  purgedAt: timestamp("purged_at", { withTimezone: true }),
+  createdAt: createdAt(),
+});
+
+export const propertyFieldVerificationShortlist = pgTable("property_field_verification_shortlist", {
+  propertyId: uuid("property_id")
+    .primaryKey()
+    .references(() => properties.id, { onDelete: "cascade" }),
+  selectedBy: uuid("selected_by")
+    .notNull()
+    .references(() => adminProfiles.id, { onDelete: "restrict" }),
+  selectedAt: timestamp("selected_at", { withTimezone: true }).notNull().defaultNow(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+  note: text("note"),
+});
+
+export const propertyFieldVisits = pgTable("property_field_visits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id")
+    .notNull()
+    .references(() => properties.id, { onDelete: "restrict" }),
+  publicationVersionId: uuid("publication_version_id").references(
+    () => propertyPublicationVersions.id,
+    { onDelete: "restrict" },
+  ),
+  status: text("status").notNull(),
+  visitedOn: date("visited_on"),
+  completedBy: uuid("completed_by").references(() => adminProfiles.id, { onDelete: "restrict" }),
+  internalEvidenceReference: text("internal_evidence_reference"),
+  createdAt: createdAt(),
+});
+
+export const propertyFieldVisitObservations = pgTable("property_field_visit_observations", {
+  visitId: uuid("visit_id")
+    .notNull()
+    .references(() => propertyFieldVisits.id, { onDelete: "cascade" }),
+  dimension: text("dimension").notNull(),
+  observationState: text("observation_state").notNull(),
+  observation: text("observation"),
 });
 
 export const propertyReviewVersions = pgTable(
