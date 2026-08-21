@@ -17,6 +17,7 @@ from tenacity import RetryError, retry, retry_if_exception, stop_after_attempt, 
 from .config import settings
 from .pdf_reader import PageContent
 from .prompts import SYSTEM_PROMPT, build_user_prompt
+from .wire_schema import openai_response_format
 from .schema import (
     BasicsSection,
     ConfigVariant,
@@ -545,7 +546,7 @@ def _call_openai(pages: List[PageContent]) -> Dict[str, Any]:
     resp = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         temperature=0,
-        response_format={"type": "json_object"},
+        response_format=openai_response_format(),
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
