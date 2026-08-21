@@ -403,6 +403,54 @@ def _validate_duplicate_labels(result: PropertyExtraction) -> None:
                     )
 
 
+def _check_provenance(field: ExtractedField, page_nums: List[int], file_name: str, result: PropertyExtraction) -> None:
+    if not field.found or field.source_page is None or field.source_page in page_nums:
+        return
+    _demote(
+        field,
+        result,
+        f'{file_name} page {field.source_page}: "{field.value}" was attributed to a page '
+        f"this batch never saw (it was shown pages {page_nums}) — likely a made-up page "
+        f"number rather than the real source, check it against the brochure",
+    )
+
+
+def _validate_page_provenance(
+    raw: Dict[str, Any], page_nums: List[int], file_name: str, result: PropertyExtraction
+) -> None:
+    """A batch only ever sees `page_nums` — if the model reports a
+    `"page"` outside that set for a row this SAME batch just produced,
+    the number is invented, not read. This is how one brochure produced
+    a duplicate unit config carrying a page it was never shown: the
+    model repeated an earlier row's fields with a fabricated page.
+
+    Scoped to `configurations` (the rows `_merge_batch_into` always
+    appends fresh, one raw row in, one row out) rather than every
+    section: `basics`/`project_structure`/etc. use keep-if-better, so
+    the field now sitting in `result` may belong to an earlier batch
+    with its own, correctly-sourced page — there is no way to tell
+    post-merge whether THIS batch's value was the one that stuck."""
+    new_rows = raw.get("configurations") or []
+    if not new_rows:
+        return
+    appended = result.configurations[len(result.configurations) - len(new_rows) :]
+    for variant in appended:
+        for field in (
+            variant.bhk_type,
+            variant.variant_label,
+            variant.floor_range,
+            variant.carpet_area,
+            variant.built_up_area,
+            variant.super_built_up_area,
+            variant.price,
+            variant.rate_per_sqft,
+        ):
+            _check_provenance(field, page_nums, file_name, result)
+        for room in variant.rooms:
+            _check_provenance(room.room_name, page_nums, file_name, result)
+            _check_provenance(room.dimension, page_nums, file_name, result)
+
+
 def _pages_meta_block(pages: List[PageContent]) -> str:
     # Measured on the sample brochure: feeding plan pages as x,y-tagged
     # blocks — on the theory that position disambiguates which of a
@@ -625,6 +673,7 @@ def extract_from_pages(
                     succeeded += 1
                     try:
                         _merge_batch_into(result, raw, file_name)
+                        _validate_page_provenance(raw, page_nums, file_name, result)
                     except Exception as exc:  # noqa: BLE001
                         msg = f"{file_name} pages {page_nums}: could not parse model output ({exc})"
                         log.warning(msg)

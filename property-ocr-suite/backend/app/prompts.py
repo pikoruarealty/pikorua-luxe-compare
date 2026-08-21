@@ -92,6 +92,14 @@ brochure mislabelled its own plan — so re-read the sheet and look for the ones
 you skipped. If after re-reading a bedroom genuinely is not drawn, report what \
 you see; never invent one, and never copy another bedroom's size to make the \
 count work.
+   g. A room's "dimension" must come only from text adjacent to THAT room's \
+own label — never a number that merely happens to sit nearby because two \
+rooms' labels and sizes are printed close together on a crowded sheet. If a \
+close-up crop separates a room's label from its size (they wrap across a line \
+break, or another room's label sits between them), re-check the whole-sheet \
+image before answering rather than pairing the nearest number you see. A \
+plausible-looking size taken from the wrong room is worse than reporting no \
+size at all.
 
 7. AREA STATEMENTS AND PRICE LISTS — a table listing units against their \
 sizes is as important as the drawing, and is the usual source for the three \

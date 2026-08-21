@@ -94,6 +94,22 @@ def test_same_variant_split_across_batches_merges_rooms():
     assert names == ["KITCHEN", "BALCONY"]
 
 
+def test_labels_differing_only_by_dash_punctuation_still_merge():
+    """The same unit shows up as "Unit - A" on the floor-plan sheet and
+    "Unit-A" on the price list — punctuation drift, not two units. Left
+    unfolded, they hash to different keys and the human sees the same
+    layout twice, each with half its rooms."""
+    e = PropertyExtraction(source_files=["brochure.pdf"])
+    e.configurations = [
+        _variant("Unit - A", "", [("KITCHEN", "11'9\" X 14'3\"")]),
+        _variant("Unit-A", "", [("BALCONY", "24'9\" X 5'6\"")]),
+    ]
+    merged = merge_extractions([e])
+    assert len(merged.configurations) == 1
+    names = [r.room_name.value for r in merged.configurations[0].rooms]
+    assert names == ["KITCHEN", "BALCONY"]
+
+
 def test_repeated_room_names_with_different_sizes_are_kept():
     """A 4 BHK has four BEDROOMs — same label, different sizes. The
     label alone must never collapse them."""

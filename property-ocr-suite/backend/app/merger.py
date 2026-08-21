@@ -88,6 +88,12 @@ _FLOOR_QUALIFIER_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Brochures are inconsistent about spacing a dash in a unit label — "Unit - A"
+# on one page, "Unit-A" on the next for the SAME unit. Left unfolded, those
+# hash to different keys and the same layout arrives as two rows instead of
+# one, each with half its rooms.
+_DASH_RE = re.compile(r"[-‐‑‒–—―]")
+
 
 def _variant_key(v: ConfigVariant) -> str:
     """Identity of a unit layout: the unit label plus which floor
@@ -97,6 +103,7 @@ def _variant_key(v: ConfigVariant) -> str:
     one of the two real layouts. Which STOREY of a multi-level home a
     sheet shows does not: those halves belong together."""
     raw_label = " ".join(str(v.variant_label.value or "").split()).strip().lower()
+    raw_label = " ".join(_DASH_RE.sub(" ", raw_label).split()).strip()
     label = " ".join(_FLOOR_QUALIFIER_RE.sub("", raw_label).split()).strip()
     multi_level = label != raw_label
 
