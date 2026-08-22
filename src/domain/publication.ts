@@ -3,12 +3,95 @@ import { z } from "zod";
 import {
   areaBasisSchema,
   areaUnitSchema,
+  ceilingHeightBasisSchema,
   configurationKindSchema,
   fieldStateSchema,
   propertyTypeSchema,
 } from "@/generated/property-contract";
 
 const nullableTrimmed = (maximum: number) => z.string().trim().min(1).max(maximum).nullable();
+
+const gatedNumber = () => z.number().finite().nullable();
+const gatedInt = () => z.number().int().nullable();
+const gatedText = (maximum: number) => nullableTrimmed(maximum);
+
+const publicationDetailsSchema = z
+  .object({
+    plotSizeValue: gatedNumber(),
+    plotSizeUnit: areaUnitSchema.nullable(),
+    plotSizeState: fieldStateSchema,
+    totalTowers: gatedInt(),
+    totalTowersState: fieldStateSchema,
+    totalFloors: gatedInt(),
+    totalFloorsState: fieldStateSchema,
+    unitsPerFloor: gatedInt(),
+    unitsPerFloorState: fieldStateSchema,
+    totalUnits: gatedInt(),
+    totalUnitsState: fieldStateSchema,
+    unitsPerAcre: gatedNumber(),
+    unitsPerAcreState: fieldStateSchema,
+    openSpacePercent: gatedNumber(),
+    openSpacePercentState: fieldStateSchema,
+    parkingLevels: gatedInt(),
+    parkingLevelsState: fieldStateSchema,
+    podiumStructure: gatedText(200),
+    podiumStructureState: fieldStateSchema,
+    liftsPerTower: gatedInt(),
+    liftsPerTowerState: fieldStateSchema,
+    clubhouseSizeSqFt: gatedNumber(),
+    clubhouseSizeSqFtState: fieldStateSchema,
+    internalCeilingHeightFt: gatedNumber(),
+    ceilingHeightBasis: ceilingHeightBasisSchema,
+    ceilingHeightState: fieldStateSchema,
+    constructionQuality: gatedText(200),
+    constructionQualityState: fieldStateSchema,
+    flooringType: gatedText(200),
+    flooringTypeState: fieldStateSchema,
+    windowGlazing: gatedText(200),
+    windowGlazingState: fieldStateSchema,
+    bathSanitaryFittings: gatedText(200),
+    bathSanitaryFittingsState: fieldStateSchema,
+    vrvAcProvision: gatedText(200),
+    vrvAcProvisionState: fieldStateSchema,
+    geyserProvision: gatedText(200),
+    geyserProvisionState: fieldStateSchema,
+    experienceYears: gatedInt(),
+    experienceYearsState: fieldStateSchema,
+    deliveredProjects: gatedInt(),
+    deliveredProjectsState: fieldStateSchema,
+    ongoingProjects: gatedInt(),
+    ongoingProjectsState: fieldStateSchema,
+    notableDeliveredProjects: z.array(z.string().trim().min(1).max(200)).max(100),
+    notableDeliveredProjectsState: fieldStateSchema,
+    background: gatedText(2000),
+    backgroundState: fieldStateSchema,
+    proposedStartDateRera: z.string().date().nullable(),
+    proposedStartDateReraState: fieldStateSchema,
+    possessionConfirmedAsOf: z.string().date().nullable(),
+    possessionConfirmedAsOfState: fieldStateSchema,
+    amenitiesOther: gatedText(2000),
+  })
+  .strict();
+
+const configurationAreaSchema = z
+  .object({
+    basis: areaBasisSchema,
+    value: z.number().finite().nonnegative().nullable(),
+    unit: areaUnitSchema.nullable(),
+    rawText: nullableTrimmed(200),
+    state: fieldStateSchema,
+  })
+  .strict();
+
+const configurationRoomSchema = z
+  .object({
+    roomType: z.string().trim().min(1).max(100),
+    dimensionRaw: nullableTrimmed(200),
+    areaValue: z.number().finite().nonnegative().nullable(),
+    areaUnit: areaUnitSchema.nullable(),
+    state: fieldStateSchema,
+  })
+  .strict();
 
 export const publicationRevisionSchema = z
   .object({
@@ -47,7 +130,13 @@ export const publicationRevisionSchema = z
             bathroomsState: fieldStateSchema,
             balconies: z.number().int().nonnegative().max(30).nullable(),
             balconiesState: fieldStateSchema,
+            servantRoomPresent: z.boolean().nullable(),
+            servantRoomState: fieldStateSchema,
+            floorPlanPage: z.number().int().nonnegative().nullable(),
+            floorPlanPageState: fieldStateSchema,
             publicFacts: z.record(z.string(), z.string().max(1000).nullable()),
+            areas: z.array(configurationAreaSchema).max(10),
+            rooms: z.array(configurationRoomSchema).max(20),
             commercial: z
               .object({
                 baseSalePriceRupees: z.number().int().nonnegative().nullable(),
@@ -61,6 +150,7 @@ export const publicationRevisionSchema = z
       .min(1)
       .max(50),
     assetIds: z.array(z.string().uuid()).max(50),
+    details: publicationDetailsSchema,
     reraVerification: z
       .object({
         sourceUrl: z.string().url(),

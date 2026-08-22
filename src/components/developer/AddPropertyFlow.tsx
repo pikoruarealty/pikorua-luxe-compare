@@ -15,11 +15,13 @@ import {
 import { BrochureUploadStep } from "./BrochureUploadStep";
 import { ExtractedFieldsReview } from "./ExtractedFieldsReview";
 import { BrochureImagePicker } from "./BrochureImagePicker";
+import { ResumeJobPicker } from "./ResumeJobPicker";
 import {
   extractedFieldList,
   mapExtractedPayload,
   type ExtractionResponse,
 } from "@/lib/brochure-field-mapping";
+import { clearReviewProgress } from "@/lib/brochure-review-storage";
 
 /** What a reviewer actually changed between the OCR draft and what they
  *  finally submitted — Phase 4(e)'s learning loop. Only scalar, OCR-sourced
@@ -56,7 +58,6 @@ export function AddPropertyFlow() {
   const [extraction, setExtraction] = useState<ExtractionResponse | null>(null);
   const [formDefaults, setFormDefaults] = useState<PropertyFormValues | undefined>(undefined);
   const [showResume, setShowResume] = useState(false);
-  const [resumeJobId, setResumeJobId] = useState("");
   const navigate = useNavigate();
   const getExtractionFn = useServerFn(getBrochureExtraction);
   const recordCorrectionsFn = useServerFn(recordExtractionCorrections);
@@ -86,6 +87,7 @@ export function AddPropertyFlow() {
       return submitPropertyForReview({ data: { action: "create", values } });
     },
     onSuccess: () => {
+      if (extraction) clearReviewProgress(extraction.job_id);
       toast.success("Submitted — your admin will review it shortly.");
       navigate({ to: "/developer" });
     },
@@ -126,41 +128,27 @@ export function AddPropertyFlow() {
           </button>
         </div>
 
-        {/* Loads a brochure that was already extracted (job id from a
-         *  previous run) straight into review — no re-upload, no repeat
-         *  LLM cost. */}
+        {/* Loads a brochure that was already extracted (its job was already
+         *  assigned to this account at upload time) straight into review —
+         *  no re-upload, no repeat LLM cost, and no job id to type or
+         *  remember. */}
         <div className="mt-4">
           {showResume ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (resumeJobId.trim()) resumeMutation.mutate(resumeJobId.trim());
-              }}
-              className="flex flex-wrap items-center gap-2"
-            >
-              <input
-                value={resumeJobId}
-                onChange={(e) => setResumeJobId(e.target.value)}
-                placeholder="Existing job id"
-                autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-(--rule-strong) bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-champagne"
-              />
-              <button
-                type="submit"
-                disabled={!resumeJobId.trim() || resumeMutation.isPending}
-                className="rounded-full border border-(--rule-strong) px-4 py-2 text-[11px] font-semibold tracking-luxury text-foreground uppercase transition-colors hover:border-foreground/30 disabled:opacity-50"
-              >
-                {resumeMutation.isPending ? "Loading…" : "Resume"}
-              </button>
-            </form>
+            <ResumeJobPicker
+              onSelect={(jobId) => resumeMutation.mutate(jobId)}
+              disabled={resumeMutation.isPending}
+            />
           ) : (
             <button
               type="button"
               onClick={() => setShowResume(true)}
               className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
             >
-              Resume a previously extracted job by id
+              Resume a previous extraction
             </button>
+          )}
+          {resumeMutation.isPending && (
+            <p className="mt-2 text-xs text-muted-foreground">Loading…</p>
           )}
         </div>
       </div>

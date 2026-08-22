@@ -155,8 +155,8 @@ export function BrochureUploadStep({
           className="mt-1 block w-full rounded-lg border border-(--rule-strong) bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-champagne"
         />
         <span className="mt-1 block text-[11px] text-muted-foreground/80">
-          If this developer's brochures have been reviewed before, we'll double-check the
-          fields that were corrected last time.
+          If this developer's brochures have been reviewed before, we'll double-check the fields
+          that were corrected last time.
         </span>
       </label>
 
