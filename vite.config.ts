@@ -37,7 +37,9 @@ export default defineConfig(async ({ command }) => {
   }
 
   return {
-    server: { port: 5173 },
+    // host: true binds to 0.0.0.0 so a colleague on the same LAN can reach
+    // this dev server, not just localhost.
+    server: { port: 5173, host: true },
     resolve: {
       dedupe: [
         "react",

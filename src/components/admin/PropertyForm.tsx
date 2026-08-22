@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useFieldArray,
   useForm,
@@ -98,7 +98,18 @@ export function PropertyForm({
   const isPlot = category === "Plots" || category === "Bungalow";
   const [activeBucket, setActiveBucket] = useState<BucketKey>("bhk4");
 
-  const [naFields, setNaFields] = useState<Record<string, boolean>>({});
+  // Blank fields start marked N/A — a reviewer confirms a listing by clearing
+  // the ones that need a real value, not by ticking every one that doesn't.
+  // Typing into a field un-marks it automatically (below); nothing re-checks
+  // it, so an intentional "actually, N/A" still requires ticking it back.
+  const [naFields, setNaFields] = useState<Record<string, boolean>>(() => {
+    const source = (defaultValues ?? emptyPropertyForm()) as Record<string, unknown>;
+    const init: Record<string, boolean> = {};
+    for (const f of TRACKED_FIELDS) {
+      if (!String(source[f] ?? "").trim()) init[f] = true;
+    }
+    return init;
+  });
   const [naError, setNaError] = useState(0);
   const allValues = watch();
 
@@ -108,6 +119,24 @@ export function PropertyForm({
     if (!isPlot && (PLOT_ONLY_FIELDS as readonly string[]).includes(f)) return false;
     return isBlank(f) && !naFields[f];
   });
+
+  // The moment a field actually has a value, its N/A mark is stale — clear it
+  // so that deleting the value back to blank asks the reviewer again instead
+  // of silently staying marked N/A from before they typed anything.
+  useEffect(() => {
+    setNaFields((s) => {
+      let changed = false;
+      const next = { ...s };
+      for (const f of TRACKED_FIELDS) {
+        if (next[f] && !isBlank(f)) {
+          next[f] = false;
+          changed = true;
+        }
+      }
+      return changed ? next : s;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allValues]);
 
   /** Wraps Field with the "not applicable" affordance. The toggle only appears
    *  once a field is actually blank — there is nothing to mark N/A about a

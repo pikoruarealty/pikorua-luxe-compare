@@ -14,9 +14,9 @@ interface BrochureJobsClient {
     insert: (row: { job_id: string; admin_profile_id: string }) => Promise<{
       error: { message: string } | null;
     }>;
-    select: (columns: "job_id") => {
+    select: (columns: "job_id" | "job_id, created_at") => {
       eq: (
-        column: "job_id",
+        column: "job_id" | "admin_profile_id",
         value: string,
       ) => {
         eq: (
@@ -28,6 +28,13 @@ interface BrochureJobsClient {
             error: { message: string } | null;
           }>;
         };
+        order: (
+          column: "created_at",
+          opts: { ascending: boolean },
+        ) => Promise<{
+          data: { job_id: string; created_at: string }[] | null;
+          error: { message: string } | null;
+        }>;
       };
     };
   };
@@ -48,6 +55,74 @@ async function assertBrochureJobOwner(jobId: string, adminProfileId: string): Pr
     .maybeSingle();
   if (error || !data) throw new Error("This brochure job doesn't belong to your account");
 }
+
+export interface BrochureJobSummary {
+  jobId: string;
+  createdAt: string;
+  propertyName: string | null;
+  developerName: string | null;
+}
+
+/** Same shape the OCR service's own job ids come in — anything else in the
+ *  ownership table is stale seed data (a manifest index, a one-off result
+ *  file) rather than a real extraction, so it's filtered out here instead
+ *  of surfacing as an entry the resume flow can't actually load. */
+const JOB_ID_RE = /^[a-f0-9]{12,32}$/;
+
+/** Every job this developer has ever started an extraction for, newest
+ *  first — backs the "resume" dropdown so nobody has to know or type a raw
+ *  job id. Doesn't distinguish finished-and-submitted jobs from abandoned
+ *  ones: nothing in this schema links a job back to the property it became,
+ *  so a job stays in this list even after its brochure was submitted. */
+export const listBrochureJobs = createServerFn({ method: "POST" })
+  .middleware([requireAdminAuth])
+  .handler(async ({ context }): Promise<BrochureJobSummary[]> => {
+    const client = await brochureJobsClient();
+    const { data, error } = await client
+      .from("brochure_jobs")
+      .select("job_id, created_at")
+      .eq("admin_profile_id", context.adminProfile.id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error("Couldn't load your brochure jobs");
+    const rows = (data ?? []).filter((row) => JOB_ID_RE.test(row.job_id));
+
+    // Best-effort: a name is a convenience for telling rows apart, not
+    // something the picker should ever fail over. If the OCR service is
+    // unreachable the dropdown still works, just labeled by date/id alone.
+    const names = new Map<string, { propertyName: string | null; developerName: string | null }>();
+    if (rows.length > 0) {
+      try {
+        const { baseUrl, headers } = serviceConfig();
+        const res = await fetch(
+          `${baseUrl}/api/properties/summaries?job_ids=${encodeURIComponent(rows.map((r) => r.job_id).join(","))}`,
+          { headers, signal: AbortSignal.timeout(15_000) },
+        );
+        if (res.ok) {
+          const body = (await res.json()) as {
+            summaries?: {
+              job_id: string;
+              property_name: string | null;
+              developer_name: string | null;
+            }[];
+          };
+          for (const s of body.summaries ?? []) {
+            names.set(s.job_id, { propertyName: s.property_name, developerName: s.developer_name });
+          }
+        } else {
+          console.error(`[listBrochureJobs] summaries fetch ${res.status}: ${await res.text()}`);
+        }
+      } catch (err) {
+        console.error("[listBrochureJobs] summaries fetch threw:", err);
+      }
+    }
+
+    return rows.map((row) => ({
+      jobId: row.job_id,
+      createdAt: row.created_at,
+      propertyName: names.get(row.job_id)?.propertyName ?? null,
+      developerName: names.get(row.job_id)?.developerName ?? null,
+    }));
+  });
 
 /** Statuses the service reports back from GET /api/properties/{id}/progress. */
 export interface ExtractionProgress {
