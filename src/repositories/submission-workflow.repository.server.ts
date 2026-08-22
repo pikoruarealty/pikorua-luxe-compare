@@ -17,6 +17,7 @@ export async function saveDeveloperRevision(
   developerId: string,
   payload: unknown,
   workflowId?: string,
+  propertyId?: string,
 ) {
   const revision = publicationRevisionSchema.parse(payload);
   const db = getDatabase();
@@ -43,7 +44,7 @@ export async function saveDeveloperRevision(
     } else {
       [workflow] = await tx
         .insert(propertySubmissionWorkflows)
-        .values({ developerId, state: "draft", currentRevision: 0 })
+        .values({ developerId, propertyId, state: "draft", currentRevision: 0 })
         .returning();
     }
     if (!workflow) throw new Error("Could not create submission workflow");

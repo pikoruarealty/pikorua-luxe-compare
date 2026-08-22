@@ -19,6 +19,68 @@ export interface SubmissionListItem {
   reviewerNote: string | null;
 }
 
+/** Best-effort v2 catalogue publish, run right after the v1 write that
+ *  `approveSubmission` already made. v1 stays the safety net while v2 is
+ *  still being verified — a failure here is reported back to the admin, not
+ *  rolled back, since the live (v1) site must keep reflecting what was just
+ *  approved either way. */
+async function publishV2Catalogue(
+  values: PropertyFormValues,
+  propertyId: string,
+  developerId: string,
+  reviewerId: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  try {
+    const { getDatabase } = await import("@/db/client.server");
+    const { configurationOptions, markets } = await import("@/db/schema");
+    const { ilike, eq, and } = await import("drizzle-orm");
+    const { buildPublicationRevision } = await import("@/domain/publication-mapping.server");
+    const { saveDeveloperRevision, submitDeveloperWorkflow } =
+      await import("@/repositories/submission-workflow.repository.server");
+    const { publishWorkflow } = await import("@/repositories/publication.repository.server");
+
+    const db = getDatabase();
+    const [market] = await db
+      .select({ id: markets.id, stateCode: markets.stateCode, cityCode: markets.cityCode })
+      .from(markets)
+      .where(
+        and(
+          eq(markets.isEnabled, true),
+          ilike(markets.stateName, values.state.trim()),
+          ilike(markets.cityName, values.city.trim()),
+        ),
+      )
+      .limit(1);
+    if (!market) {
+      return { ok: false, reason: `No enabled market matches "${values.city}, ${values.state}"` };
+    }
+
+    const optionRows = await db
+      .select({ id: configurationOptions.id, kind: configurationOptions.kind })
+      .from(configurationOptions);
+    const configurationOptionsByKind = new Map(optionRows.map((row) => [row.kind, row.id]));
+
+    const revision = buildPublicationRevision(values, {
+      configurationOptionsByKind,
+      marketId: market.id,
+      stateCode: market.stateCode,
+      cityCode: market.cityCode,
+    });
+
+    const { workflowId } = await saveDeveloperRevision(
+      developerId,
+      revision,
+      undefined,
+      propertyId,
+    );
+    await submitDeveloperWorkflow(workflowId, developerId);
+    await publishWorkflow(workflowId, reviewerId);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
 /** Owner-only: every submission, newest first, pending ones easy to isolate
  *  client-side by `status`. */
 export const listSubmissions = createServerFn({ method: "GET" })
@@ -156,7 +218,18 @@ export const approveSubmission = createServerFn({ method: "POST" })
       throwSafeError("approveSubmission.review", reviewError, "Could not approve submission");
     }
 
-    return { ok: true, propertyId };
+    const v2 = await publishV2Catalogue(
+      values,
+      propertyId,
+      sub.developer_id,
+      context.adminProfile.id,
+    );
+    return {
+      ok: true,
+      propertyId,
+      v2Published: v2.ok,
+      v2Error: v2.ok ? null : v2.reason,
+    };
   });
 
 /** Owner-only: rejects without touching `properties` at all — the developer

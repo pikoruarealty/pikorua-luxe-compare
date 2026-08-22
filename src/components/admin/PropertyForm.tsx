@@ -31,6 +31,7 @@ const TRACKED_FIELDS = [
   "status",
   "possession",
   "possessionAsOf",
+  "possessionConfirmedAsOf",
   "location",
   "city",
   "state",
@@ -58,6 +59,7 @@ const TRACKED_FIELDS = [
   "constructionQuality",
   "internalCeilingHeight",
   "clubhouseSize",
+  "amenitiesOther",
   "developerExperienceYears",
   "totalDeliveredProjects",
   "ongoingProjects",
@@ -228,8 +230,11 @@ export function PropertyForm({
           <NaField name="possession" label="Possession">
             <Input {...register("possession")} placeholder="e.g. 9 Months or RTMI" />
           </NaField>
-          <NaField name="possessionAsOf" label="Possession confirmed as of">
+          <NaField name="possessionAsOf" label="Possession duration confirmed as of">
             <Input type="date" {...register("possessionAsOf")} />
+          </NaField>
+          <NaField name="possessionConfirmedAsOf" label="Possession date confirmed as of">
+            <Input type="date" {...register("possessionConfirmedAsOf")} />
           </NaField>
           <NaField name="location" label="Location">
             <Input {...register("location")} placeholder="e.g. Sindhu Bhavan Road" />
@@ -349,6 +354,13 @@ export function PropertyForm({
           <NaField name="internalCeilingHeight" label="Internal ceiling height">
             <Input {...register("internalCeilingHeight")} placeholder="e.g. 10 ft" />
           </NaField>
+          <Field label="Ceiling height basis">
+            <Select {...register("ceilingHeightBasis")}>
+              <option value="not_stated">Not stated</option>
+              <option value="clear">Clear height</option>
+              <option value="slab_to_slab">Slab to slab</option>
+            </Select>
+          </Field>
           <NaField name="clubhouseSize" label="Clubhouse size">
             <Input {...register("clubhouseSize")} placeholder="e.g. 15,000 sq ft" />
           </NaField>
@@ -449,6 +461,9 @@ export function PropertyForm({
           onItemsChange={(next) => setValue("amenities", next, { shouldDirty: true })}
           placeholder="e.g. Infinity Pool"
         />
+        <NaField name="amenitiesOther" label="Other amenities (uncatalogued)">
+          <Input {...register("amenitiesOther")} placeholder="e.g. Pet spa, cricket pitch" />
+        </NaField>
       </Section>
 
       <Section title="Highlights / advantages">

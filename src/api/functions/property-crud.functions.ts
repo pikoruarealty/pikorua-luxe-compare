@@ -189,7 +189,12 @@ export const getPropertyForEdit = createServerFn({ method: "GET" })
       unitsPerAcre: row.units_per_acre ?? "",
       constructionQuality: row.construction_quality ?? "",
       internalCeilingHeight: row.internal_ceiling_height ?? "",
+      // Not stored on the v1 `properties` row today — no source to restore
+      // for an existing property, so the edit form starts blank/not-stated.
+      ceilingHeightBasis: "not_stated",
       clubhouseSize: row.clubhouse_size ?? "",
+      possessionConfirmedAsOf: "",
+      amenitiesOther: "",
       developerBackground: row.developer_background ?? "",
       developerExperienceYears: row.developer_experience_years?.toString() ?? "",
       totalDeliveredProjects: row.total_delivered_projects?.toString() ?? "",
