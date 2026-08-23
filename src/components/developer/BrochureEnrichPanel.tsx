@@ -7,7 +7,11 @@ import {
   type ExtractionResponse,
   type MergeRow,
 } from "@/lib/brochure-field-mapping";
-import { CONFIG_BUCKETS, type PropertyFormValues } from "@/lib/property-schema";
+import {
+  CONFIG_BUCKETS,
+  emptyPropertyForm,
+  type PropertyFormValues,
+} from "@/lib/property-schema";
 
 /** Lets an existing property be topped up from a brochure: whatever is still
  *  blank gets filled, and anything that disagrees with what's already saved has
@@ -68,7 +72,9 @@ export function BrochureEnrichPanel({
 
   const applySelected = () => {
     const merged = structuredClone(current);
-    merged.configs = merged.configs ?? { bhk3: [], bhk4: [], bhk5: [], penthouse: [], duplex: [] };
+    // Taken from the form's own empty value so a new bucket added to
+    // CONFIG_BUCKETS can never be missed here.
+    merged.configs = merged.configs ?? emptyPropertyForm().configs;
     for (const row of rows) if (isOn(row)) row.apply(merged);
     onApply(merged);
     reset();

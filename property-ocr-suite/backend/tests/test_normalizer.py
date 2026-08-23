@@ -9,6 +9,7 @@ from app.normalizer import (
     normalize,
     normalize_date,
     normalize_number,
+    recover_carpet_area_from_label,
 )
 from app.schema import ConfigVariant, ExtractedField, PropertyExtraction, RoomDimension
 
@@ -148,3 +149,66 @@ def test_different_units_are_compared_separately():
     ]
     flag_lopsided_series(e)
     assert e.warnings == []
+
+
+# --- carpet area lifted out of a unit label -------------------------------
+
+
+def _labelled(value: str, evidence: str = "", carpet: str = "") -> PropertyExtraction:
+    e = PropertyExtraction()
+    e.configurations = [
+        ConfigVariant(
+            variant_label=ExtractedField(
+                value=value,
+                found=True,
+                confidence=0.9,
+                evidence=evidence,
+                source_file="brochure.pdf",
+                source_page=13,
+            ),
+            carpet_area=ExtractedField(value=carpet, found=True, confidence=0.9)
+            if carpet
+            else ExtractedField(),
+        )
+    ]
+    return e
+
+
+def test_recovers_carpet_area_from_label_evidence():
+    e = _labelled("101", "101 R.C.A.=181.55 SQ.MT.")
+    recover_carpet_area_from_label(e)
+    field = e.configurations[0].carpet_area
+    assert field.found
+    # The unit must survive: stored bare, 181.55 would later be read as square
+    # feet and publish a 1,954 sq ft home as a 182 sq ft one.
+    assert field.value == "181.55 SQ.MT."
+    assert field.derived
+    assert field.source_page == 13
+
+
+def test_recovers_carpet_area_from_label_value():
+    e = _labelled("UNIT NO.-2201 R.C.A. = 130.80 Sq.Mts.")
+    recover_carpet_area_from_label(e)
+    assert e.configurations[0].carpet_area.value == "130.80 Sq.Mts."
+
+
+def test_never_overwrites_an_extracted_carpet_area():
+    e = _labelled("101", "101 R.C.A.=181.55 SQ.MT.", carpet="2000 Sq.Ft.")
+    recover_carpet_area_from_label(e)
+    field = e.configurations[0].carpet_area
+    assert field.value == "2000 Sq.Ft."
+    assert not field.derived
+
+
+def test_ignores_a_label_with_no_carpet_area():
+    e = _labelled("TYPE - 4 SUB UNIT TYPE - 4.2", "TYPE - 4 SUB UNIT TYPE - 4.2")
+    recover_carpet_area_from_label(e)
+    assert not e.configurations[0].carpet_area.found
+
+
+def test_is_idempotent():
+    e = _labelled("101", "101 R.C.A.=181.55 SQ.MT.")
+    recover_carpet_area_from_label(e)
+    first = e.configurations[0].carpet_area.model_copy()
+    recover_carpet_area_from_label(e)
+    assert e.configurations[0].carpet_area == first

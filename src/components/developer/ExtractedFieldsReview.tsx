@@ -451,6 +451,13 @@ export function ExtractedFieldsReview({
                   const isApproved = Boolean(approved[item.key]);
                   const needsAttention = showError && !isApproved;
                   const editable = Boolean(item.formField) || Boolean(item.configField);
+                  // The label bakes in a count ("Amenities (37)") computed once from
+                  // the raw extraction — pills can be added/removed since then, so
+                  // re-derive the number from the live list rather than showing a
+                  // count that's gone stale the moment the reviewer edits anything.
+                  const displayLabel = item.values
+                    ? item.label.replace(/\(\d+\)$/, `(${(listValues[item.key] ?? item.values).length})`)
+                    : item.label;
                   return (
                     <div
                       key={item.key}
@@ -467,7 +474,7 @@ export function ExtractedFieldsReview({
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-label text-[10px] font-semibold tracking-luxury text-muted-foreground uppercase">
-                              {item.label}
+                              {displayLabel}
                             </p>
                             {item.confidence !== undefined && (
                               <span
@@ -480,22 +487,42 @@ export function ExtractedFieldsReview({
 
                           {item.values ? (
                             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                              {(listValues[item.key] ?? item.values).map((v, vi) => (
-                                <span
-                                  key={`${item.key}-${vi}`}
-                                  className="inline-flex items-center gap-1 rounded-full border border-(--rule) bg-muted/30 py-1 pr-1.5 pl-2.5 text-xs text-foreground"
-                                >
-                                  {v}
-                                  <button
-                                    type="button"
-                                    onClick={() => removePill(item.key, vi)}
-                                    aria-label={`Remove ${v}`}
-                                    className="text-muted-foreground transition-colors hover:text-foreground"
+                              {(listValues[item.key] ?? item.values).map((v, vi) => {
+                                // Pills can be added/removed by the reviewer, so an index
+                                // into the live list doesn't line up with the citation array
+                                // that was built alongside the original extracted values —
+                                // look the citation up by value instead.
+                                const originalIndex = item.values!.indexOf(v);
+                                const citation =
+                                  originalIndex >= 0
+                                    ? item.valueCitations?.[originalIndex]
+                                    : undefined;
+                                const citationTitle = citation?.sourcePage
+                                  ? `p.${citation.sourcePage}${citation.snippet ? ` — "${citation.snippet}"` : ""}`
+                                  : undefined;
+                                return (
+                                  <span
+                                    key={`${item.key}-${vi}`}
+                                    title={citationTitle}
+                                    className="inline-flex items-center gap-1 rounded-full border border-(--rule) bg-muted/30 py-1 pr-1.5 pl-2.5 text-xs text-foreground"
                                   >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </span>
-                              ))}
+                                    {v}
+                                    {citation?.sourcePage && (
+                                      <span className="text-[9px] text-muted-foreground/70">
+                                        p.{citation.sourcePage}
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => removePill(item.key, vi)}
+                                      aria-label={`Remove ${v}`}
+                                      className="text-muted-foreground transition-colors hover:text-foreground"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
                               <input
                                 value={newPillText[item.key] ?? ""}
                                 onChange={(e) =>

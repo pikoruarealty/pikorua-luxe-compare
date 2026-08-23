@@ -28,9 +28,33 @@ anything printed small, ambiguous, stylised, or partially obscured.
 3. Never merge information across pages into a single guess. If page 3 says \
 "3 towers" and page 5 says "24 floors", report both as separate fields — never \
 invent a "total units" figure by multiplying them yourself.
-4. Amenities and highlights are LISTS. Only include items explicitly named on \
-the page (e.g. "Infinity Pool", "Multipurpose Hall") — do not paraphrase or \
-summarise into a house-style phrase.
+4. Amenities and highlights are LISTS, each entry a short name.
+   a. Only include items explicitly PRINTED as text on the page (e.g. "Infinity \
+Pool", "Multipurpose Hall") — do not paraphrase or summarise into a house-style \
+phrase, and never invent a name for something you merely see in a lifestyle \
+photo. A photo of people playing basketball is NOT evidence for "Basketball \
+Court" unless that name is also printed as a caption/label on the page — with \
+no caption, leave it out entirely (same as rule 1). "evidence" for an amenity \
+must be text printed on the page, never a description of what an image shows.
+   b. A numbered site-plan or clubhouse floor-plan legend (e.g. "1. ENTRY", \
+"2. EXIT", "A. LOUNGE", "B. THEATRE") is a floor-plan drawing, not an amenities \
+list. Skip purely functional/back-of-house callouts even when numbered \
+alongside genuine amenities on the same legend — ENTRY, EXIT, ENTRY LOBBY, \
+RAMP TO BASEMENT PARKING, DRIVEWAY (PLAZA), DROP-OFF (PLAZA), SECURITY CABIN, \
+VISITOR PARKING, TOILET, W.C., SHOWER (including OUTDOOR SHOWER), CHANGING \
+ROOM, MANAGER CABIN, RECEPTION, KITCHEN, GARBAGE COLLECTION, SERVICE AREA / \
+SERVICE YARD and similar are never amenities. Only the genuine lifestyle/recreation facilities named on \
+that legend (e.g. "YOGA DECK", "MINI GOLF", "ADVENTURE PARK") belong in \
+"amenities".
+   c. If the same amenity is named more than once across these pages with \
+slightly different wording ("Club House" / "Clubhouse", "Kids Play Area" / \
+"Kids' Play Area"), report it once, using the wording from its clearest or \
+most complete mention — do not report the same amenity twice under two names. \
+This includes amenities named differently but meaning the same feature — \
+"Tot Lot" and "Kids Play Area" / "Children's Play Area" are the same play \
+area; "Gym" and "Gymnasium" / "Fitness Centre" are the same room; \
+"Amphitheatre" and "Open Air Theatre" are the same feature — report each \
+such feature once.
 5. Configurations (BHK variants): report a row for each distinct unit layout \
 shown on these pages. A row is worth reporting if the page gives it a label \
 (e.g. "Unit - A", "Type B", "4 BHK") — it does NOT also need an area or price.
@@ -145,6 +169,12 @@ a rate; a figure in the thousands per sq ft is never a total price.
 
 8. Return ONLY valid JSON matching the schema you were given in the user \
 message. No prose, no markdown fences, no commentary before or after.
+
+9. "website" (in "basics") is the PROJECT's own site — printed on a cover, \
+back page, or contact block as a domain (e.g. "www.ikebana.com", \
+"ikebanaresidences.in"). It is NEVER a gujrera.gujarat.gov.in / RERA portal \
+URL — that goes in "rera_link" instead. If the only URL on the page is a RERA \
+portal link, leave "website" out rather than duplicating it there.
 """
 
 FIELD_SCHEMA_HINT = """
@@ -163,6 +193,7 @@ on these pages — do not include nulls, just leave the key out entirely):
     "city": {...},
     "state": {...},
     "tagline": {...},
+    "website": {...},          // the project's own site, e.g. "www.ikebana.com" — never the RERA portal link
     "expert_note": {...}
   },
   "project_structure": {

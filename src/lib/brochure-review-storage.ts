@@ -9,6 +9,11 @@ export interface ReviewProgress {
   values: Record<string, string>;
   listValues: Record<string, string[]>;
   overrides: VariantOverrides;
+  // Step 3 (image slot picks) owns these — optional because step 2 (field
+  // review) writes progress before step 3 has ever run.
+  picked?: Partial<Record<string, string>>;
+  customUrls?: Partial<Record<string, string>>;
+  activeSlot?: string;
 }
 
 const PREFIX = "brochure-review:";
@@ -23,9 +28,14 @@ export function loadReviewProgress(jobId: string): ReviewProgress | null {
   }
 }
 
-export function saveReviewProgress(jobId: string, progress: ReviewProgress): void {
+// Steps 2 and 3 each own a different slice of this record and save
+// independently — merge onto whatever's already stored rather than
+// overwriting wholesale, so saving one step's slice doesn't erase the
+// other's.
+export function saveReviewProgress(jobId: string, patch: Partial<ReviewProgress>): void {
   try {
-    localStorage.setItem(PREFIX + jobId, JSON.stringify(progress));
+    const existing = loadReviewProgress(jobId);
+    localStorage.setItem(PREFIX + jobId, JSON.stringify({ ...existing, ...patch }));
   } catch {
     // Best-effort — a full/blocked localStorage just means progress isn't
     // saved this time, not something worth interrupting the review over.

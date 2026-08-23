@@ -136,10 +136,59 @@ lists and specs.
       "N auto-accepted, M need you" report-card format. Configuration-variant rows (areas,
       rooms) never silently auto-accept since they don't trace back to one scalar
       `ExtractedField`. Covered by `scripts/check-extraction-diff.ts`, wired into `bun run check`.
-- [ ] Re-extract all 26 brochures through `property-ocr-suite` into the submission workflow
+- [x] ~~Re-extract~~ **Load** all 26 brochures through `property-ocr-suite` into the submission
+      workflow — re-extraction was a stale framing: the job JSONs on disk *are* the extraction
+      output (human-checked, RERA-enriched), and nothing on disk had ever been fed into the
+      submission workflow. That load step is what was actually missing, and now exists as
+      `scripts/load-brochures.ts` (`--plan` reports and writes nothing, `--publish` loads).
+      It calls the same three repository functions the developer portal calls
+      (`saveDeveloperRevision` → `submitDeveloperWorkflow` → `publishWorkflow`), so a loaded
+      property is indistinguishable from a real developer submission approved by a reviewer.
+      **20 of 25 unique properties published** to the local Postgres; 5 still blocked, see below.
+- [x] Side-work, not a checklist item itself but feeds it: GujRERA cross-reference tooling
+      (`scripts/rera-pilot.ts`, `rera-brochures.ts`, `rera-enrich.ts`) now covers all 25 unique
+      already-extracted properties (of 27 on disk; 2 are duplicate re-uploads, left as-is,
+      owner's call) — human-confirmed `entityId` matches in `scripts/rera-matches.json`, the
+      registered RERA-filed brochure PDF downloaded per project, and 3 RERA-only fields
+      (`rera.registered_completion_date`, `rera.construction_progress`,
+      `developer.total_delivered_projects`/`ongoing_projects` reused) pre-filled into the OCR
+      job JSONs wherever still blank. This is local-only — none of it has touched the Supabase
+      DB or the submission workflow yet; see `PROGRESS.md` Phase 3 notes for the full writeup.
 - [ ] Exception-only review per brochure (§5.1 — target ~70–80% silent auto-accept), using the
-      diff/classification tool above
+      diff/classification tool above. The worklist is now built and ranked:
+      `bun run review:queue` (`scripts/review-queue.ts`) runs the same `classifyDiffs` /
+      `buildReviewReport` the review UI uses, so the queue and the screen cannot disagree.
+      Across the 25: **315 auto-accepted, 824 fields needing a human** (212 failed a backend
+      consistency check, 4 conflict with a saved value, 607 uncertain gaps), plus 13
+      unidentified layouts and 11 bedroom shortfalls. Ordered worst-first — pashmina (62
+      flagged), THE KIMANA TOWERS (38), Rashmi Skyscape (32), EMINENCE 96 (32) lead it.
+      Note the 315/824 split is well short of the 70–80% auto-accept target; most of the 607
+      gaps are fields the brochures simply do not print, which publish as `not_stated` rather
+      than needing a decision, so the honest denominator is smaller than 824. Worth measuring
+      properly once the first few brochures are actually reviewed.
 - [ ] Publish all 26; every field carries real provenance and an honest `field_state`
+      — **20 of 25 done.** Target is a local PostgreSQL (owner's decision 2026-08-23: skip the
+      Supabase intermediate step, stand up the real Postgres now and replay the same
+      migrations on the GCP VM so the two stay in sync). Standing it up needed two new files,
+      because the 21 migrations were written against Supabase and assume things stock Postgres
+      lacks: `ops/db/bootstrap.sql` (creates the `anon`/`authenticated`/`service_role` roles,
+      an `auth.users` shim for the `admin_profiles` FK, a `storage.buckets` shim, and the
+      migration-tracking table) and `ops/db/migrate.sh` (replays the migrations in filename
+      order, each `--single-transaction`, skipping already-applied). Both are written to run
+      unchanged on the VM. All 21 migrations applied clean; `check-drizzle-schema.ts` clean
+      across 37 mirrored tables. Result after the 2026-08-23 republish: **20 properties, 20
+      publication versions/details, 98 configuration variants, 44 variant areas, 686 variant
+      rooms** — up from 76 variants and 21 areas, because widening the form's bucket list to
+      the full `2_bhk`–`7_bhk` taxonomy recovered layouts that were being dropped on the way
+      in, and the R.C.A. carpet-area backfill recovered 9 areas the extractor had missed.
+      The first 16 were republished rather than left: they carried areas stored ten times too
+      small (a `133.23 SQ.MT.` carpet area written as `133.230 sq_ft`), now converted through
+      `toSqFt` at the point of mapping.
+      **5 remain blocked** — AMARIS, Anurita, Shaligram Luxuria, The Universe, THE WEST PARK,
+      all with zero configurations extracted against a schema that requires at least one.
+      Needs an owner decision (hand-correct via `VariantOverrides`, or leave unpublished if the
+      brochures genuinely have no floor plans), not a code fix. See Phase 3 notes in
+      `PROGRESS.md`.
 - [ ] Flip `V2_CATALOGUE`, `V2_COMPARISON`, `V2_REVIEWS` together in staging first
 - [ ] **Gate: v2 must render every row v1 renders, and be usable on mobile, before the
       flip** — side-by-side screenshot diff, plus a real-phone/emulated-viewport pass on the

@@ -24,6 +24,7 @@ STRICT_SHAPE_MOSTLY_NULL = {
         "city": None,
         "state": None,
         "tagline": None,
+        "website": None,
         "expert_note": None,
     },
     "project_structure": None,

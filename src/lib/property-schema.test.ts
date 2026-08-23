@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  CONFIG_BUCKETS,
   type ConfigDetailInput,
   emptyConfigDetail,
   emptyPropertyForm,
   parsePropertySubmission,
   propertyFormSchema,
+  type PropertyFormValues,
 } from "./property-schema";
 
 const validProperty = () => ({ ...emptyPropertyForm(), name: "A valid property" });
@@ -59,7 +61,9 @@ describe("property form input bounds", () => {
     expect(() =>
       parsePropertySubmission({
         ...validProperty(),
-        configs: { bhk3: bucket, bhk4: bucket, bhk5: bucket, penthouse: bucket, duplex: bucket },
+        configs: Object.fromEntries(
+          CONFIG_BUCKETS.map((b) => [b.key, bucket]),
+        ) as PropertyFormValues["configs"],
       }),
     ).toThrow(/submission is too large/i);
   });

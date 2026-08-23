@@ -132,8 +132,38 @@ if (ranked.length) {
   }
 }
 
-if (totalDropped || totalUnparsed) {
-  console.log("\nFAIL — a layout or a printed size is being lost.");
+// Measured against a committed baseline rather than against zero. The corpus
+// carries real brochure ambiguities a human has to settle one page at a time —
+// a bungalow's basement sheet, an unlabelled "Type : A ( 201 )", a clubhouse
+// "Reception" — so demanding zero here only ever produced a red check nobody
+// could act on. What this must catch is a REGRESSION: a new plan-book
+// convention the mapping stops handling. That is an increase, and an increase
+// fails.
+const baseline = JSON.parse(
+  readFileSync(join(import.meta.dirname, "brochure-gaps.baseline.json"), "utf-8"),
+) as { unidentifiedLayouts: number; unparsedSizes: number };
+
+const regressions = [
+  { what: "unidentified layouts", now: totalDropped, was: baseline.unidentifiedLayouts },
+  { what: "unparsed sizes", now: totalUnparsed, was: baseline.unparsedSizes },
+];
+
+const worse = regressions.filter((r) => r.now > r.was);
+if (worse.length) {
+  for (const r of worse) {
+    console.log(`\nFAIL — ${r.what}: ${r.now}, up from ${r.was}.`);
+  }
+  console.log("A layout or a printed size the mapping used to handle is being lost.");
   process.exit(1);
 }
-console.log("\nOK — every layout mapped and every size parsed.");
+
+const better = regressions.filter((r) => r.now < r.was);
+if (better.length) {
+  for (const r of better) {
+    console.log(`\n${r.what}: ${r.now}, down from ${r.was} — lower the baseline to hold the gain.`);
+  }
+  console.log("scripts/brochure-gaps.baseline.json");
+  process.exit(1);
+}
+
+console.log("\nOK — no layout or printed size lost beyond the recorded baseline.");

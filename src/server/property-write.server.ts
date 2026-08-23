@@ -10,9 +10,12 @@ import {
 import { CONFIG_BUCKETS, type PropertyFormValues } from "@/lib/property-schema";
 
 const BUCKET_TO_CONFIG_KEY: Record<string, ConfigKey> = {
+  bhk2: "2 BHK",
   bhk3: "3 BHK",
   bhk4: "4 BHK",
   bhk5: "5 BHK",
+  bhk6: "6 BHK",
+  bhk7: "7 BHK",
   penthouse: "Penthouse",
   duplex: "Duplex",
 };
@@ -66,9 +69,12 @@ export function toConfigurations(configs: PropertyFormValues["configs"]): Proper
 /** PropertyConfigurations → form bucket arrays (inverse of toConfigurations). */
 export function toFormConfigs(configurations: PropertyConfigurations) {
   const out = {
+    bhk2: [],
     bhk3: [],
     bhk4: [],
     bhk5: [],
+    bhk6: [],
+    bhk7: [],
     penthouse: [],
     duplex: [],
   } as PropertyFormValues["configs"];

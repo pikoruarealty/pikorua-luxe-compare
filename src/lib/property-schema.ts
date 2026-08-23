@@ -3,6 +3,14 @@ import { ceilingHeightBasisSchema } from "@/generated/property-contract";
 import { safeHttpUrl } from "./utils";
 
 const MAX_SHORT_TEXT = 200;
+// A handful of specification fields are not short labels at all — brochures
+// print them as a sentence or a semicolon-separated list ("Imported marble in
+// the living and dining, vitrified tile in bedrooms, anti-skid ceramic in
+// bathrooms and utility, …"). Four brochures in the corpus ran 204–488
+// characters and were rejected outright at 200. The database columns behind
+// these are unconstrained `text`, so this is a validation ceiling only, raised
+// to fit what developers actually print rather than truncating their words.
+const MAX_SPEC_TEXT = 600;
 const MAX_LONG_TEXT = 5_000;
 const MAX_URL_LENGTH = 2_048;
 const MAX_LIST_ITEMS = 100;
@@ -10,6 +18,9 @@ const MAX_CONFIGS_PER_BUCKET = 20;
 const MAX_SUBMISSION_PAYLOAD_BYTES = 256_000;
 
 const shortText = () => z.string().trim().max(MAX_SHORT_TEXT);
+const specText = () => z.string().trim().max(MAX_SPEC_TEXT).optional().default("");
+const nullableRoomText = () =>
+  z.string().trim().max(MAX_SPEC_TEXT).nullable().optional().default(null);
 const optionalShortText = () => shortText().optional().default("");
 const nullableShortText = () => shortText().nullable().optional().default(null);
 const longText = () => z.string().trim().max(MAX_LONG_TEXT).optional().default("");
@@ -34,13 +45,19 @@ export const configDetailSchema = z.object({
   bathrooms: nullableShortText(),
   balconies: nullableShortText(),
   servantRoom: nullableShortText(),
-  livingArea: nullableShortText(),
-  kitchen: nullableShortText(),
-  bedroom1: nullableShortText(),
-  bedroom2: nullableShortText(),
-  bedroom3: nullableShortText(),
-  bedroom4: nullableShortText(),
-  bedroom5: nullableShortText(),
+  // Room slots hold more than one dimension. A plan that draws a family lounge,
+  // a formal living, a family living, a family room and a formal dining has
+  // five living spaces and the form has one slot, so the mapping joins them —
+  // "Family Lounge 256 sq ft (16'0" x 16'0") + Formal Living 238 sq ft (…)".
+  // That is the brochure's own content, not noise, and 200 characters cut it
+  // off mid-room.
+  livingArea: nullableRoomText(),
+  kitchen: nullableRoomText(),
+  bedroom1: nullableRoomText(),
+  bedroom2: nullableRoomText(),
+  bedroom3: nullableRoomText(),
+  bedroom4: nullableRoomText(),
+  bedroom5: nullableRoomText(),
 });
 
 export type ConfigDetailInput = z.infer<typeof configDetailSchema>;
@@ -68,10 +85,20 @@ export const VARIANT_FIELDS = [
 
 // Internal safe keys (no spaces) used as form field-array names; translated to
 // the real ConfigKey strings ("4 BHK", etc.) only at submit/load time.
+// Ascending, so the form's tabs and every listing built from them read smallest
+// home to largest. The set mirrors the canonical `configuration_kind` taxonomy
+// (2_bhk–7_bhk, penthouse, duplex) rather than a narrower editorial choice:
+// when this held only 3/4/5 BHK, every 2 and 6 BHK layout a brochure printed
+// was silently dropped on the way in, so published listings were thinner than
+// the document they came from. 1 BHK is deliberately absent — the canonical
+// taxonomy has no `1_bhk` option, so there is nowhere for it to land.
 export const CONFIG_BUCKETS = [
+  { key: "bhk2", label: "2 BHK" },
   { key: "bhk3", label: "3 BHK" },
   { key: "bhk4", label: "4 BHK" },
   { key: "bhk5", label: "5 BHK" },
+  { key: "bhk6", label: "6 BHK" },
+  { key: "bhk7", label: "7 BHK" },
   { key: "penthouse", label: "Penthouse" },
   { key: "duplex", label: "Duplex" },
 ] as const;
@@ -124,10 +151,10 @@ export const propertyFormSchema = z.object({
   geyserHeatPumpProvided: optionalShortText(),
   vrvAcProvided: optionalShortText(),
   windowGlazing: optionalShortText(),
-  bathSanitaryFittings: optionalShortText(),
-  flooringType: optionalShortText(),
+  bathSanitaryFittings: specText(),
+  flooringType: specText(),
   unitsPerAcre: optionalShortText(),
-  constructionQuality: optionalShortText(),
+  constructionQuality: specText(),
   internalCeilingHeight: optionalShortText(),
   ceilingHeightBasis: ceilingHeightBasisSchema.default("not_stated"),
   clubhouseSize: optionalShortText(),
@@ -143,9 +170,12 @@ export const propertyFormSchema = z.object({
   ongoingProjects: optionalShortText(),
   notableDeliveredProjects: z.array(shortText().min(1)).max(MAX_LIST_ITEMS).default([]),
   configs: z.object({
+    bhk2: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
     bhk3: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
     bhk4: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
     bhk5: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
+    bhk6: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
+    bhk7: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
     penthouse: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
     duplex: z.array(configDetailSchema).max(MAX_CONFIGS_PER_BUCKET).default([]),
   }),
@@ -232,7 +262,16 @@ export function emptyPropertyForm(): PropertyFormValues {
     totalDeliveredProjects: "",
     ongoingProjects: "",
     notableDeliveredProjects: [],
-    configs: { bhk3: [], bhk4: [], bhk5: [], penthouse: [], duplex: [] },
+    configs: {
+      bhk2: [],
+      bhk3: [],
+      bhk4: [],
+      bhk5: [],
+      bhk6: [],
+      bhk7: [],
+      penthouse: [],
+      duplex: [],
+    },
     isPublished: true,
   };
 }

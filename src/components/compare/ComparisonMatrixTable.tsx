@@ -50,10 +50,15 @@ type RoomKey =
   | "bedroom5";
 
 function roomFieldsFor(k: ConfigKey): { key: RoomKey; label: string }[] {
+  // 6 and 7 BHK cap at 5 because ConfigDetail carries only bedroom1–bedroom5;
+  // the extra bedrooms exist in the home but have no dimension slot to render.
   const bedroomCount: Record<ConfigKey, number> = {
+    "2 BHK": 2,
     "3 BHK": 3,
     "4 BHK": 4,
     "5 BHK": 5,
+    "6 BHK": 5,
+    "7 BHK": 5,
     Penthouse: 5,
     Duplex: 4,
   };

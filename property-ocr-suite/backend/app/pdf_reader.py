@@ -114,7 +114,7 @@ class EmbeddedImage:
     height: int
 
 
-def looks_like_floor_plan(text: str, vector_paths: int = 0) -> bool:
+def looks_like_floor_plan(text: str, vector_paths: int = 0, raster_signal: bool = False) -> bool:
     """A page whose text layer is peppered with feet-and-inches sizes
     is a floor plan, not a photo spread. Cheap to check and it decides
     how many pixels that page is worth. Falls back to the page title
@@ -125,27 +125,40 @@ def looks_like_floor_plan(text: str, vector_paths: int = 0) -> bool:
     sheets carry hundreds to thousands of vector paths where marketing
     pages carry tens. Without this, an image-only brochure has every
     page classified as marketing and its plans read at photo
-    resolution, three to an LLM call."""
+    resolution, three to an LLM call.
+
+    `raster_signal` covers the remaining case: a plan sheet flattened
+    into ONE raster image — a scan or an exported PNG — carries no text
+    layer AND no vector paths, so both checks above read zero even
+    though the page is unmistakably a floor plan to a human. See
+    `_raster_floor_plan_signal` for how that gets decided instead."""
     text = text or ""
     if len(DIMENSION_RE.findall(text)) >= settings.FLOORPLAN_DIMENSION_HITS:
         return True
     if PLAN_TITLE_RE.search(text):
         return True
-    return vector_paths >= settings.FLOORPLAN_VECTOR_PATHS
+    if vector_paths >= settings.FLOORPLAN_VECTOR_PATHS:
+        return True
+    return raster_signal
 
 
-def _page_priority(text: str, vector_paths: int = 0) -> int:
+def _page_priority(text: str, vector_paths: int = 0, raster_signal: bool = False) -> int:
     """What a page is worth when there isn't budget for all of them.
     Floor plans first, then area/price tables, then everything else —
     the marketing prose is the only part a listing can survive without."""
-    if looks_like_floor_plan(text, vector_paths):
+    if looks_like_floor_plan(text, vector_paths, raster_signal):
         return 0
     if AREA_TABLE_RE.search(text or ""):
         return 1
     return 2
 
 
-def select_pages(texts: List[str], budget: int, vector_paths: List[int] | None = None) -> List[int]:
+def select_pages(
+    texts: List[str],
+    budget: int,
+    vector_paths: List[int] | None = None,
+    raster_signals: List[bool] | None = None,
+) -> List[int]:
     """Which page indices to actually read, in document order.
 
     A brochure running past the budget is the normal case, not an edge
@@ -159,8 +172,62 @@ def select_pages(texts: List[str], budget: int, vector_paths: List[int] | None =
     if budget <= 0 or len(texts) <= budget:
         return list(range(len(texts)))
     paths = vector_paths or [0] * len(texts)
-    ranked = sorted(range(len(texts)), key=lambda i: (_page_priority(texts[i], paths[i]), i))
+    rasters = raster_signals or [False] * len(texts)
+    ranked = sorted(
+        range(len(texts)),
+        key=lambda i: (_page_priority(texts[i], paths[i], rasters[i]), i),
+    )
     return sorted(ranked[:budget])
+
+
+def _raster_floor_plan_signal(page: "fitz.Page") -> bool:
+    """Catches a plan sheet flattened into one raster image — a scan, or a
+    PNG exported straight from CAD — where the text and vector-path checks
+    both read zero because there is no real text layer and no line art,
+    just a picture of one. Only worth checking once those cheaper signals
+    have already come up empty (see call site in read_pdf).
+
+    Two things distinguish a plan scan from a lifestyle photo that also
+    happens to fill the page: it's a single image covering nearly the
+    whole page (a photo spread is too, so this alone doesn't discriminate)
+    AND its pixels are dominated by a plain white/light background with
+    sparse dark linework, rather than a photo's full tonal range. Sampled
+    from a small thumbnail — this only needs to be roughly right, not
+    exact, since it only affects resolution/tiling for pages the LLM
+    reads anyway, not whether they're skipped outright."""
+    rect = page.rect
+    page_area = rect.width * rect.height
+    if page_area <= 0:
+        return False
+    try:
+        images = page.get_images(full=True)
+    except Exception:  # noqa: BLE001
+        return False
+    best_ratio = 0.0
+    best_xref = None
+    for img in images:
+        xref = img[0]
+        try:
+            bbox = page.get_image_bbox(img)
+        except Exception:  # noqa: BLE001
+            continue
+        ratio = (bbox.width * bbox.height) / page_area
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_xref = xref
+    if best_ratio < 0.85 or best_xref is None:
+        return False
+    try:
+        base_image = page.parent.extract_image(best_xref)
+        img = Image.open(io.BytesIO(base_image["image"])).convert("L")
+        img.thumbnail((96, 96))
+        pixels = list(img.getdata())
+        if not pixels:
+            return False
+        light_ratio = sum(1 for p in pixels if p > 200) / len(pixels)
+        return light_ratio >= 0.55
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _render_page_image_b64(page: "fitz.Page", dpi: int, detailed: bool = False) -> tuple[str, int, int]:
@@ -280,11 +347,19 @@ def read_pdf(path: Path) -> PdfDocument:
         # sheet in a brochure with no text layer, which is a large minority of
         # them — see looks_like_floor_plan.
         paths = [len(doc.load_page(i).get_drawings()) for i in range(doc.page_count)]
-        keep = select_pages(texts, settings.MAX_PAGES_PER_DOC, paths)
+        # Only worth the extra image-sampling work for pages the cheaper
+        # signals above already missed.
+        rasters = [
+            False
+            if (looks_like_floor_plan(texts[i], paths[i]))
+            else _raster_floor_plan_signal(doc.load_page(i))
+            for i in range(doc.page_count)
+        ]
+        keep = select_pages(texts, settings.MAX_PAGES_PER_DOC, paths, rasters)
         for i in keep:
             page = doc.load_page(i)
             text = texts[i]
-            is_floor_plan = looks_like_floor_plan(text, paths[i])
+            is_floor_plan = looks_like_floor_plan(text, paths[i], rasters[i])
             image_b64, width, height = _render_page_image_b64(
                 page, settings.PAGE_RENDER_DPI, detailed=is_floor_plan
             )

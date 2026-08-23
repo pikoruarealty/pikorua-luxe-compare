@@ -55,8 +55,11 @@ function apartmentValues(): PropertyFormValues {
           rate: "10500",
         },
       ],
+      bhk2: [],
       bhk3: [],
       bhk5: [],
+      bhk6: [],
+      bhk7: [],
       penthouse: [],
       duplex: [],
     },
@@ -91,7 +94,7 @@ describe("buildPublicationRevision", () => {
       category: "Plots",
       plotSuperArea: "12000",
       plotCarpetArea: "8000",
-      configs: { bhk3: [], bhk4: [], bhk5: [], penthouse: [], duplex: [] },
+      configs: emptyPropertyForm().configs,
     };
     const revision = buildPublicationRevision(values, lookup);
     const result = publicationRevisionSchema.safeParse(revision);
@@ -126,5 +129,51 @@ describe("buildPublicationRevision", () => {
     const revision = buildPublicationRevision(values, lookup);
     expect(revision.details.proposedStartDateRera).toBeNull();
     expect(revision.details.proposedStartDateReraState).toBe("not_stated");
+  });
+});
+
+describe("area units", () => {
+  const configure = (detail: Partial<ReturnType<typeof emptyConfigDetail>>) => {
+    const values = apartmentValues();
+    values.configs.bhk4 = [{ ...emptyConfigDetail(), type: "Type A", ...detail }];
+    return buildPublicationRevision(values, lookup);
+  };
+
+  const areaOf = (revision: ReturnType<typeof buildPublicationRevision>, basis: string) =>
+    revision.configurations[0].areas.find((a) => a.basis === basis);
+
+  it("converts a square-metre carpet area into square feet", () => {
+    // 133.93 m² is a 1,441 sq ft home. Stored unconverted under the sq_ft
+    // label it reads as 134 sq ft — the mistake this test exists to catch.
+    const carpet = areaOf(configure({ carpet: "133.93 SQ.MT." }), "carpet");
+    expect(carpet?.unit).toBe("sq_ft");
+    expect(carpet?.value).toBeCloseTo(1441.6, 0);
+    // The brochure's own words are kept alongside the converted number, so a
+    // reviewer can always see what the page actually said.
+    expect(carpet?.rawText).toBe("133.93 SQ.MT.");
+  });
+
+  it("recognises the spellings brochures actually use", () => {
+    for (const raw of ["383.62 Sq. Mtr.", "130.80 Sq.Mts.", "100 sq m", "100 SQ.MT."]) {
+      const carpet = areaOf(configure({ carpet: raw }), "carpet");
+      expect(carpet?.value, raw).toBeGreaterThan(Number.parseFloat(raw) * 10);
+    }
+  });
+
+  it("leaves a square-foot area alone", () => {
+    expect(areaOf(configure({ carpet: "2,896 Sq. Ft." }), "carpet")?.value).toBeCloseTo(2896, 3);
+  });
+
+  it("treats an area with no stated unit as square feet", () => {
+    expect(areaOf(configure({ area: "4615" }), "super_built_up")?.value).toBeCloseTo(4615, 3);
+  });
+
+  it("does not read a room's dimension pair as an area", () => {
+    // "18x14" is two lengths, not an area; the first number alone published an
+    // 18 sq ft living room.
+    const revision = configure({ livingArea: "18x14" });
+    const room = revision.configurations[0].rooms.find((r) => r.dimensionRaw === "18x14");
+    expect(room?.areaValue).toBeNull();
+    expect(room?.dimensionRaw).toBe("18x14");
   });
 });

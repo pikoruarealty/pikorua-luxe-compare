@@ -1,12 +1,16 @@
 import type { PropertyFormValues } from "@/lib/property-schema";
 import { CONFIG_BUCKETS, VARIANT_FIELDS } from "@/lib/property-schema";
-import type { ConfigurationKind } from "@/generated/property-contract";
+import type { AreaUnit, ConfigurationKind } from "@/generated/property-contract";
+import { toSqFt } from "./units";
 import type { PublicationRevision } from "./publication";
 
 const BUCKET_TO_KIND: Record<(typeof CONFIG_BUCKETS)[number]["key"], ConfigurationKind> = {
+  bhk2: "2_bhk",
   bhk3: "3_bhk",
   bhk4: "4_bhk",
   bhk5: "5_bhk",
+  bhk6: "6_bhk",
+  bhk7: "7_bhk",
   penthouse: "penthouse",
   duplex: "duplex",
 };
@@ -33,6 +37,46 @@ function parseNumberOrNull(value: string | null | undefined): number | null {
   if (!match) return null;
   const parsed = Number.parseFloat(match[0]);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** The unit a brochure printed an area in, read off the text next to the
+ *  number. Gujarat plan books quote carpet areas in square metres about as
+ *  often as in square feet — "133.93 SQ.MT.", "383.62 Sq. Mtr." — and a few
+ *  quote land in sq. yards / gaj or acres.
+ *
+ *  Null means the string named no unit at all ("4615", "2156.20"). That is not
+ *  the same as "square feet": it is an unstated unit that only happens to be
+ *  square feet most of the time. Callers decide what to do with that; this
+ *  function will not guess on their behalf. */
+function parseAreaUnit(value: string | null | undefined): AreaUnit | null {
+  const t = (value ?? "").toLowerCase();
+  // Metres first: "sq. mtr." also contains "sq. m", and testing the shorter
+  // pattern first would still be correct here, but ordering longest-first keeps
+  // this robust if abbreviations are added later.
+  if (/\bsq\.?\s*(m|mt|mtr|mtrs|mts|metre|meter)s?\.?\b/.test(t)) return "sq_m";
+  if (/\bsq\.?\s*(ft|feet|foot)\.?\b/.test(t)) return "sq_ft";
+  if (/\bgaj\b/.test(t)) return "gaj";
+  if (/\bsq\.?\s*(yd|yds|yard)s?\.?\b/.test(t)) return "sq_yd";
+  if (/\bacres?\b/.test(t)) return "acre";
+  return null;
+}
+
+/** An area as a number of square feet, whatever unit the brochure printed it
+ *  in. Every area column downstream is declared `sq_ft`, so a value parsed out
+ *  of "133.93 SQ.MT." has to be converted before it is stored under that
+ *  label — publishing it unconverted turned a 1,441 sq ft home into a 134 sq ft
+ *  one, on the very field the comparison surface ranks by.
+ *
+ *  A string with no unit is taken as already being square feet. That is the
+ *  brochure convention this catalogue is built on and matches what the admin
+ *  form's own "Super built-up (sq ft)" inputs mean, so it is an assumption
+ *  about the source rather than a conversion — but it is stated here so the
+ *  next person reading a suspicious number knows where to look. */
+function parseAreaSqFtOrNull(value: string | null | undefined): number | null {
+  const parsed = parseNumberOrNull(value);
+  if (parsed === null) return null;
+  const unit = parseAreaUnit(value);
+  return unit === null ? parsed : toSqFt(parsed, unit);
 }
 
 function parseIntOrNull(value: string | null | undefined): number | null {
@@ -79,7 +123,7 @@ function mapConfiguration(
 ): PublicationRevision["configurations"][number] {
   const areas = AREA_BUCKET_FIELDS.map(({ name, basis }) => {
     const raw = detail[name];
-    const value = parseNumberOrNull(raw);
+    const value = parseAreaSqFtOrNull(raw);
     return {
       basis,
       value,
@@ -91,7 +135,14 @@ function mapConfiguration(
 
   const rooms = VARIANT_FIELDS.filter((field) => ROOM_LABELS.has(field.name)).map((field) => {
     const raw = detail[field.name as keyof ConfigDetail] as string | null;
-    const areaValue = parseNumberOrNull(raw);
+    // A room is nearly always printed as a dimension pair — "18x14", "5.20 X
+    // 4.30 M" — which is not an area, and taking the first number out of it
+    // published an 18 sq ft living room. Multiplying the two sides would be
+    // stating an area the brochure never printed, so a dimension yields no
+    // areaValue at all; `dimensionRaw` still carries exactly what was on the
+    // page. Only a room genuinely quoted as a single area keeps a number.
+    const isDimensionPair = /\d\s*[x×]\s*\d/i.test(raw ?? "");
+    const areaValue = isDimensionPair ? null : parseAreaSqFtOrNull(raw);
     return {
       roomType: field.label,
       dimensionRaw: nz(raw),
@@ -102,7 +153,7 @@ function mapConfiguration(
   });
 
   const primaryArea = detail.area ?? detail.builtUpArea ?? detail.carpet ?? null;
-  const primaryAreaValue = parseNumberOrNull(primaryArea);
+  const primaryAreaValue = parseAreaSqFtOrNull(primaryArea);
   const primaryAreaBasis = detail.area
     ? ("super_built_up" as const)
     : detail.builtUpArea
@@ -197,8 +248,10 @@ export function buildPublicationRevision(
   if (isPlotLike && configurations.length === 0) {
     const kind = CATEGORY_TO_CONFIG_KIND[values.category as "Bungalow" | "Plots"];
     const optionId = lookup.configurationOptionsByKind.get(kind);
-    const superArea = parseNumberOrNull(values.plotSuperArea);
-    const carpetArea = parseNumberOrNull(values.plotCarpetArea);
+    // Plot areas are quoted in sq. yards and gaj as often as in square feet,
+    // so they go through the same unit-aware parse as configuration areas.
+    const superArea = parseAreaSqFtOrNull(values.plotSuperArea);
+    const carpetArea = parseAreaSqFtOrNull(values.plotCarpetArea);
     if (optionId && (superArea !== null || carpetArea !== null)) {
       const areas = [
         superArea !== null

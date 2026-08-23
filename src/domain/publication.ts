@@ -15,6 +15,11 @@ const gatedNumber = () => z.number().finite().nullable();
 const gatedInt = () => z.number().int().nullable();
 const gatedText = (maximum: number) => nullableTrimmed(maximum);
 
+// Specification fields brochures print as prose rather than as a label — see
+// MAX_SPEC_TEXT in property-schema.ts, which this must not be tighter than or
+// a value the form accepts would be rejected at publish time instead.
+const SPEC_TEXT_MAX = 600;
+
 const publicationDetailsSchema = z
   .object({
     plotSizeValue: gatedNumber(),
@@ -43,13 +48,13 @@ const publicationDetailsSchema = z
     internalCeilingHeightFt: gatedNumber(),
     ceilingHeightBasis: ceilingHeightBasisSchema,
     ceilingHeightState: fieldStateSchema,
-    constructionQuality: gatedText(200),
+    constructionQuality: gatedText(SPEC_TEXT_MAX),
     constructionQualityState: fieldStateSchema,
-    flooringType: gatedText(200),
+    flooringType: gatedText(SPEC_TEXT_MAX),
     flooringTypeState: fieldStateSchema,
     windowGlazing: gatedText(200),
     windowGlazingState: fieldStateSchema,
-    bathSanitaryFittings: gatedText(200),
+    bathSanitaryFittings: gatedText(SPEC_TEXT_MAX),
     bathSanitaryFittingsState: fieldStateSchema,
     vrvAcProvision: gatedText(200),
     vrvAcProvisionState: fieldStateSchema,
@@ -86,7 +91,9 @@ const configurationAreaSchema = z
 const configurationRoomSchema = z
   .object({
     roomType: z.string().trim().min(1).max(100),
-    dimensionRaw: nullableTrimmed(200),
+    // Plan books print a room's dimensions with the room name, unit and
+    // occasional annotation all in one string; 200 clipped the longest of them.
+    dimensionRaw: nullableTrimmed(SPEC_TEXT_MAX),
     areaValue: z.number().finite().nonnegative().nullable(),
     areaUnit: areaUnitSchema.nullable(),
     state: fieldStateSchema,

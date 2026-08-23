@@ -10,6 +10,7 @@ import {
 } from "@/api/functions/property-images.functions";
 import type { ExtractionResponse } from "@/lib/brochure-field-mapping";
 import type { PropertyFormValues } from "@/lib/property-schema";
+import { loadReviewProgress, saveReviewProgress } from "@/lib/brochure-review-storage";
 
 /** The five images a property shows on the site. `cover` is the card photo; the
  *  rest fill the gallery. */
@@ -47,17 +48,33 @@ export function BrochureImagePicker({
       .slice(0, 60);
   }, [response]);
 
-  const [picked, setPicked] = useState<Partial<Record<SlotKey, string>>>({});
+  // Restored once on mount if this job's review was left and come back to —
+  // by going back a step from the field-review page, or resuming by job id
+  // later. Previously this was plain useState({}), which lost every pick the
+  // moment the step unmounted.
+  const [saved] = useState(() => loadReviewProgress(response.job_id));
+
+  const [picked, setPicked] = useState<Partial<Record<SlotKey, string>>>(
+    () => (saved?.picked as Partial<Record<SlotKey, string>>) ?? {},
+  );
   // Photos a reviewer uploaded directly for a slot rather than choosing one of
   // the candidates pulled out of the PDFs — already saved to permanent
   // storage on upload, so unlike `picked` these need no import step later.
-  const [customUrls, setCustomUrls] = useState<Partial<Record<SlotKey, string>>>({});
+  const [customUrls, setCustomUrls] = useState<Partial<Record<SlotKey, string>>>(
+    () => (saved?.customUrls as Partial<Record<SlotKey, string>>) ?? {},
+  );
   const [uploading, setUploading] = useState(false);
   const [maxUploadBytes, setMaxUploadBytes] = useState(DEFAULT_MAX_IMAGE_UPLOAD_BYTES);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const getUploadLimit = useServerFn(getPropertyImageUploadLimit);
   const uploadFn = useServerFn(uploadPropertyImage);
-  const [activeSlot, setActiveSlot] = useState<SlotKey>("cover");
+  const [activeSlot, setActiveSlot] = useState<SlotKey>(
+    () => (saved?.activeSlot as SlotKey) ?? "cover",
+  );
+
+  useEffect(() => {
+    saveReviewProgress(response.job_id, { picked, customUrls, activeSlot });
+  }, [response.job_id, picked, customUrls, activeSlot]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

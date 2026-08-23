@@ -65,7 +65,14 @@ class Settings:
     MAX_FILES: int = int(os.getenv("MAX_FILES", "6"))
 
     # --- extraction tuning ---
-    MAX_PAGES_PER_DOC: int = int(os.getenv("MAX_PAGES_PER_DOC", "40"))
+    # 40 was too tight for the larger luxury brochures this pipeline actually
+    # sees (60-90 pages is common) — even with page-priority ranking sending
+    # floor plans and price tables to the front of the queue, a brochure with
+    # more configuration pages than the budget still lost real unit data.
+    # Raised as a safety margin alongside the floor-plan detection fix (see
+    # pdf_reader._raster_floor_plan_signal) that makes the ranking itself
+    # more accurate — this cap is the backstop for whatever it still misses.
+    MAX_PAGES_PER_DOC: int = int(os.getenv("MAX_PAGES_PER_DOC", "60"))
     PAGES_PER_LLM_CALL: int = int(os.getenv("PAGES_PER_LLM_CALL", "3"))
     # How many page-batches to send to the vision LLM at once. Batches
     # within one file are independent calls (each only ever sees its own
