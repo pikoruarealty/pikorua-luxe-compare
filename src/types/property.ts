@@ -1,5 +1,5 @@
 export type PropertyStatus = string;
-export type PropertyCategory = "Apartment" | "Bungalow" | "Plots";
+export type PropertyCategory = "Apartment" | "Villa" | "Bungalow" | "Plots";
 export type ConfigKey =
   | "2 BHK"
   | "3 BHK"
@@ -28,6 +28,9 @@ export interface ConfigDetail {
   bathrooms?: string | null;
   balconies?: string | null;
   servantRoom?: string | null; // "Yes" / "No"
+  // Per-variant plot size — distinct from the project-level plotSize field;
+  // villas/plots within the same project routinely carry different plot sizes.
+  plotSize?: string | null;
   livingArea?: string | null;
   kitchen?: string | null;
   bedroom1?: string | null; // Master Bedroom 1

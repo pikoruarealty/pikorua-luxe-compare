@@ -45,6 +45,9 @@ export const configDetailSchema = z.object({
   bathrooms: nullableShortText(),
   balconies: nullableShortText(),
   servantRoom: nullableShortText(),
+  // Distinct from the project-level plotSize field — villas/plots within the
+  // same project routinely carry different plot sizes per variant.
+  plotSize: nullableShortText(),
   // Room slots hold more than one dimension. A plan that draws a family lounge,
   // a formal living, a family living, a family room and a formal dining has
   // five living spaces and the form has one slot, so the mapping joins them —
@@ -74,6 +77,7 @@ export const VARIANT_FIELDS = [
   { name: "bathrooms", label: "Bathrooms" },
   { name: "balconies", label: "Balconies" },
   { name: "servantRoom", label: "Servant room" },
+  { name: "plotSize", label: "Plot size (this variant)" },
   { name: "livingArea", label: "Drawing / Living / Dining" },
   { name: "kitchen", label: "Kitchen" },
   { name: "bedroom1", label: "Bedroom 1" },
@@ -106,7 +110,7 @@ export const CONFIG_BUCKETS = [
 export const propertyFormSchema = z.object({
   name: shortText().min(1, "Name is required"),
   developer: optionalShortText(),
-  category: z.enum(["Apartment", "Bungalow", "Plots"]),
+  category: z.enum(["Apartment", "Villa", "Bungalow", "Plots"]),
   tagline: optionalShortText(),
   location: optionalShortText(),
   state: optionalShortText(),
@@ -143,6 +147,8 @@ export const propertyFormSchema = z.object({
   reraId: optionalShortText(),
   reraUrl: publicUrl(),
   proposedStartDateRera: optionalShortText(),
+  registeredCompletionDateRera: optionalShortText(),
+  constructionProgressRera: optionalShortText(),
   // Construction & amenities
   parkingLevels: optionalShortText(),
   podiumStructure: optionalShortText(),
@@ -203,6 +209,7 @@ export function emptyConfigDetail(): ConfigDetailInput {
     bathrooms: null,
     balconies: null,
     servantRoom: null,
+    plotSize: null,
     livingArea: null,
     kitchen: null,
     bedroom1: null,
@@ -241,6 +248,8 @@ export function emptyPropertyForm(): PropertyFormValues {
     reraId: "",
     reraUrl: "",
     proposedStartDateRera: "",
+    registeredCompletionDateRera: "",
+    constructionProgressRera: "",
     parkingLevels: "",
     podiumStructure: "",
     liftsPerTower: "",

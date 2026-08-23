@@ -46,6 +46,8 @@ const TRACKED_FIELDS = [
   "reraId",
   "reraUrl",
   "proposedStartDateRera",
+  "registeredCompletionDateRera",
+  "constructionProgressRera",
   "parkingLevels",
   "podiumStructure",
   "liftsPerTower",
@@ -71,6 +73,17 @@ const TRACKED_FIELDS = [
 ] as const;
 
 const PLOT_ONLY_FIELDS = ["plotSuperArea", "plotCarpetArea"] as const;
+
+// Tower/floor/podium structure only means something when a project has
+// multiple towers of stacked units — a bungalow, villa or plot project is a
+// single structure per unit, so these fields are hidden (and can't block
+// submission) for those categories.
+const HIDDEN_FOR_PLOT_FIELDS = ["totalTowers", "totalFloors", "unitsPerFloor", "podiumStructure"] as const;
+
+// A property that's already ready has no duration/estimate left to track —
+// these two fields exist only to date-stamp a still-pending possession claim.
+const READY_ONLY_FIELDS = ["possessionAsOf", "possessionConfirmedAsOf"] as const;
+const READY_RE = /\bready\b|\brtmi\b/i;
 
 type TrackedField = (typeof TRACKED_FIELDS)[number];
 
@@ -166,7 +179,15 @@ export function PropertyForm({
   });
   const { register, handleSubmit, control, watch, setValue, formState } = form;
   const category = watch("category");
-  const isPlot = category === "Plots" || category === "Bungalow";
+  // Bungalow/Villa/Plots are all "one plot, one structure" — no towers, no
+  // per-floor unit counts — so they share the plot-area section and the
+  // trimmed-down project-structure fields below.
+  const isPlot = category === "Plots" || category === "Bungalow" || category === "Villa";
+  const possession = watch("possession");
+  const status = watch("status");
+  // "Ready to Move In" leaves nothing left to date-stamp — the duration and
+  // confirmation-date fields exist only to track a still-pending estimate.
+  const readyNow = READY_RE.test(possession ?? "") || READY_RE.test(status ?? "");
   const [activeBucket, setActiveBucket] = useState<BucketKey>("bhk4");
 
   // Blank fields start marked N/A — a reviewer confirms a listing by clearing
@@ -188,6 +209,8 @@ export function PropertyForm({
     !String((allValues as Record<string, unknown>)[field] ?? "").trim();
   const unhandled = TRACKED_FIELDS.filter((f) => {
     if (!isPlot && (PLOT_ONLY_FIELDS as readonly string[]).includes(f)) return false;
+    if (isPlot && (HIDDEN_FOR_PLOT_FIELDS as readonly string[]).includes(f)) return false;
+    if (readyNow && (READY_ONLY_FIELDS as readonly string[]).includes(f)) return false;
     return isBlank(f) && !naFields[f];
   });
 
@@ -234,6 +257,7 @@ export function PropertyForm({
             <Field label="Category">
               <Select {...register("category")}>
                 <option value="Apartment">Apartment</option>
+                <option value="Villa">Villa</option>
                 <option value="Bungalow">Bungalow</option>
                 <option value="Plots">Plots</option>
               </Select>
@@ -244,12 +268,16 @@ export function PropertyForm({
             <NaField name="possession" label="Possession">
               <Input {...register("possession")} placeholder="e.g. 9 Months or RTMI" />
             </NaField>
-            <NaField name="possessionAsOf" label="Possession duration confirmed as of">
-              <Input type="date" {...register("possessionAsOf")} />
-            </NaField>
-            <NaField name="possessionConfirmedAsOf" label="Possession date confirmed as of">
-              <Input type="date" {...register("possessionConfirmedAsOf")} />
-            </NaField>
+            {!readyNow && (
+              <>
+                <NaField name="possessionAsOf" label="Possession duration confirmed as of">
+                  <Input type="date" {...register("possessionAsOf")} />
+                </NaField>
+                <NaField name="possessionConfirmedAsOf" label="Possession date confirmed as of">
+                  <Input type="date" {...register("possessionConfirmedAsOf")} />
+                </NaField>
+              </>
+            )}
             <NaField name="location" label="Location">
               <Input {...register("location")} placeholder="e.g. Sindhu Bhavan Road" />
             </NaField>
@@ -298,15 +326,19 @@ export function PropertyForm({
             <NaField name="availableBhkTypes" label="Available BHK types">
               <Input {...register("availableBhkTypes")} placeholder="e.g. 4, 5, 6 BHK" />
             </NaField>
-            <NaField name="totalTowers" label="Total towers">
-              <Input {...register("totalTowers")} placeholder="e.g. 3" />
-            </NaField>
-            <NaField name="totalFloors" label="Total floors">
-              <Input {...register("totalFloors")} placeholder="e.g. 24" />
-            </NaField>
-            <NaField name="unitsPerFloor" label="Units per floor">
-              <Input {...register("unitsPerFloor")} placeholder="e.g. 4" />
-            </NaField>
+            {!isPlot && (
+              <>
+                <NaField name="totalTowers" label="Total towers">
+                  <Input {...register("totalTowers")} placeholder="e.g. 3" />
+                </NaField>
+                <NaField name="totalFloors" label="Total floors">
+                  <Input {...register("totalFloors")} placeholder="e.g. 24" />
+                </NaField>
+                <NaField name="unitsPerFloor" label="Units per floor">
+                  <Input {...register("unitsPerFloor")} placeholder="e.g. 4" />
+                </NaField>
+              </>
+            )}
             <NaField name="totalUnits" label="Total units">
               <Input {...register("totalUnits")} placeholder="e.g. 96" />
             </NaField>
@@ -324,6 +356,21 @@ export function PropertyForm({
             <NaField name="proposedStartDateRera" label="Proposed start date (RERA)">
               <Input {...register("proposedStartDateRera")} placeholder="e.g. Jan 2025" />
             </NaField>
+            <NaField
+              name="registeredCompletionDateRera"
+              label="Registered completion date (RERA)"
+            >
+              <Input
+                {...register("registeredCompletionDateRera")}
+                placeholder="e.g. Dec 2027"
+              />
+            </NaField>
+            <NaField name="constructionProgressRera" label="Construction progress (RERA)">
+              <Input
+                {...register("constructionProgressRera")}
+                placeholder="e.g. 62.5% as of Q1 2026"
+              />
+            </NaField>
           </Grid>
         </Section>
 
@@ -332,10 +379,15 @@ export function PropertyForm({
             <NaField name="parkingLevels" label="Parking levels">
               <Input {...register("parkingLevels")} placeholder="e.g. 2" />
             </NaField>
-            <NaField name="podiumStructure" label="Podium structure">
-              <Input {...register("podiumStructure")} placeholder="e.g. 2-Level Podium" />
-            </NaField>
-            <NaField name="liftsPerTower" label="Lifts per tower">
+            {!isPlot && (
+              <NaField name="podiumStructure" label="Podium structure">
+                <Input {...register("podiumStructure")} placeholder="e.g. 2-Level Podium" />
+              </NaField>
+            )}
+            <NaField
+              name="liftsPerTower"
+              label={isPlot ? "Lifts per unit" : "Lifts per tower"}
+            >
               <Input {...register("liftsPerTower")} placeholder="e.g. 3" />
             </NaField>
             <NaField name="openSpace" label="Open space">

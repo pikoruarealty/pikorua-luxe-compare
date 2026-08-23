@@ -138,7 +138,8 @@ export const getPropertyForEdit = createServerFn({ method: "GET" })
     if (!row) throw new Error("Property not found");
 
     const gallery = (row.gallery ?? {}) as Record<string, string>;
-    const isPlot = row.category === "Plots" || row.category === "Bungalow";
+    const isPlot =
+      row.category === "Plots" || row.category === "Bungalow" || row.category === "Villa";
     // Plot areas are stored with a suffix ("12,000 Plot") — strip it back off
     // so the edit form shows the raw number the owner originally typed.
     const stripSuffix = (v: string | null, suffix: string) =>
@@ -148,7 +149,7 @@ export const getPropertyForEdit = createServerFn({ method: "GET" })
       id: row.id,
       name: row.name ?? "",
       developer: row.developer === "-" ? "" : (row.developer ?? ""),
-      category: (row.category as "Apartment" | "Bungalow" | "Plots") ?? "Apartment",
+      category: (row.category as "Apartment" | "Villa" | "Bungalow" | "Plots") ?? "Apartment",
       tagline: row.tagline ?? "",
       location: row.location === "-" ? "" : (row.location ?? ""),
       state: row.state ?? "",
@@ -177,6 +178,8 @@ export const getPropertyForEdit = createServerFn({ method: "GET" })
       reraId: row.rera_id ?? "",
       reraUrl: row.rera_url ?? "",
       proposedStartDateRera: row.proposed_start_date_rera ?? "",
+      registeredCompletionDateRera: "",
+      constructionProgressRera: "",
       parkingLevels: row.parking_levels?.toString() ?? "",
       podiumStructure: row.podium_structure ?? "",
       liftsPerTower: row.lifts_per_tower?.toString() ?? "",

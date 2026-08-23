@@ -32,7 +32,8 @@ const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
 function legacyCategory(type: PublicationRevision["property"]["propertyType"]) {
   if (type === "plot") return "Plots";
-  if (type === "bungalow" || type === "villa") return "Bungalow";
+  if (type === "villa") return "Villa";
+  if (type === "bungalow") return "Bungalow";
   return "Apartment";
 }
 
@@ -197,6 +198,10 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
       proposedStartDateReraState: revision.details.proposedStartDateReraState,
       possessionConfirmedAsOf: revision.details.possessionConfirmedAsOf,
       possessionConfirmedAsOfState: revision.details.possessionConfirmedAsOfState,
+      registeredCompletionDateRera: revision.details.registeredCompletionDateRera,
+      registeredCompletionDateReraState: revision.details.registeredCompletionDateReraState,
+      constructionProgressRera: revision.details.constructionProgressRera,
+      constructionProgressReraState: revision.details.constructionProgressReraState,
       amenitiesOther: revision.details.amenitiesOther,
     });
 

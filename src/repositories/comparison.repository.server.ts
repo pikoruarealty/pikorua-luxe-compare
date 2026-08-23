@@ -464,6 +464,14 @@ export async function findConsumerComparison(
               value: details?.possessionConfirmedAsOf ?? null,
               state: details?.possessionConfirmedAsOfState ?? ("not_stated" as const),
             },
+            registeredCompletionDateRera: {
+              value: details?.registeredCompletionDateRera ?? null,
+              state: details?.registeredCompletionDateReraState ?? ("not_stated" as const),
+            },
+            constructionProgressRera: {
+              value: details?.constructionProgressRera ?? null,
+              state: details?.constructionProgressReraState ?? ("not_stated" as const),
+            },
             configurations: item.gatedConfigurations,
           }
         : null;

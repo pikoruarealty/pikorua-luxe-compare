@@ -180,7 +180,10 @@ function mapConfiguration(
     servantRoomState: fieldState(nz(detail.servantRoom)),
     floorPlanPage: null,
     floorPlanPageState: "not_stated",
-    publicFacts: {},
+    // publicFacts is a free-form bag (no dedicated column) — plot size only
+    // applies to a subset of variants (villas/plots), so it doesn't warrant
+    // a first-class field on every configuration row.
+    publicFacts: nz(detail.plotSize) ? { plotSize: nz(detail.plotSize) } : {},
     areas,
     rooms,
     commercial: {
@@ -203,14 +206,16 @@ export interface PublicationMappingLookup {
 
 const CATEGORY_TO_PROPERTY_TYPE: Record<
   PropertyFormValues["category"],
-  "apartment" | "bungalow" | "plot"
+  "apartment" | "villa" | "bungalow" | "plot"
 > = {
   Apartment: "apartment",
+  Villa: "villa",
   Bungalow: "bungalow",
   Plots: "plot",
 };
 
-const CATEGORY_TO_CONFIG_KIND: Record<"Bungalow" | "Plots", ConfigurationKind> = {
+const CATEGORY_TO_CONFIG_KIND: Record<"Villa" | "Bungalow" | "Plots", ConfigurationKind> = {
+  Villa: "villa",
   Bungalow: "bungalow",
   Plots: "plot",
 };
@@ -244,9 +249,10 @@ export function buildPublicationRevision(
     }
   }
 
-  const isPlotLike = values.category === "Bungalow" || values.category === "Plots";
+  const isPlotLike =
+    values.category === "Villa" || values.category === "Bungalow" || values.category === "Plots";
   if (isPlotLike && configurations.length === 0) {
-    const kind = CATEGORY_TO_CONFIG_KIND[values.category as "Bungalow" | "Plots"];
+    const kind = CATEGORY_TO_CONFIG_KIND[values.category as "Villa" | "Bungalow" | "Plots"];
     const optionId = lookup.configurationOptionsByKind.get(kind);
     // Plot areas are quoted in sq. yards and gaj as often as in square feet,
     // so they go through the same unit-aware parse as configuration areas.
@@ -301,6 +307,7 @@ export function buildPublicationRevision(
   const openSpacePercent = parseNumberOrNull(values.openSpace);
   const proposedStartDateRera = toIsoDateOrNull(values.proposedStartDateRera);
   const possessionConfirmedAsOf = toIsoDateOrNull(values.possessionConfirmedAsOf);
+  const registeredCompletionDateRera = toIsoDateOrNull(values.registeredCompletionDateRera);
 
   return {
     schemaVersion: 1,
@@ -374,6 +381,10 @@ export function buildPublicationRevision(
       proposedStartDateReraState: fieldState(proposedStartDateRera),
       possessionConfirmedAsOf,
       possessionConfirmedAsOfState: fieldState(possessionConfirmedAsOf),
+      registeredCompletionDateRera,
+      registeredCompletionDateReraState: fieldState(registeredCompletionDateRera),
+      constructionProgressRera: nz(values.constructionProgressRera),
+      constructionProgressReraState: fieldState(nz(values.constructionProgressRera)),
       amenitiesOther: nz(values.amenitiesOther),
     },
     reraVerification: null,

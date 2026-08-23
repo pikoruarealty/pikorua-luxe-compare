@@ -11,10 +11,10 @@ import {
 import type { PropertyFormValues } from "@/lib/property-schema";
 
 export const Route = createFileRoute("/developer/submissions/$id")({
-  component: EditPendingSubmission,
+  component: EditSubmission,
 });
 
-function EditPendingSubmission() {
+function EditSubmission() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
 
@@ -24,10 +24,16 @@ function EditPendingSubmission() {
     retry: false,
   });
 
+  const wasRejected = data?.status === "rejected";
+
   const saveMutation = useMutation({
     mutationFn: (values: PropertyFormValues) => updateMyPendingSubmission({ data: { id, values } }),
     onSuccess: () => {
-      toast.success("Submission updated — it's still waiting for your admin to review it.");
+      toast.success(
+        wasRejected
+          ? "Resubmitted — it's back in your admin's review queue."
+          : "Submission updated — it's still waiting for your admin to review it.",
+      );
       navigate({ to: "/developer" });
     },
     onError: (e: Error) => toast.error(e.message || "Could not save"),
@@ -51,12 +57,13 @@ function EditPendingSubmission() {
       {data && (
         <>
           <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-            This hasn't been reviewed yet, so you can still change anything. Saving replaces what
-            your admin will see — it doesn't create a second request.
+            {wasRejected
+              ? "This was rejected — fix what your admin flagged and resubmit. It goes back into the same review queue rather than creating a second request."
+              : "This hasn't been reviewed yet, so you can still change anything. Saving replaces what your admin will see — it doesn't create a second request."}
           </p>
           <PropertyForm
-            defaultValues={data}
-            submitLabel="Save changes"
+            defaultValues={data.values}
+            submitLabel={wasRejected ? "Resubmit for review" : "Save changes"}
             hidePublishToggle
             submitting={saveMutation.isPending}
             onSubmit={(values) => saveMutation.mutate(values)}

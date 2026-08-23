@@ -337,6 +337,14 @@ export const propertyPublicationDetails = pgTable("property_publication_details"
   possessionConfirmedAsOfState: fieldState("possession_confirmed_as_of_state")
     .notNull()
     .default("not_stated"),
+  registeredCompletionDateRera: date("registered_completion_date_rera"),
+  registeredCompletionDateReraState: fieldState("registered_completion_date_rera_state")
+    .notNull()
+    .default("not_stated"),
+  constructionProgressRera: text("construction_progress_rera"),
+  constructionProgressReraState: fieldState("construction_progress_rera_state")
+    .notNull()
+    .default("not_stated"),
 
   amenitiesOther: text("amenities_other"),
 

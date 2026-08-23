@@ -136,13 +136,14 @@ function DeveloperDashboard() {
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
-                      {/* Only while it's still pending — once reviewed, the
-                          submission is a record of what was decided. */}
-                      {s.status === "pending" && (
+                      {/* Pending: still correctable before review. Rejected:
+                          correctable again to resubmit. Approved is the only
+                          one that's a closed record — it's already live. */}
+                      {(s.status === "pending" || s.status === "rejected") && (
                         <Link
                           to="/developer/submissions/$id"
                           params={{ id: s.id }}
-                          title="Edit this submission"
+                          title={s.status === "rejected" ? "Fix and resubmit" : "Edit this submission"}
                           className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
                         >
                           <Pencil className="h-4 w-4" />

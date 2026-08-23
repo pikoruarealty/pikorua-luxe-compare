@@ -6,6 +6,10 @@ import type { VariantOverrides } from "@/lib/brochure-field-mapping";
  *  the same id the resume flow already uses to refetch the extraction. */
 export interface ReviewProgress {
   approved: Record<string, boolean>;
+  // A reviewer's explicit "not providing this now" — distinct from a field
+  // the OCR never found: this is a found value the reviewer chose to leave
+  // out (e.g. possession, until RERA confirms it) rather than approve.
+  skipped?: Record<string, boolean>;
   values: Record<string, string>;
   listValues: Record<string, string[]>;
   overrides: VariantOverrides;

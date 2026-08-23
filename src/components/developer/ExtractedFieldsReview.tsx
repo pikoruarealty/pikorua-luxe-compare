@@ -106,11 +106,16 @@ export function ExtractedFieldsReview({
     ),
     ...saved?.approved,
   }));
+  // A reviewer's explicit "not providing this now" — a found value they
+  // choose to leave out (e.g. possession, until RERA confirms it) rather
+  // than approve. Counts toward "handled" the same as an approval, but the
+  // value is dropped instead of written to the form.
+  const [skipped, setSkipped] = useState<Record<string, boolean>>(() => saved?.skipped ?? {});
   const [showError, setShowError] = useState(false);
 
   useEffect(() => {
-    saveReviewProgress(response.job_id, { approved, values, listValues, overrides });
-  }, [response.job_id, approved, values, listValues, overrides]);
+    saveReviewProgress(response.job_id, { approved, skipped, values, listValues, overrides });
+  }, [response.job_id, approved, skipped, values, listValues, overrides]);
 
   // Only the first item to cite a given page gets the actual <img> — every
   // later item citing that same page just links back up to it, so a plan
@@ -314,12 +319,12 @@ export function ExtractedFieldsReview({
     return url.toString();
   };
 
-  const remaining = allItems.filter((i) => !approved[i.key]).length;
+  const remaining = allItems.filter((i) => !approved[i.key] && !skipped[i.key]).length;
 
   const handleContinue = () => {
     if (remaining > 0) {
       setShowError(true);
-      const first = allItems.find((i) => !approved[i.key]);
+      const first = allItems.find((i) => !approved[i.key] && !skipped[i.key]);
       if (first) {
         document
           .querySelector(`[data-approval="${first.key}"]`)
@@ -327,7 +332,7 @@ export function ExtractedFieldsReview({
       }
       return;
     }
-    const mapped = allItems.filter((i) => i.formField);
+    const mapped = allItems.filter((i) => i.formField && !skipped[i.key]);
     const partial: Record<string, string | string[]> = {};
     for (const item of mapped) {
       partial[item.formField as string] = item.values
@@ -342,7 +347,7 @@ export function ExtractedFieldsReview({
     // corrections.
     const mergedOverrides: VariantOverrides = { ...overrides };
     for (const item of allItems) {
-      if (!item.configField || item.configIndex === undefined) continue;
+      if (!item.configField || item.configIndex === undefined || skipped[item.key]) continue;
       const value = values[item.key] ?? item.value;
       if (!value) continue;
       const idx = item.configIndex;
@@ -366,7 +371,8 @@ export function ExtractedFieldsReview({
     <div ref={reviewRootRef} className="max-w-2xl">
       <p className="text-sm text-muted-foreground">
         Here's everything we found. Check each value against the source, fix anything wrong, then
-        approve it. All {allItems.length} need a tick — one at a time, on purpose.
+        approve it — or skip it if it's not something you want to publish yet. All{" "}
+        {allItems.length} need a decision — one at a time, on purpose.
       </p>
 
       {missing.length > 0 && (
@@ -449,7 +455,8 @@ export function ExtractedFieldsReview({
               <div className="space-y-2">
                 {group.items.map((item) => {
                   const isApproved = Boolean(approved[item.key]);
-                  const needsAttention = showError && !isApproved;
+                  const isSkipped = Boolean(skipped[item.key]);
+                  const needsAttention = showError && !isApproved && !isSkipped;
                   const editable = Boolean(item.formField) || Boolean(item.configField);
                   // The label bakes in a count ("Amenities (37)") computed once from
                   // the raw extraction — pills can be added/removed since then, so
@@ -465,9 +472,11 @@ export function ExtractedFieldsReview({
                       className={`rounded-xl border p-3 transition-colors ${
                         isApproved
                           ? "border-emerald-600/40 bg-emerald-600/5"
-                          : needsAttention
-                            ? "border-red-500/50"
-                            : "border-(--rule)"
+                          : isSkipped
+                            ? "border-(--rule) bg-muted/20 opacity-60"
+                            : needsAttention
+                              ? "border-red-500/50"
+                              : "border-(--rule)"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -633,25 +642,42 @@ export function ExtractedFieldsReview({
                             })()}
                         </div>
 
-                        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 pt-0.5">
-                          <input
-                            type="checkbox"
-                            checked={isApproved}
-                            onChange={(e) =>
-                              setApproved((a) => ({ ...a, [item.key]: e.target.checked }))
-                            }
-                            className="h-4 w-4"
-                          />
-                          <span
-                            className={`flex items-center gap-1 text-xs font-medium ${
-                              isApproved
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-muted-foreground"
+                        <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
+                          <label className="flex cursor-pointer items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={isApproved}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setApproved((a) => ({ ...a, [item.key]: checked }));
+                                if (checked) setSkipped((s) => ({ ...s, [item.key]: false }));
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <span
+                              className={`flex items-center gap-1 text-xs font-medium ${
+                                isApproved
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              <Check className="h-3.5 w-3.5" /> Approve
+                            </span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = !isSkipped;
+                              setSkipped((s) => ({ ...s, [item.key]: next }));
+                              if (next) setApproved((a) => ({ ...a, [item.key]: false }));
+                            }}
+                            className={`text-[11px] font-medium underline underline-offset-2 ${
+                              isSkipped ? "text-foreground" : "text-muted-foreground/70"
                             }`}
                           >
-                            <Check className="h-3.5 w-3.5" /> Approve
-                          </span>
-                        </label>
+                            {isSkipped ? "Skipped — leave blank" : "Skip this field"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -664,7 +690,8 @@ export function ExtractedFieldsReview({
 
       {showError && remaining > 0 && (
         <p className="mt-4 text-sm text-red-600 dark:text-red-400">
-          Approve all {remaining} remaining value{remaining > 1 ? "s" : ""} before continuing.
+          Approve or skip all {remaining} remaining value{remaining > 1 ? "s" : ""} before
+          continuing.
         </p>
       )}
 
@@ -684,7 +711,9 @@ export function ExtractedFieldsReview({
           Continue to form
         </button>
         <span className="text-xs text-muted-foreground">
-          {allItems.length - remaining} of {allItems.length} approved
+          {allItems.length - remaining} of {allItems.length} handled
+          {Object.values(skipped).some(Boolean) &&
+            ` (${Object.values(skipped).filter(Boolean).length} skipped)`}
         </span>
       </div>
 

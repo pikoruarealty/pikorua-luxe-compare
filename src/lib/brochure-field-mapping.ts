@@ -116,6 +116,8 @@ const FIELD_MAP: Record<string, keyof PropertyFormValues> = {
   "rera.rera_id": "reraId",
   "rera.rera_link": "reraUrl",
   "rera.proposed_start_date": "proposedStartDateRera",
+  "rera.registered_completion_date": "registeredCompletionDateRera",
+  "rera.construction_progress": "constructionProgressRera",
 
   "construction_amenities.parking_levels": "parkingLevels",
   "construction_amenities.podium_structure": "podiumStructure",
@@ -151,7 +153,8 @@ const COERCE: Partial<Record<keyof PropertyFormValues, (raw: string) => string>>
   category: (raw) => {
     const t = raw.toLowerCase();
     if (/\b(plot|land|parcel)\b/.test(t)) return "Plots";
-    if (/\b(villa|bungalow|row\s*house|independent\s*hous)/.test(t)) return "Bungalow";
+    if (/\bvilla/.test(t)) return "Villa";
+    if (/\b(bungalow|row\s*house|independent\s*hous)/.test(t)) return "Bungalow";
     if (/\b(apartment|flat|residence|tower|high\s*rise)/.test(t)) return "Apartment";
     // Says nothing about the built form — let the form's own default stand
     // rather than guessing a category the brochure never claimed.
@@ -345,8 +348,11 @@ const ROOM_PATTERNS = {
   balcony: /balcon|deck|sit[\s-]?out|terrace|verandah?|zarukho|otla/,
   // "S. ROOM" / "S ROOM" is how most plan books label the servant room.
   servant: /servant|maid|house\s*help|\bs\.?\s*room\b/,
-  // A wet kitchen is often just "WET K" beside the main one.
-  kitchen: /kitchen|\bwet\s*k\b/,
+  // A wet kitchen is often just "WET K" beside the main one. "Kitchen garden"
+  // is a different thing entirely — a landscaped herb patch, not a room — so
+  // it's excluded here and falls through to `ignorable` below instead of
+  // dragging its own area into the kitchen measurement.
+  kitchen: /kitchen(?!\s*garden)|\bwet\s*k\b/,
   living: /living|drawing|dining|lounge|family\s*room/,
   bedroom: /bed\s*room|\bbed\b|\bmbr\b/,
   /** Circulation and service spaces the form deliberately has no field for.

@@ -1,7 +1,8 @@
-/** Fills the three RERA facts the team decided are worth keeping as real form
+/** Fills the RERA facts the team decided are worth keeping as real form
  *  fields, for projects our own extractions have already been hand-matched to
  *  a GujRERA filing — registered timeline (start → completion), construction
- *  progress %, and developer track record (filed/completed project counts).
+ *  progress %, developer track record (filed/completed project counts), and
+ *  the RERA ID itself.
  *
  *  Decision trail (2026-08-23): of six RERA-only facts the pilot surfaced
  *  (scripts/rera-pilot.ts), the user approved exactly these three as schema
@@ -15,6 +16,14 @@
  *      developer.ongoing_projects  (existing fields)
  *  Registered promoter, total carpet area, and declared project cost were
  *  explicitly turned down and must not be added anywhere.
+ *
+ *  Decision trail (2026-08-24): the user asked that reraId also be backfilled
+ *  from the hand-confirmed match's regNo wherever the brochure itself never
+ *  printed one — a verified GujRERA registration number is real data, not an
+ *  inference, so "not found in the brochure" is no longer a reason to leave
+ *  it blank. reraUrl is deliberately NOT backfilled here: no verified
+ *  human-facing GujRERA project URL exists anywhere in this codebase or its
+ *  research, and this script does not fabricate one.
  *
  *  Conservative reading of "replaced or pre filled": this script only ever
  *  writes into a field that is currently blank (found === false) and never
@@ -160,7 +169,7 @@ const norm = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-type Confirmed = { entityId: number | null; entityName?: string };
+type Confirmed = { entityId: number | null; entityName?: string; regNo?: string };
 
 function loadConfirmed(): Map<string, Confirmed> {
   const out = new Map<string, Confirmed>();
@@ -177,7 +186,7 @@ function loadConfirmed(): Map<string, Confirmed> {
   return out;
 }
 
-type Target = { name: string; entityId: number; source: string; path: string };
+type Target = { name: string; entityId: number; regNo: string | null; source: string; path: string };
 
 function loadTargets(): Target[] {
   const confirmed = loadConfirmed();
@@ -203,7 +212,13 @@ function loadTargets(): Target[] {
     const rec = confirmed.get(norm(name));
     if (!rec?.entityId) continue;
     if (ONLY && !norm(name).includes(norm(ONLY))) continue;
-    targets.push({ name, entityId: rec.entityId, source: rec.entityName ?? "", path });
+    targets.push({
+      name,
+      entityId: rec.entityId,
+      regNo: rec.regNo?.trim() || null,
+      source: rec.entityName ?? "",
+      path,
+    });
   }
   return targets.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -281,6 +296,12 @@ async function main() {
       label: string;
       value: string | null;
     }> = [
+      {
+        section: rera,
+        key: "rera_id",
+        label: "RERA ID (confirmed registration no.)",
+        value: t.regNo,
+      },
       {
         section: rera,
         key: "proposed_start_date",

@@ -51,6 +51,7 @@ export function toConfigurations(configs: PropertyFormValues["configs"]): Proper
         bathrooms: nz(v.bathrooms),
         balconies: nz(v.balconies),
         servantRoom: nz(v.servantRoom),
+        plotSize: nz(v.plotSize),
         livingArea: nz(v.livingArea),
         kitchen: nz(v.kitchen),
         bedroom1: nz(v.bedroom1),
@@ -90,6 +91,7 @@ export function toFormConfigs(configurations: PropertyConfigurations) {
       bathrooms: v.bathrooms ?? null,
       balconies: v.balconies ?? null,
       servantRoom: v.servantRoom ?? null,
+      plotSize: v.plotSize ?? null,
       livingArea: v.livingArea ?? null,
       kitchen: v.kitchen ?? null,
       bedroom1: v.bedroom1 ?? null,
@@ -190,7 +192,7 @@ export function buildPropertyRow(
 ): PropertyRowInsert {
   const configurations = toConfigurations(input.configs);
   const category = input.category as PropertyCategory;
-  const isPlot = category === "Plots" || category === "Bungalow";
+  const isPlot = category === "Plots" || category === "Bungalow" || category === "Villa";
 
   const superBuiltUpArea = isPlot
     ? nz(input.plotSuperArea)

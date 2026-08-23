@@ -111,7 +111,8 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
     if (!row) throw new Error("Property not found");
 
     const gallery = (row.gallery ?? {}) as Record<string, string>;
-    const isPlot = row.category === "Plots" || row.category === "Bungalow";
+    const isPlot =
+      row.category === "Plots" || row.category === "Bungalow" || row.category === "Villa";
     const stripSuffix = (v: string | null, suffix: string) =>
       (v ?? "").replace(new RegExp(`\\s*${suffix}$`), "").replace(/^-$/, "");
 
@@ -119,7 +120,7 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
       id: row.id,
       name: row.name ?? "",
       developer: row.developer === "-" ? "" : (row.developer ?? ""),
-      category: (row.category as "Apartment" | "Bungalow" | "Plots") ?? "Apartment",
+      category: (row.category as "Apartment" | "Villa" | "Bungalow" | "Plots") ?? "Apartment",
       tagline: row.tagline ?? "",
       location: row.location === "-" ? "" : (row.location ?? ""),
       state: row.state ?? "",
@@ -148,6 +149,8 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
       reraId: row.rera_id ?? "",
       reraUrl: row.rera_url ?? "",
       proposedStartDateRera: row.proposed_start_date_rera ?? "",
+      registeredCompletionDateRera: "",
+      constructionProgressRera: "",
       parkingLevels: row.parking_levels?.toString() ?? "",
       podiumStructure: row.podium_structure ?? "",
       liftsPerTower: row.lifts_per_tower?.toString() ?? "",
@@ -174,33 +177,40 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
     };
   });
 
-/** Developer-only: reopen one of their own still-pending submissions so it can
- *  be corrected. Approved and rejected ones are history and stay read-only —
- *  an approved submission's changes already live on the property itself. */
+/** Developer-only: reopen one of their own pending OR rejected submissions so
+ *  it can be corrected. Approved ones are history and stay read-only — an
+ *  approved submission's changes already live on the property itself. */
 export const getMyPendingSubmission = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
   .inputValidator((data: { id: string }) => {
     if (!data?.id) throw new Error("Missing submission id");
     return { id: data.id };
   })
-  .handler(async ({ data, context }): Promise<PropertyFormValues> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row, error } = await supabaseAdmin
-      .from("property_submissions")
-      .select("payload, status")
-      .eq("id", data.id)
-      .eq("developer_id", context.adminProfile.id)
-      .maybeSingle();
-    if (error || !row) throw new Error("Submission not found");
-    if (row.status !== "pending") {
-      throw new Error("Only submissions still awaiting review can be edited.");
-    }
-    return propertyFormSchema.parse(row.payload);
-  });
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ values: PropertyFormValues; status: "pending" | "rejected" }> => {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: row, error } = await supabaseAdmin
+        .from("property_submissions")
+        .select("payload, status")
+        .eq("id", data.id)
+        .eq("developer_id", context.adminProfile.id)
+        .maybeSingle();
+      if (error || !row) throw new Error("Submission not found");
+      if (row.status !== "pending" && row.status !== "rejected") {
+        throw new Error("Only a pending or rejected submission can be edited.");
+      }
+      return { values: propertyFormSchema.parse(row.payload), status: row.status };
+    },
+  );
 
 /** Developer-only: replace the payload of a pending submission in place, so
  *  correcting a mistake doesn't leave the owner with two near-identical
- *  requests to review. */
+ *  requests to review. Also handles resubmitting a rejected one — flips it
+ *  back to "pending" and clears the prior reviewer's verdict, so it re-enters
+ *  the same queue rather than needing a brand new submission row. */
 export const updateMyPendingSubmission = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
   .inputValidator((data: { id: string; values: PropertyFormValues }) => {
@@ -211,10 +221,16 @@ export const updateMyPendingSubmission = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: updated, error } = await supabaseAdmin
       .from("property_submissions")
-      .update({ payload: data.values as never })
+      .update({
+        payload: data.values as never,
+        status: "pending",
+        reviewer_note: null,
+        reviewer_id: null,
+        reviewed_at: null,
+      })
       .eq("id", data.id)
       .eq("developer_id", context.adminProfile.id)
-      .eq("status", "pending")
+      .in("status", ["pending", "rejected"])
       .select("id")
       .maybeSingle();
     if (error) throwSafeError("submitProperty", error, "Could not submit property");

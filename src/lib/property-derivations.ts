@@ -38,7 +38,7 @@ export const summariseConfiguration = (
   }
   const bhkStr = bhk.length ? `${bhk.join(", ")} BHK` : "";
   const tail = extras.length ? ` · ${extras.join(" · ")}` : "";
-  const prefix = type === "Bungalow" ? "Bungalow · " : "";
+  const prefix = type === "Bungalow" ? "Bungalow · " : type === "Villa" ? "Villa · " : "";
   const out = `${prefix}${bhkStr}${tail}`.trim();
   return out || type;
 };

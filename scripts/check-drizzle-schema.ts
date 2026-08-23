@@ -11,6 +11,7 @@ const migrationFiles = [
   "20260817140000_phase5_verification_propscore.sql",
   "20260818120000_canonical_dictionary.sql",
   "20260821120000_phase7_developer_intelligence.sql",
+  "20260823120000_rera_registered_completion_progress.sql",
 ];
 const migration = (
   await Promise.all(

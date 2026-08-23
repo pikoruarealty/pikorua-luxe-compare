@@ -205,6 +205,8 @@ export const gatedComparisonPropertySchema = z
     background: gatedField(z.string().max(2000).nullable()),
     proposedStartDateRera: gatedField(z.string().date().nullable()),
     possessionConfirmedAsOf: gatedField(z.string().date().nullable()),
+    registeredCompletionDateRera: gatedField(z.string().date().nullable()),
+    constructionProgressRera: gatedField(z.string().max(100).nullable()),
     configurations: z.array(gatedConfigurationSchema),
   })
   .strict();

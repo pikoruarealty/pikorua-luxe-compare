@@ -74,6 +74,10 @@ const publicationDetailsSchema = z
     proposedStartDateReraState: fieldStateSchema,
     possessionConfirmedAsOf: z.string().date().nullable(),
     possessionConfirmedAsOfState: fieldStateSchema,
+    registeredCompletionDateRera: z.string().date().nullable(),
+    registeredCompletionDateReraState: fieldStateSchema,
+    constructionProgressRera: gatedText(100),
+    constructionProgressReraState: fieldStateSchema,
     amenitiesOther: gatedText(2000),
   })
   .strict();
