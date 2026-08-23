@@ -150,6 +150,66 @@ def derive_bhk_from_rooms(extraction: PropertyExtraction) -> PropertyExtraction:
     return extraction
 
 
+_RCA_IN_LABEL_RE = re.compile(
+    r"""R\.?\s*C\.?\s*A\.?          # "R.C.A." / "RCA" — RERA Carpet Area
+        \s*[=:\-]?\s*
+        (\d[\d,]*\.?\d*)            # the number
+        \s*
+        (sq\.?\s*(?:mt?r?s?|m|metre?s?|ft|feet)\.?)   # and its unit
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def recover_carpet_area_from_label(extraction: PropertyExtraction) -> PropertyExtraction:
+    """Lift a carpet area the model left inside the unit's label.
+
+    Some plan books print the unit number and its RERA carpet area as one
+    caption — "UNIT NO.-2201 R.C.A. = 130.80 Sq.Mts.", "101 R.C.A.=181.55
+    SQ.MT." The model takes the unit number as the label and quotes the
+    whole caption as that label's evidence, then reports `carpet_area` as
+    not found — so a number plainly printed on the page never reaches the
+    listing. Area is what the comparison surface ranks homes by, so losing
+    it matters more than most fields.
+
+    Both the label's value and its evidence are searched. Evidence is
+    where this usually lives, and it is the better source of the two: it
+    is the verbatim page text the model quoted, not a value it chose.
+
+    This invents nothing: the number, its unit, its page and its evidence
+    all come from a string the extractor already returned. It only ever
+    fills a BLANK carpet_area — anything actually extracted wins. Like
+    `derive_bhk_from_rooms` the result is flagged `derived=True` and
+    carries its own reasoning, so a reviewer sees a lifted value rather
+    than a quoted one."""
+    for variant in extraction.configurations:
+        if variant.carpet_area.found:
+            continue
+        label = variant.variant_label
+        for raw in (str(label.value or ""), str(label.evidence or "")):
+            match = _RCA_IN_LABEL_RE.search(raw)
+            if match:
+                break
+        if not match:
+            continue
+        number, unit = match.group(1), match.group(2)
+        # Kept in the brochure's own unit rather than converted here. The
+        # publication mapping reads the unit off this string and converts to
+        # square feet at the point of storage, so converting twice — or
+        # dropping the unit and letting it be assumed — is how a square-metre
+        # area ends up ten times too small.
+        variant.carpet_area = ExtractedField(
+            value=f"{number} {unit}".strip(),
+            found=True,
+            confidence=min(label.confidence, 0.7),
+            derived=True,
+            source_file=label.source_file,
+            source_page=label.source_page,
+            evidence=f"read from this unit's label: {raw.strip()}",
+        )
+    return extraction
+
+
 def flag_lopsided_series(extraction: PropertyExtraction) -> PropertyExtraction:
     """Warn when one unit's two mirrored series disagree on bedroom count.
 
@@ -219,5 +279,6 @@ def normalize(extraction: PropertyExtraction) -> PropertyExtraction:
         _normalize_field(variant.price, "number")
 
     derive_bhk_from_rooms(extraction)
+    recover_carpet_area_from_label(extraction)
     flag_lopsided_series(extraction)
     return extraction

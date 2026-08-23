@@ -60,6 +60,7 @@ class WireBasics(BaseModel):
     city: Optional[WireField] = None
     state: Optional[WireField] = None
     tagline: Optional[WireField] = None
+    website: Optional[WireField] = None
     expert_note: Optional[WireField] = None
 
 

@@ -1,0 +1,5 @@
+{
+  "//": "What the stored brochure corpus still cannot map, as of the last time someone looked. check-brochures.ts fails when a number here goes UP — a new plan-book convention the mapping does not handle — and tells you to lower it when one goes down. It is not a target of zero: the layouts counted here are real brochure ambiguities (a bungalow's basement sheet, an unlabelled 'Type : A ( 201 )', a clubhouse 'Reception') that only a human reading the page can settle, which is what the per-brochure review does. Lower these as that review resolves them.",
+  "unidentifiedLayouts": 13,
+  "unparsedSizes": 2
+}

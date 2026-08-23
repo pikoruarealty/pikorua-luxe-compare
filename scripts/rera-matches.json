@@ -1,0 +1,56 @@
+{
+  "//": "Project name → the GujRERA project a human confirmed it to be. Used by scripts/rera-pilot.ts.",
+  "//why": "Some projects cannot be matched by string comparison — five registered projects are called 'The Park'. Once a person has identified ours, that decision is recorded here instead of being re-derived (or re-guessed differently) on the next run.",
+  "//howto": "Run `bun run scripts/rera-pilot.ts --candidates` to see the rival projects and what the brochure says about ours, then add an entry. entityId null means the project was looked for and is genuinely not on GujRERA — that stops it being searched for again.",
+  "//fields": "entityId (number|null, required) · regNo · entityName · confirmedOn (YYYY-MM-DD) · note (why this one, in a sentence)",
+
+  "THE CAPSTONE": {
+    "entityId": 23331,
+    "regNo": "PR/GJ/AHMEDABAD/DASKROI/Ahmedabad Municipal Corporation/RAA14025/A1R/060525/311229",
+    "entityName": "THE BEAUMONDE",
+    "confirmedOn": "2026-08-23",
+    "note": "The brochure is headed with the developer's own name and never prints the project's. Registered as THE BEAUMONDE, which shares no word with 'THE CAPSTONE', so no name search can reach it; its registered promoter is THE CAPSTONE DEVELOPERS. Recorded by hand because the script only finds it via the uploaded filename, which a re-upload could lose."
+  },
+
+  "Vaikunth": {
+    "entityId": 20094,
+    "regNo": "PR/GJ/AHMEDABAD/DASKROI/Ahmedabad Municipal Corporation/RAA12898/070224/300628",
+    "entityName": "VAIKUNTH",
+    "confirmedOn": "2026-08-23",
+    "note": "User confirmed against the printed reg no on the physical brochure. This is the Bopal candidate the script already surfaced (entityId 20094), not the Ambli one (19481) — its registered promoter SHILAJ INFRABUILD LLP is presumably the brochure developer 'A.Shridhar Group' operating through an SPV, which the script cannot verify by name alone."
+  },
+
+  "SHANTIGRAM": {
+    "entityId": 27447,
+    "regNo": "PR/GJ/GANDHINAGAR/GANDHINAGAR/Ahmedabad Urban Development Authority/RAA15538/180725/310530",
+    "entityName": "BELROSA",
+    "confirmedOn": "2026-08-23",
+    "note": "OCR extracted the township location as the project name — the brochure's actual filename is 'Adani Belrosa Brochure.pdf'. Registered as BELROSA, sharing no word with 'SHANTIGRAM' (which is the address, not the project — 'Shantigram, Nr. Vaishnodevi Circle, S.G. Highway'), so unreachable by any name search. Not to be confused with the separately-matched 'Shaligram Luxuria' (RAA10653), a different project entirely."
+  },
+
+  "//batch2": "The 22 entries below were auto-matched by the pilot's own ladder (exact reg no printed on the brochure, or exact name + district agreement, or registered promoter matching the brochure's stated developer) and bulk-confirmed by the user on 2026-08-24 after reviewing the full list in chat, rather than one candidate resolution each — none of these were 'CANDIDATE — needs a human' tier.",
+
+  "AATMAN": { "entityId": 19640, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/Ahmedabad Municipal Corporation/RAA12710/A1R/060426/300628", "entityName": "AATMAN", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no (bare code RAA12710 rescued a stale full-string ID printed on the brochure — same code re-issued under AMC)." },
+  "ANAMIKA HIGH POINT": { "entityId": 20279, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/Ahmedabad Municipal Corporation/RAA12755/050124/300630", "entityName": "ANAMIKA HIGH POINT", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no printed on the brochure." },
+  "EMINENCE 96": { "entityId": 14029, "regNo": "PR/GJ/AHME/DASKROI/Ahmedabad Municipal Corporation/RN4AA09904/080422", "entityName": "EMINENCE 96", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no printed on the brochure." },
+  "Godrej Altus": { "entityId": 30461, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/Ahmedabad Municipal Corporation/MAA16636/240326/071131", "entityName": "Godrej Altus", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no printed on the brochure." },
+  "IKEBANA": { "entityId": 17770, "regNo": "PR/GJ/AHMEDABAD/DASKROI/AUDA/RAA10949/191122", "entityName": "IKEBANA", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no printed on the brochure." },
+  "SATYAMEV LUXOR": { "entityId": 18969, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA11846/240523", "entityName": "SATYAMEV LUXOR", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no printed on the brochure." },
+  "RIVIERA SELECT": { "entityId": 21419, "regNo": "PR/GJ/AHMEDABAD/DASKROI/Ahmedabad Municipal Corporation/RAA14197/300924/311228", "entityName": "RIVIERA SELECT", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no printed on the brochure." },
+  "SHALIGRAM LUXURIA": { "entityId": 17656, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA10653/EX1/151125/251126", "entityName": "SHALIGRAM LUXURIA", "confirmedOn": "2026-08-24", "note": "Matched by exact reg no (bare code RAA10653). Not to be confused with the separately-matched BELROSA/SHANTIGRAM — a different project entirely." },
+
+  "MARUTI 360": { "entityId": 18991, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA12039/280623", "entityName": "MARUTI 360", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via developer 'MARUTI' → registered name 'MARUTI 360'." },
+  "AMARIS": { "entityId": 28310, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/Ahmedabad Municipal Corporation/RAA15836/150925/310729", "entityName": "AMARIS", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." },
+  "ANURITA": { "entityId": 12832, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA09212/EX1/A1R/150623", "entityName": "ANURITA", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." },
+  "AVANT": { "entityId": 13696, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA09835/210222", "entityName": "AVANT", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." },
+  "Venus Pashmina": { "entityId": 11729, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA08400/030521", "entityName": "Venus Pashmina", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via developer 'Venus Group' → registered name 'Venus Pashmina'." },
+  "Rashmi Skyscape": { "entityId": 25476, "regNo": "PR/GJ/AHMEDABAD/DASKROI/Ahmedabad Municipal Corporation/RAA14591/301224/311229", "entityName": "Rashmi Sky Scape", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via the noSpace rescue — same name, spaced differently ('Rashmi Skyscape' vs registered 'Rashmi Sky Scape')." },
+  "Swati Senor": { "entityId": 12765, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA09077/A1R/040422", "entityName": "Swati Senor", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees. (Brochure's own name is the longer 'Swati Senor Residential Project at Ambli Road'; progressive query relaxation found this.)" },
+  "THE BELLAGIO": { "entityId": 18919, "regNo": "PR/GJ/AHMEDABAD/DASKROI/AUDA/RAA11972/190623", "entityName": "THE BELLAGIO", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." },
+  "The Kimana Towers": { "entityId": 17929, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/AUDA/RAA10879/111122", "entityName": "The Kimana Towers", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." },
+  "The North Park at Shantigram": { "entityId": 997, "regNo": "PR/GJ/GANDHINAGAR/GANDHINAGAR/Ahmedabad Urban Development Authority/RAA01824/A1R/EX1/240726/300627", "entityName": "NORTH PARK (Phase-2 and 3)", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure; only matched via registered promoter 'ADANI ESTATE MANAGEMENT PRIVATE LIMITED' agreeing with the brochure's developer, not by name. User checked the physical brochure and confirmed Phase-2-and-3 is the correct registered phase." },
+  "THE PARK": { "entityId": 23708, "regNo": "PR/GJ/AHMEDABAD/DASKROI/Ahmedabad Municipal Corporation/RAA14076/020924/311229", "entityName": "THE PARK", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure; only matched via registered promoter 'HN SAFAL INFRA DEVELOPERS PRIVATE LIMITED' agreeing with the brochure's developer — one of five registered projects called 'The Park', disambiguated by promoter." },
+  "The Universe": { "entityId": 31351, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/Ahmedabad Municipal Corporation/MAA17082/080726/311232", "entityName": "The Universe", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure; only matched via registered promoter 'Venus Infrastructure and Developers Private Limited' agreeing with the brochure's developer 'Venus'." },
+  "THE WEST PARK": { "entityId": 18385, "regNo": "PR/GJ/GANDHINAGAR/GANDHINAGAR/AUDA/RAA11300/020323", "entityName": "The West Park", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." },
+  "TRIVENI 84": { "entityId": 25551, "regNo": "PR/GJ/AHMEDABAD/AHMEDABAD CITY/Ahmedabad Municipal Corporation/RAA14770/030225/311229", "entityName": "Triveni 84", "confirmedOn": "2026-08-24", "note": "No reg no on the brochure. Matched via exact name, district agrees." }
+}

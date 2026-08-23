@@ -1,12 +1,13 @@
 import {
+  CONFIG_BUCKETS,
   emptyConfigDetail,
   VARIANT_FIELDS,
   type ConfigDetailInput,
   type PropertyFormValues,
 } from "@/lib/property-schema";
 
-/** The form groups variants under bhk3/bhk4/bhk5/penthouse/duplex, which is not
- *  the same as ConfigKey ("3 BHK", "4 BHK", …) used by the public property type. */
+/** The form groups variants under bhk2…bhk7/penthouse/duplex, which is not the
+ *  same as ConfigKey ("3 BHK", "4 BHK", …) used by the public property type. */
 type ConfigBucket = keyof PropertyFormValues["configs"];
 
 /** Every scalar the OCR service returns is wrapped like this, never a bare
@@ -89,7 +90,16 @@ const FIELD_MAP: Record<string, keyof PropertyFormValues> = {
   "basics.category": "category",
   "basics.status": "status",
   "basics.possession": "possession",
-  "basics.possession_confirmed_as_of": "possessionAsOf",
+  // Its namesake, not `possessionAsOf`. The two form fields are genuinely
+  // distinct: `possessionAsOf` records when the free-text duration string
+  // ("9 Months") was last checked and drives the v1 countdown, while
+  // `possessionConfirmedAsOf` records when the possession estimate itself was
+  // confirmed and is what the v2 publication and PropScore's possession
+  // evidence read. Brochures essentially never print this — it is found in 0 of
+  // the 29 extracted jobs — because the real source is the RERA record, which
+  // `scripts/rera-enrich.ts` fills in. Routing it to `possessionAsOf` meant
+  // that enrichment had nowhere to land.
+  "basics.possession_confirmed_as_of": "possessionConfirmedAsOf",
   "basics.location": "location",
   "basics.city": "city",
   "basics.state": "state",
@@ -127,13 +137,44 @@ const FIELD_MAP: Record<string, keyof PropertyFormValues> = {
   "developer.background": "developerBackground",
 };
 
+/** A few form fields are typed narrower than the free text a brochure prints
+ *  into them, so the raw extracted string can't be written through unchanged.
+ *  These normalise the printed value onto what the field can hold; returning
+ *  "" means the brochure said nothing the field can represent, which the form
+ *  then leaves blank rather than filling with something unusable. Nothing here
+ *  invents a value — each one only reshapes what the brochure already stated. */
+const COERCE: Partial<Record<keyof PropertyFormValues, (raw: string) => string>> = {
+  // OCR reads the category off the cover, where it is prose ("4 BHK Apartment",
+  // "Luxurious Villa Community"), not one of the form's three enum values.
+  // Written through raw it fails enum validation with the brochure long out of
+  // sight, so it is classified here against the same words a reader would use.
+  category: (raw) => {
+    const t = raw.toLowerCase();
+    if (/\b(plot|land|parcel)\b/.test(t)) return "Plots";
+    if (/\b(villa|bungalow|row\s*house|independent\s*hous)/.test(t)) return "Bungalow";
+    if (/\b(apartment|flat|residence|tower|high\s*rise)/.test(t)) return "Apartment";
+    // Says nothing about the built form — let the form's own default stand
+    // rather than guessing a category the brochure never claimed.
+    return "";
+  },
+  // Brochures print the RERA site as a bare domain ("www.gujrera.gujarat.gov.in").
+  // Adding the scheme is a formatting fix to a URL the brochure did state; a
+  // value that isn't a domain at all is left out rather than coerced.
+  reraUrl: (raw) => {
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(raw)) return `https://${raw}`;
+    return "";
+  },
+};
+
 const LABELS: Partial<Record<keyof PropertyFormValues, string>> = {
   name: "Property name",
   developer: "Developer",
   category: "Category",
   status: "Status",
   possession: "Possession",
-  possessionAsOf: "Possession confirmed as of",
+  possessionAsOf: "Possession duration confirmed as of",
+  possessionConfirmedAsOf: "Possession date confirmed as of",
   location: "Location",
   city: "City",
   state: "State",
@@ -208,16 +249,31 @@ function bucketFor(
   // as ordinary flats — the lower one was dropped outright.
   if (/pent\s*-?\s*house/.test(t)) return "penthouse";
   if (t.includes("duplex")) return "duplex";
-  // Largest first: a sheet titled "3 BHK & 4 BHK TYPICAL PLAN" describes the
-  // bigger home, and reading the smaller digit would file it a tier too low.
+
+  // Largest first throughout: a sheet titled "3 BHK & 4 BHK TYPICAL PLAN"
+  // describes the bigger home, and reading the smaller digit would file it a
+  // tier too low.
+  //
+  // 6, 7 and 2 BHK require the literal "N BHK" wording, while 3/4/5 still match
+  // a bare digit. That asymmetry is deliberate. A bare digit is safe for the
+  // middle sizes because a plan sheet that mentions "4" at all is almost always
+  // naming the home, but it is not safe at the edges: plan books label layouts
+  // and towers "Type 2", "Wing 2", "Block 6", and a bare-digit rule would file
+  // every one of those as a 2 or 6 BHK home the brochure never claimed. Every
+  // 2/6/7 BHK layout actually seen in the corpus is printed in the "N BHK"
+  // form, so requiring it costs nothing and closes that hole.
+  if (/\b7\s*bhk\b/.test(t)) return "bhk7";
+  if (/\b6\s*bhk\b/.test(t)) return "bhk6";
   if (/\b5\b/.test(t)) return "bhk5";
   if (/\b4\b/.test(t)) return "bhk4";
   if (/\b3\b/.test(t)) return "bhk3";
+  if (/\b2\s*bhk\b/.test(t)) return "bhk2";
 
-  // A sheet that states its size in words is telling the truth even when the
-  // form has no bucket for it — "2 BHK", "6 BHK". Counting bedrooms instead
-  // would file it under a size the brochure never claimed, so report it as
-  // dropped and let a human decide.
+  // A sheet that states a size with no bucket behind it — "1 BHK", "10 BHK" —
+  // is still telling the truth. Counting bedrooms instead would file it under a
+  // size the brochure never claimed, so report it as dropped and let a human
+  // decide. (1 BHK has no canonical `configuration_kind`, and a "10 BHK" villa
+  // sheet is far more likely a mis-read room count than a real claim.)
   if (/\b\d+\s*bhk\b/.test(t)) return null;
 
   // Nothing on the sheet says what size this home is. Plan books routinely
@@ -225,8 +281,15 @@ function bucketFor(
   // and one such book had all eight of its layouts dropped for want of the
   // words "4 BHK" anywhere on the page. So count the bedrooms the plan draws,
   // which is what a human reads off the same drawing.
+  //
+  // The floor stays at 3. Counting is known to undercount — that is what
+  // `bedroomShortfall` reports — so letting it reach down to a 2 BHK verdict
+  // would turn a half-read 3 BHK plan into a confidently mis-filed smaller
+  // home. Below 3 the honest answer is still "dropped, ask a human".
   const beds = countBedrooms(rooms);
-  if (beds >= 5) return "bhk5";
+  if (beds >= 7) return "bhk7";
+  if (beds === 6) return "bhk6";
+  if (beds === 5) return "bhk5";
   if (beds === 4) return "bhk4";
   if (beds === 3) return "bhk3";
   return null;
@@ -745,7 +808,12 @@ export function mapExtractedPayload(
   for (const [path, ourKey] of Object.entries(FIELD_MAP)) {
     const [sectionName, fieldName] = path.split(".");
     const value = text(section(extraction, sectionName)[fieldName]);
-    if (value) (out as Record<string, unknown>)[ourKey] = value;
+    if (!value) continue;
+    const coerced = COERCE[ourKey]?.(value) ?? value;
+    // A value the form can't represent is dropped rather than written through
+    // as-is — an unusable value in a typed field fails validation later, far
+    // from the brochure that caused it.
+    if (coerced) (out as Record<string, unknown>)[ourKey] = coerced;
   }
 
   const notable = (extraction.developer?.notable_delivered_projects ?? [])
@@ -762,9 +830,12 @@ export function mapExtractedPayload(
   const variants = extraction.configurations ?? [];
   if (variants.length) {
     const configs: PropertyFormValues["configs"] = {
+      bhk2: [],
       bhk3: [],
       bhk4: [],
       bhk5: [],
+      bhk6: [],
+      bhk7: [],
       penthouse: [],
       duplex: [],
     };
@@ -825,6 +896,10 @@ export interface ApprovalItem {
   /** Set for list-style items (amenities) that are read and ticked as one —
    *  a name like "gazebo" carries no measurement worth confirming on its own. */
   values?: string[];
+  /** One citation per entry in `values`, same index — lets a reviewer check
+   *  where a specific amenity came from without splitting the list into 37
+   *  individually-approved rows. */
+  valueCitations?: (RoomCitation | undefined)[];
   /** Present only for values that map onto a form field, which are editable. */
   formField?: keyof PropertyFormValues;
   /** Present instead of formField for a config-variant measurement (area,
@@ -873,13 +948,12 @@ export type VariantOverrides = Record<
   { bucket?: ConfigBucket; label?: string; fields?: Partial<ConfigDetailInput> }
 >;
 
-export const CONFIG_BUCKET_OPTIONS = [
-  { value: "bhk3", label: "3 BHK" },
-  { value: "bhk4", label: "4 BHK" },
-  { value: "bhk5", label: "5 BHK" },
-  { value: "penthouse", label: "Penthouse" },
-  { value: "duplex", label: "Duplex" },
-] as const;
+// Kept in step with CONFIG_BUCKETS in property-schema.ts — this is the same set
+// of buckets, shaped for a <select> in the review screen.
+export const CONFIG_BUCKET_OPTIONS = CONFIG_BUCKETS.map((b) => ({
+  value: b.key,
+  label: b.label,
+}));
 
 export type { ConfigBucket };
 
@@ -888,13 +962,9 @@ export interface ApprovalSection {
   groups: ApprovalGroup[];
 }
 
-const BUCKET_LABELS: Record<ConfigBucket, string> = {
-  bhk3: "3 BHK",
-  bhk4: "4 BHK",
-  bhk5: "5 BHK",
-  penthouse: "Penthouse",
-  duplex: "Duplex",
-};
+const BUCKET_LABELS: Record<ConfigBucket, string> = Object.fromEntries(
+  CONFIG_BUCKETS.map((b) => [b.key, b.label]),
+) as Record<ConfigBucket, string>;
 
 const ROOM_SLOTS: { key: keyof ConfigDetailInput; label: string }[] = [
   { key: "bathrooms", label: "Bathrooms" },
@@ -942,11 +1012,15 @@ export function buildApprovalSections(
     });
   }
 
-  const amenities = (extraction.amenities ?? []).map((f) => text(f)).filter(Boolean);
-  const highlights = (extraction.highlights ?? []).map((f) => text(f)).filter(Boolean);
+  const amenityFields = (extraction.amenities ?? []).filter((f) => text(f));
+  const highlightFields = (extraction.highlights ?? []).filter((f) => text(f));
+  const amenities = amenityFields.map((f) => text(f));
+  const highlights = highlightFields.map((f) => text(f));
   // Read and ticked as one list. Unlike a carpet area, an amenity name is not
   // a number that can be subtly wrong — checking 37 of them individually is
   // busywork that would train the developer to click through without looking.
+  // Each entry still carries its own citation (valueCitations, same index as
+  // values) so a reviewer can check a specific one without per-item approval.
   const listItems: ApprovalItem[] = [];
   if (amenities.length) {
     listItems.push({
@@ -954,6 +1028,7 @@ export function buildApprovalSections(
       label: `Amenities (${amenities.length})`,
       value: amenities.join(" · "),
       values: amenities,
+      valueCitations: amenityFields.map((f) => fieldCitation(f)),
       formField: "amenities",
     });
   }
@@ -963,6 +1038,7 @@ export function buildApprovalSections(
       label: `Highlights (${highlights.length})`,
       value: highlights.join(" · "),
       values: highlights,
+      valueCitations: highlightFields.map((f) => fieldCitation(f)),
       formField: "advantages",
     });
   }
@@ -1046,7 +1122,9 @@ export function buildApprovalSections(
     byBucket.set(bucket, groups);
   });
 
-  for (const bucket of ["bhk3", "bhk4", "bhk5", "penthouse", "duplex"] as ConfigBucket[]) {
+  // Iterated in CONFIG_BUCKETS order so the review screen lists buckets
+  // smallest-first, matching the form's own tab order.
+  for (const { key: bucket } of CONFIG_BUCKETS) {
     const groups = byBucket.get(bucket);
     if (groups?.length) sections.push({ title: BUCKET_LABELS[bucket], groups });
   }

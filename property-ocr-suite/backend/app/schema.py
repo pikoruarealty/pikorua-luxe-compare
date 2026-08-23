@@ -113,6 +113,7 @@ class BasicsSection(BaseModel):
     city: ExtractedField = PydanticField(default_factory=blank_field)
     state: ExtractedField = PydanticField(default_factory=blank_field)
     tagline: ExtractedField = PydanticField(default_factory=blank_field)
+    website: ExtractedField = PydanticField(default_factory=blank_field)  # printed on brochure, e.g. "www.ikebana.com"
     expert_note: ExtractedField = PydanticField(default_factory=blank_field)
 
 
@@ -129,6 +130,11 @@ class ReraSection(BaseModel):
     rera_id: ExtractedField = PydanticField(default_factory=blank_field)
     rera_link: ExtractedField = PydanticField(default_factory=blank_field)
     proposed_start_date: ExtractedField = PydanticField(default_factory=blank_field)  # "Jan 2025"
+    # Never on a brochure — only ever filled by cross-referencing GujRERA's own
+    # filing (scripts/rera-enrich.ts), not the LLM extractor. Deliberately not
+    # in wire_schema.py/prompts.py: see test_field_schema_hint_names_match_wire_schema.
+    registered_completion_date: ExtractedField = PydanticField(default_factory=blank_field)
+    construction_progress: ExtractedField = PydanticField(default_factory=blank_field)  # "53.7% as of Jul 2026"
 
 
 class ConstructionAmenitiesSection(BaseModel):

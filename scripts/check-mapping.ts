@@ -360,20 +360,24 @@ const unlabelled = {
       variant_label: f("B 102 - 1002"),
       rooms: [1, 2, 3, 4, 5].map((n) => room(`M.BED-${n}`, "13'0\" X 18'0\"")),
     },
-    // But a sheet that DOES state a size the form can't hold must stay dropped
-    // rather than be re-filed by its bedroom count.
+    // A stated 2 BHK now has a bucket of its own and must reach it.
     { ...extraction.configurations[0], bhk_type: f("2 BHK"), variant_label: f("2 BHK COMPACT") },
+    // But a sheet stating a size the form still can't hold must stay dropped
+    // rather than be re-filed by its bedroom count. `configuration_kind` runs
+    // 2_bhk–7_bhk, so a 1 BHK has nowhere to land and a human decides.
+    { ...extraction.configurations[0], bhk_type: f("1 BHK"), variant_label: f("1 BHK STUDIO") },
   ],
 } as unknown as PropertyExtraction;
 
 const derived = mapExtractedPayload(unlabelled).configs!;
 assert.equal(derived.bhk4.length, 1, "four drawn bedrooms means a 4 BHK");
 assert.equal(derived.bhk5.length, 1, "five drawn bedrooms means a 5 BHK");
+assert.equal(derived.bhk2.length, 1, "a stated 2 BHK now has a bucket of its own");
 assert.equal(derived.bhk4[0].bedroom1, "285 sq ft (13'0\" × 21'11\")");
 assert.equal(derived.bhk4[0].bathrooms, "1", "M. TOI 1 must count as a bathroom, not a bedroom");
 const unlabelledGaps = findMappingGaps(unlabelled);
-assert.equal(unlabelledGaps.droppedVariants.length, 1, "only the stated 2 BHK should drop");
-assert.equal(unlabelledGaps.droppedVariants[0].label, "2 BHK COMPACT");
+assert.equal(unlabelledGaps.droppedVariants.length, 1, "only the stated 1 BHK should drop");
+assert.equal(unlabelledGaps.droppedVariants[0].label, "1 BHK STUDIO");
 console.log("unlabelled plans  : BHK counted from the bedrooms drawn");
 
 // --- Spellings and abbreviations each brochure invented for itself. ---
@@ -425,10 +429,10 @@ console.log("brochure dialects : PENT HOUSE, WET K, TOLET, ZARUKHO all read");
 const stated = findMappingGaps({
   ...extraction,
   configurations: [
-    { ...extraction.configurations[0], bhk_type: f("2 BHK"), variant_label: f("2201") },
+    { ...extraction.configurations[0], bhk_type: f("1 BHK"), variant_label: f("2201") },
   ],
 } as unknown as PropertyExtraction);
-assert.equal(stated.droppedVariants[0].stated, true, "an explicit 2 BHK is a stated size");
+assert.equal(stated.droppedVariants[0].stated, true, "an explicit 1 BHK is a stated size");
 assert.equal(unlabelledGaps.droppedVariants[0].stated, true);
 // Building services are not a home, and calling that a mapping failure would
 // leave the regression crying wolf on every brochure that lists a substation.
@@ -546,7 +550,7 @@ console.log("abbreviations     : TOIL / TOL / S. ROOM recognised");
 const unusable = {
   ...extraction,
   configurations: [
-    { ...extraction.configurations[0], bhk_type: f("2 BHK"), variant_label: f("2 BHK COMPACT") },
+    { ...extraction.configurations[0], bhk_type: f("1 BHK"), variant_label: f("1 BHK COMPACT") },
     {
       ...extraction.configurations[0],
       rooms: [room("HOME OFFICE", "10'0\" X 10'0\""), room("BED ROOM", "approx. 300 sqft")],
@@ -555,7 +559,7 @@ const unusable = {
 } as unknown as PropertyExtraction;
 const gaps = findMappingGaps(unusable);
 assert.equal(gaps.droppedVariants.length, 1, "a layout with no bucket must be reported");
-assert.equal(gaps.droppedVariants[0].label, "2 BHK COMPACT");
+assert.equal(gaps.droppedVariants[0].label, "1 BHK COMPACT");
 assert.ok(
   gaps.unplacedRooms.some((r) => r.name === "HOME OFFICE"),
   "a room with no form field must be reported",

@@ -62,3 +62,18 @@ def test_ranking_is_unchanged_when_no_path_counts_are_given():
 
 def test_every_page_is_kept_when_it_fits_the_budget():
     assert select_pages([""] * 5, budget=40, vector_paths=[9000] * 5) == [0, 1, 2, 3, 4]
+
+
+def test_raster_signal_promotes_a_page_with_no_text_and_no_vector_paths():
+    """A plan sheet flattened into one raster image (a scan, an exported PNG)
+    has neither a text layer nor vector line art — both existing signals read
+    zero even though a human can see it's a floor plan. The raster signal is
+    the last resort for exactly that case."""
+    assert looks_like_floor_plan("", vector_paths=0, raster_signal=True) is True
+    assert looks_like_floor_plan("", vector_paths=0, raster_signal=False) is False
+
+
+def test_raster_signal_ranks_pages_ahead_of_marketing_under_budget():
+    texts = [MARKETING] * 8 + [""] * 2
+    rasters = [False] * 8 + [True, True]
+    assert select_pages(texts, budget=2, raster_signals=rasters) == [8, 9]

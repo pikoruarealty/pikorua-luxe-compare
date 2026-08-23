@@ -44,6 +44,7 @@ const FIELD_CONFIGS = {
     { key: "city", label: "City", example: "Ahmedabad" },
     { key: "state", label: "State", example: "Gujarat" },
     { key: "tagline", label: "Tagline", example: "Shown under the property name" },
+    { key: "website", label: "Website", example: "e.g. www.ikebana.com" },
     { key: "expert_note", label: "Expert note", example: "Visible on the public website", type: "textarea", span2: true },
   ],
   project_structure: [
@@ -58,6 +59,8 @@ const FIELD_CONFIGS = {
     { key: "rera_id", label: "RERA ID", example: "e.g. PR/GJ/AHMEDABAD/..." },
     { key: "rera_link", label: "RERA link", example: "https://gujrera.gujarat.gov.in/..." },
     { key: "proposed_start_date", label: "Proposed start date (RERA)", example: "e.g. Jan 2025" },
+    { key: "registered_completion_date", label: "Registered completion date (RERA)", example: "e.g. May 2030" },
+    { key: "construction_progress", label: "Construction progress (RERA)", example: "e.g. 53.7% as of Jul 2026" },
   ],
   construction_amenities: [
     { key: "parking_levels", label: "Parking levels", example: "e.g. 2" },

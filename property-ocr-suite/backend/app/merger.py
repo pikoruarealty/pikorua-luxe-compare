@@ -36,13 +36,46 @@ def _pick(a: ExtractedField, b: ExtractedField, prefer_b: bool = False) -> Extra
     return b if b.confidence > a.confidence else a
 
 
+def _normalize_list_key(value: str) -> str:
+    """Collapse wording variants of the same amenity onto one key.
+
+    "Club House" and "Clubhouse", or "Kids Play Area" and "Kids' Play Area",
+    are the same feature with different punctuation/spacing — stripping both
+    down to bare alphanumerics catches these without risking a false merge,
+    since two genuinely different amenities never share the same letters."""
+    return re.sub(r"[^a-z0-9]", "", value.strip().lower())
+
+
+# Same feature, genuinely different words — punctuation-stripping alone
+# can't catch these. Each group maps every variant onto one canonical key;
+# keep this list to names that are unambiguously the same real-world thing
+# (a brochure that lists both a "Tot Lot" AND a "Kids Play Area" means one
+# feature named twice, not two separate play areas).
+_AMENITY_SYNONYM_GROUPS = [
+    {"totlot", "kidsplayarea", "childrensplayarea", "childrenplayarea", "kidsplayzone", "toddlerplayarea", "kidszone"},
+    {"gym", "gymnasium", "fitnesscentre", "fitnesscenter"},
+    {"amphitheatre", "amphitheater", "openairtheatre", "openairtheater"},
+    {"seniorcitizenarea", "seniorcitizensittingarea", "seniorcitizenspark", "elderssittingarea", "elderlysittingarea"},
+    {"multipurposehall", "multipurposeroom", "communityhall"},
+]
+
+_AMENITY_SYNONYM_MAP = {
+    variant: sorted(group)[0] for group in _AMENITY_SYNONYM_GROUPS for variant in group
+}
+
+
+def _canonical_list_key(value: str) -> str:
+    key = _normalize_list_key(value)
+    return _AMENITY_SYNONYM_MAP.get(key, key)
+
+
 def _dedupe_list(fields: List[ExtractedField]) -> List[ExtractedField]:
     seen = set()
     out = []
     for f in fields:
         if not f.found or f.value is None:
             continue
-        key = str(f.value).strip().lower()
+        key = _canonical_list_key(str(f.value))
         if key in seen:
             continue
         seen.add(key)
