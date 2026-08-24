@@ -18,10 +18,15 @@ sudo git reset --hard origin/main
 sudo bash ops/fetch-secrets.sh
 
 export $(sudo cat /run/propcompare/db.env | xargs)
+export $(sudo grep -E '^VITE_SUPABASE_(URL|PUBLISHABLE_KEY)=' /run/propcompare/web.env | sed -E 's/="(.*)"$/=\1/' | xargs)
 
-sudo docker compose --env-file .env.deploy \
+sudo --preserve-env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY \
+  docker compose --env-file .env.deploy \
   -f docker-compose.production.yml -f docker-compose.override.yml \
-  build web-blue ocr-worker
+  build \
+  --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
+  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
+  web-blue ocr-worker
 
 sudo docker run --rm --network propcompare-production \
   -v "$REPO_DIR":/repo -w /repo \
