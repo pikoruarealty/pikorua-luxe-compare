@@ -7,42 +7,54 @@
 # prunes dangling images/build cache so repeated deploys don't fill the
 # shared disk. Invoked over an IAP SSH tunnel by
 # .github/workflows/deploy-shared-vm.yml on every push to main.
+#
+# Everything lives inside main(), called only at the very end. This script
+# git-resets its own file on disk mid-run (line below) — bash reads a
+# top-level script by file offset as it executes, so without this wrapper a
+# reset that changes the file's byte layout silently corrupts which lines
+# run next (no error, just skipped/misaligned commands). A function body is
+# parsed as one complete block before it's ever invoked, so main() is immune
+# to the file changing underneath it once execution reaches the call below.
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
-REPO_DIR=/opt/propcompare
-cd "$REPO_DIR"
-sudo git fetch origin main
-sudo git reset --hard origin/main
+main() {
+  REPO_DIR=/opt/propcompare
+  cd "$REPO_DIR"
+  sudo git fetch origin main
+  sudo git reset --hard origin/main
 
-sudo bash ops/fetch-secrets.sh
+  sudo bash ops/fetch-secrets.sh
 
-export $(sudo cat /run/propcompare/db.env | xargs)
-export $(sudo grep -E '^VITE_SUPABASE_(URL|PUBLISHABLE_KEY)=|^VITE_STAFF_MFA_ENFORCE=' /run/propcompare/web.env | sed -E 's/="(.*)"$/=\1/' | xargs)
-VITE_STAFF_MFA_ENFORCE="${VITE_STAFF_MFA_ENFORCE:-}"
+  export $(sudo cat /run/propcompare/db.env | xargs)
+  export $(sudo grep -E '^VITE_SUPABASE_(URL|PUBLISHABLE_KEY)=|^VITE_STAFF_MFA_ENFORCE=' /run/propcompare/web.env | sed -E 's/="(.*)"$/=\1/' | xargs)
+  VITE_STAFF_MFA_ENFORCE="${VITE_STAFF_MFA_ENFORCE:-}"
 
-sudo --preserve-env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_STAFF_MFA_ENFORCE \
-  docker compose --env-file .env.deploy \
-  -f docker-compose.production.yml -f docker-compose.override.yml \
-  build \
-  --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
-  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
-  --build-arg VITE_STAFF_MFA_ENFORCE="$VITE_STAFF_MFA_ENFORCE" \
-  web-blue ocr-worker ocr-api
+  sudo --preserve-env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_STAFF_MFA_ENFORCE \
+    docker compose --env-file .env.deploy \
+    -f docker-compose.production.yml -f docker-compose.override.yml \
+    build \
+    --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
+    --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
+    --build-arg VITE_STAFF_MFA_ENFORCE="$VITE_STAFF_MFA_ENFORCE" \
+    web-blue ocr-worker ocr-api
 
-sudo docker run --rm --network propcompare-production \
-  -v "$REPO_DIR":/repo -w /repo \
-  -e PGURL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}" \
-  postgres:16-alpine sh -c "apk add --no-cache bash >/dev/null && bash ops/db/migrate.sh"
+  sudo docker run --rm --network propcompare-production \
+    -v "$REPO_DIR":/repo -w /repo \
+    -e PGURL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}" \
+    postgres:16-alpine sh -c "apk add --no-cache bash >/dev/null && bash ops/db/migrate.sh"
 
-sudo docker compose --env-file .env.deploy -f docker-compose.production.yml \
-  exec -T db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < ops/db/seed.sql
+  sudo docker compose --env-file .env.deploy -f docker-compose.production.yml \
+    exec -T db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < ops/db/seed.sql
 
-sudo docker compose --env-file .env.deploy \
-  -f docker-compose.production.yml -f docker-compose.override.yml \
-  up -d --no-deps db web-blue ocr-worker ocr-api
+  sudo docker compose --env-file .env.deploy \
+    -f docker-compose.production.yml -f docker-compose.override.yml \
+    up -d --no-deps db web-blue ocr-worker ocr-api
 
-sudo docker image prune -f
-sudo docker builder prune -f --filter until=72h
+  sudo docker image prune -f
+  sudo docker builder prune -f --filter until=72h
 
-echo "deploy complete: $(sudo git rev-parse --short HEAD)"
+  echo "deploy complete: $(sudo git rev-parse --short HEAD)"
+}
+
+main "$@"
