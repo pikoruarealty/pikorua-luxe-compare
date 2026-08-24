@@ -16,6 +16,9 @@ services:
 
   web-blue:
     image: ${WEB_BLUE_IMAGE:?Set WEB_BLUE_IMAGE}
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       db:
@@ -40,6 +43,9 @@ services:
 
   web-green:
     image: ${WEB_GREEN_IMAGE:?Set WEB_GREEN_IMAGE}
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       db:
@@ -64,6 +70,9 @@ services:
 
   ocr-worker:
     image: ${OCR_WORKER_IMAGE:?Set OCR_WORKER_IMAGE}
+    build:
+      context: ./property-ocr-suite/backend
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     depends_on:
       db:
