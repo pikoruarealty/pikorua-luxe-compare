@@ -465,6 +465,41 @@ async def cancel_extraction(job_id: str):
     return {"job_id": job_id, "status": "cancelling"}
 
 
+@app.get("/api/properties/summaries", dependencies=[Depends(require_service_key)])
+async def get_property_summaries(job_ids: str = Query(...)):
+    """Cheap batch lookup backing a "resume" picker: property + developer
+    name for many jobs in one call, instead of the caller fetching (and
+    re-resolving every image URL of) a full extraction per row just to
+    label a dropdown. Reads the job file directly rather than going through
+    `_load_job`/`PropertyExtraction` — this only ever needs two string
+    fields, and the full model validates every image candidate too.
+
+    Declared ahead of GET /api/properties/{job_id} — FastAPI matches routes
+    in declaration order, and "summaries" would otherwise be swallowed as a
+    literal job id by that path param."""
+    summaries = []
+    for job_id in job_ids.split(","):
+        job_id = job_id.strip()
+        if not JOB_ID_RE.fullmatch(job_id):
+            continue
+        path = _job_path(job_id)
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        basics = data.get("basics") or {}
+        summaries.append(
+            {
+                "job_id": job_id,
+                "property_name": (basics.get("property_name") or {}).get("value"),
+                "developer_name": (basics.get("developer") or {}).get("value"),
+            }
+        )
+    return {"summaries": summaries}
+
+
 @app.get("/api/properties/{job_id}", dependencies=[Depends(require_service_key)])
 async def get_property(job_id: str):
     extraction = _load_job(job_id)

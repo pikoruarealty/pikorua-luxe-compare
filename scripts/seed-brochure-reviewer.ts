@@ -50,10 +50,17 @@ async function findUserByEmail(target: string): Promise<string | null> {
   return null;
 }
 
+// Matches JOB_ID_RE in the OCR service's main.py. storage/jobs/ also holds
+// non-job files (_manifest.json is an index of every job ever run;
+// *.meta.json sidecars; the odd hand-dropped result file) — anything that
+// isn't a real hex job id would 404 the moment someone tried to resume it.
+const JOB_ID_RE = /^[a-f0-9]{12,32}$/;
+
 function jobIdsOnDisk(): string[] {
   return readdirSync(JOBS_DIR)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => f.slice(0, -".json".length));
+    .map((f) => f.slice(0, -".json".length))
+    .filter((id) => JOB_ID_RE.test(id));
 }
 
 async function main() {

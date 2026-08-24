@@ -6,9 +6,12 @@ import {
   cacheInvalidationOutbox,
   commercialTerms,
   configurationOptions,
+  configurationVariantAreas,
+  configurationVariantRooms,
   configurationVariants,
   properties,
   propertyAssets,
+  propertyPublicationDetails,
   propertyPublicationVersions,
   propertySubmissionRevisions,
   propertySubmissionWorkflows,
@@ -140,6 +143,63 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
       .returning({ id: propertyPublicationVersions.id });
     if (!publication) throw new Error("Could not create publication version");
 
+    await tx.insert(propertyPublicationDetails).values({
+      publicationVersionId: publication.id,
+      plotSizeValue: revision.details.plotSizeValue?.toString() ?? null,
+      plotSizeUnit: revision.details.plotSizeUnit,
+      plotSizeState: revision.details.plotSizeState,
+      totalTowers: revision.details.totalTowers,
+      totalTowersState: revision.details.totalTowersState,
+      totalFloors: revision.details.totalFloors,
+      totalFloorsState: revision.details.totalFloorsState,
+      unitsPerFloor: revision.details.unitsPerFloor,
+      unitsPerFloorState: revision.details.unitsPerFloorState,
+      totalUnits: revision.details.totalUnits,
+      totalUnitsState: revision.details.totalUnitsState,
+      unitsPerAcre: revision.details.unitsPerAcre?.toString() ?? null,
+      unitsPerAcreState: revision.details.unitsPerAcreState,
+      openSpacePercent: revision.details.openSpacePercent?.toString() ?? null,
+      openSpacePercentState: revision.details.openSpacePercentState,
+      parkingLevels: revision.details.parkingLevels,
+      parkingLevelsState: revision.details.parkingLevelsState,
+      podiumStructure: revision.details.podiumStructure,
+      podiumStructureState: revision.details.podiumStructureState,
+      liftsPerTower: revision.details.liftsPerTower,
+      liftsPerTowerState: revision.details.liftsPerTowerState,
+      clubhouseSizeSqFt: revision.details.clubhouseSizeSqFt?.toString() ?? null,
+      clubhouseSizeSqFtState: revision.details.clubhouseSizeSqFtState,
+      internalCeilingHeightFt: revision.details.internalCeilingHeightFt?.toString() ?? null,
+      ceilingHeightBasis: revision.details.ceilingHeightBasis,
+      ceilingHeightState: revision.details.ceilingHeightState,
+      constructionQuality: revision.details.constructionQuality,
+      constructionQualityState: revision.details.constructionQualityState,
+      flooringType: revision.details.flooringType,
+      flooringTypeState: revision.details.flooringTypeState,
+      windowGlazing: revision.details.windowGlazing,
+      windowGlazingState: revision.details.windowGlazingState,
+      bathSanitaryFittings: revision.details.bathSanitaryFittings,
+      bathSanitaryFittingsState: revision.details.bathSanitaryFittingsState,
+      vrvAcProvision: revision.details.vrvAcProvision,
+      vrvAcProvisionState: revision.details.vrvAcProvisionState,
+      geyserProvision: revision.details.geyserProvision,
+      geyserProvisionState: revision.details.geyserProvisionState,
+      experienceYears: revision.details.experienceYears,
+      experienceYearsState: revision.details.experienceYearsState,
+      deliveredProjects: revision.details.deliveredProjects,
+      deliveredProjectsState: revision.details.deliveredProjectsState,
+      ongoingProjects: revision.details.ongoingProjects,
+      ongoingProjectsState: revision.details.ongoingProjectsState,
+      notableDeliveredProjects: revision.details.notableDeliveredProjects,
+      notableDeliveredProjectsState: revision.details.notableDeliveredProjectsState,
+      background: revision.details.background,
+      backgroundState: revision.details.backgroundState,
+      proposedStartDateRera: revision.details.proposedStartDateRera,
+      proposedStartDateReraState: revision.details.proposedStartDateReraState,
+      possessionConfirmedAsOf: revision.details.possessionConfirmedAsOf,
+      possessionConfirmedAsOfState: revision.details.possessionConfirmedAsOfState,
+      amenitiesOther: revision.details.amenitiesOther,
+    });
+
     for (const [sortOrder, configuration] of revision.configurations.entries()) {
       const [variant] = await tx
         .insert(configurationVariants)
@@ -155,11 +215,42 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
           bathroomsState: configuration.bathroomsState,
           balconies: configuration.balconies,
           balconiesState: configuration.balconiesState,
+          servantRoomPresent: configuration.servantRoomPresent,
+          servantRoomState: configuration.servantRoomState,
+          floorPlanPage: configuration.floorPlanPage,
+          floorPlanPageState: configuration.floorPlanPageState,
           publicFacts: configuration.publicFacts,
           sortOrder,
         })
         .returning({ id: configurationVariants.id });
       if (!variant) throw new Error("Could not create configuration variant");
+
+      if (configuration.areas.length) {
+        await tx.insert(configurationVariantAreas).values(
+          configuration.areas.map((area) => ({
+            variantId: variant.id,
+            basis: area.basis,
+            value: area.value?.toString() ?? null,
+            unit: area.unit,
+            rawText: area.rawText,
+            state: area.state,
+          })),
+        );
+      }
+
+      if (configuration.rooms.length) {
+        await tx.insert(configurationVariantRooms).values(
+          configuration.rooms.map((room, roomSortOrder) => ({
+            configurationVariantId: variant.id,
+            roomType: room.roomType,
+            dimensionRaw: room.dimensionRaw,
+            areaValue: room.areaValue?.toString() ?? null,
+            areaUnit: room.areaUnit,
+            roomState: room.state,
+            sortOrder: roomSortOrder,
+          })),
+        );
+      }
 
       const commercial = configuration.commercial;
       if (commercial.baseSalePriceRupees !== null || commercial.rateRupeesPerSqFt !== null) {

@@ -786,6 +786,7 @@ export function mapExtractedPayload(
         price: textOrNull(variant.price),
         rate: textOrNull(variant.rate_per_sqft),
         ...assignRooms(variant.rooms ?? []).values,
+        ...overrides[index]?.fields,
       });
     });
     if (matched) out.configs = configs;
@@ -826,6 +827,16 @@ export interface ApprovalItem {
   values?: string[];
   /** Present only for values that map onto a form field, which are editable. */
   formField?: keyof PropertyFormValues;
+  /** Present instead of formField for a config-variant measurement (area,
+   *  price, a room dimension) — these don't live on PropertyFormValues
+   *  directly, but on configs[bucket][configIndex][configField]. Also
+   *  editable; the edit is threaded back through VariantOverrides.fields
+   *  rather than the top-level partial. */
+  configField?: keyof ConfigDetailInput;
+  /** Set alongside configField — which entry in extraction.configurations
+   *  this measurement came from, so an edit can be routed back to the right
+   *  variant. */
+  configIndex?: number;
   confidence?: number;
   snippet?: string | null;
   sourceFile?: string | null;
@@ -853,9 +864,14 @@ export interface ApprovalGroup {
   labelWarning?: string | null;
 }
 
-/** Reviewer corrections to the OCR's own bucketing, keyed by the variant's
- *  index in `extraction.configurations`. */
-export type VariantOverrides = Record<number, { bucket?: ConfigBucket; label?: string }>;
+/** Reviewer corrections to the OCR's own bucketing — and, via `fields`, to
+ *  the measurements themselves — keyed by the variant's index in
+ *  `extraction.configurations`. A reviewer's correction always wins over
+ *  whatever mapExtractedPayload would otherwise compute. */
+export type VariantOverrides = Record<
+  number,
+  { bucket?: ConfigBucket; label?: string; fields?: Partial<ConfigDetailInput> }
+>;
 
 export const CONFIG_BUCKET_OPTIONS = [
   { value: "bhk3", label: "3 BHK" },
@@ -965,7 +981,13 @@ export function buildApprovalSections(
     if (!bucket) return;
 
     const items: ApprovalItem[] = [];
-    const push = (label: string, field: ExtractedField | undefined) => {
+    // Floor range has no configField — the form has nowhere for it to land —
+    // so it alone stays read-only here, same as before.
+    const push = (
+      label: string,
+      field: ExtractedField | undefined,
+      configField?: keyof ConfigDetailInput,
+    ) => {
       const value = text(field);
       if (!value) return;
       items.push({
@@ -977,13 +999,15 @@ export function buildApprovalSections(
         sourceFile: field?.source_file ?? null,
         sourcePage: field?.source_page ?? null,
         validationWarning: field?.validation_warning ?? null,
+        configField,
+        configIndex: configField ? index : undefined,
       });
     };
-    push("Super built-up area", variant.super_built_up_area);
-    push("Carpet area", variant.carpet_area);
-    push("Built-up area", variant.built_up_area);
-    push("Price", variant.price);
-    push("Rate (per sq ft)", variant.rate_per_sqft);
+    push("Super built-up area", variant.super_built_up_area, "area");
+    push("Carpet area", variant.carpet_area, "carpet");
+    push("Built-up area", variant.built_up_area, "builtUpArea");
+    push("Price", variant.price, "price");
+    push("Rate (per sq ft)", variant.rate_per_sqft, "rate");
     push("Floor range", variant.floor_range);
 
     const roomMapping = assignRooms(variant.rooms ?? []);
@@ -1003,6 +1027,8 @@ export function buildApprovalSections(
         validationWarning: roomMapping.failingSlots.has(slot.key)
           ? "This measurement disagrees with a consistency check — verify it against the plan before trusting it."
           : null,
+        configField: slot.key,
+        configIndex: index,
       });
     }
     if (!items.length) return;

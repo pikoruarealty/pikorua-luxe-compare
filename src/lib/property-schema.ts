@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ceilingHeightBasisSchema } from "@/generated/property-contract";
 import { safeHttpUrl } from "./utils";
 
 const MAX_SHORT_TEXT = 200;
@@ -128,7 +129,13 @@ export const propertyFormSchema = z.object({
   unitsPerAcre: optionalShortText(),
   constructionQuality: optionalShortText(),
   internalCeilingHeight: optionalShortText(),
+  ceilingHeightBasis: ceilingHeightBasisSchema.default("not_stated"),
   clubhouseSize: optionalShortText(),
+  // Date the possession estimate itself was last confirmed with the
+  // developer — distinct from `possessionAsOf`, which only tracks when the
+  // free-text `possession` duration string was last checked.
+  possessionConfirmedAsOf: optionalShortText(),
+  amenitiesOther: optionalShortText(),
   // Developer track record
   developerBackground: longText(),
   developerExperienceYears: optionalShortText(),
@@ -216,7 +223,10 @@ export function emptyPropertyForm(): PropertyFormValues {
     unitsPerAcre: "",
     constructionQuality: "",
     internalCeilingHeight: "",
+    ceilingHeightBasis: "not_stated",
     clubhouseSize: "",
+    possessionConfirmedAsOf: "",
+    amenitiesOther: "",
     developerBackground: "",
     developerExperienceYears: "",
     totalDeliveredProjects: "",
