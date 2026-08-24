@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="PropCompare">
+  <title>PropCompare</title>
+  <style>
+    /* Light browser chrome: ink plate, gold mark. Dark chrome inverts the plate
+       so the mark keeps its contrast in either tab bar. */
+    .plate { fill: #131313; }
+    .mark  { fill: #f2a900; }
+    .seam  { stroke: #f2a900; opacity: 0.5; }
+    @media (prefers-color-scheme: dark) {
+      .plate { fill: #f4f5f7; }
+    }
+  </style>
+  <rect class="plate" width="32" height="32" rx="7" />
+  <!-- The seam: the vertical rule the whole product is built around. -->
+  <line class="seam" x1="16" y1="4" x2="16" y2="28" stroke-width="0.9" />
+  <!-- P — one path, bowl counter-punched with fill-rule="evenodd" so it reads
+       as a letter rather than a solid block at 16px. -->
+  <path
+    class="mark"
+    fill-rule="evenodd"
+    d="M11 7 H18.2 a4.3 4.3 0 0 1 0 8.6 H14.4 V25 H11 Z
+       M14.4 10.2 H18.2 a1.1 1.1 0 0 1 0 2.2 H14.4 Z"
+  />
+</svg>

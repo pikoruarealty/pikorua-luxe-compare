@@ -20,6 +20,10 @@ import { useCompareStore } from "@/stores/compare-store";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { LandingSections } from "@/components/landing/LandingSections";
+import { DeveloperAlliances } from "@/components/marketing/DeveloperAlliances";
+import { PREFERENCES } from "@/components/landing/landing-content";
+import { scrollToId } from "@/lib/scroll-to-id";
 import { useActivityLog } from "@/hooks/use-activity-log";
 
 const SESSION_KEY = "propcompare:v2-preferences-confirmed";
@@ -112,6 +116,10 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
     localStorage.setItem(CATALOGUE_PREFERENCES_STORAGE_KEY, JSON.stringify(request));
     sessionStorage.setItem(SESSION_KEY, "true");
     setConfirmed(true);
+    // The results section renders below the wizard, which now sits well down
+    // the page. Without this the visitor stays put and nothing appears to have
+    // happened. Deferred a frame so the section exists before we measure it.
+    requestAnimationFrame(() => scrollToId("results"));
     logActivity("quiz_completed", null, {
       marketId: request.marketId,
       configurationOptionIds: request.configurationOptionIds,
@@ -141,22 +149,25 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main>
-        <section className="border-b border-border pt-28 pb-12">
+        <LandingSections onPrimary={() => scrollToId("preferences")} />
+        {/* The wizard keeps its behaviour but is no longer the first thing a
+            visitor meets — the marketing stack above owns the top of the page,
+            so the header-clearance padding that used to live here is gone. */}
+        <section id="preferences" className="scroll-mt-28 border-b border-border py-12 sm:py-16">
           <div className="container-lux">
             <p className="text-xs font-semibold tracking-[0.2em] text-champagne uppercase">
-              Ahmedabad-first property decisions
+              {PREFERENCES.eyebrow}
             </p>
             <div className="mt-4 grid gap-8 lg:grid-cols-[0.75fr_1.25fr]">
               <div>
-                <h1 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">
-                  Compare what fits your life, with the commercial details kept private.
-                </h1>
-                <p className="mt-4 max-w-xl leading-7 text-muted-foreground">
-                  Complete all four preferences to open a catalogue ranked against verified project
-                  data. Exact prices and rates never enter your browser.
-                </p>
+                {/* h2, not h1 — the landing hero owns the page's only h1. */}
+                <h2 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">
+                  {PREFERENCES.headline}{" "}
+                  <span className="gold-text">{PREFERENCES.headlineEmphasis}</span>
+                </h2>
+                <p className="mt-4 max-w-xl leading-7 text-muted-foreground">{PREFERENCES.body}</p>
               </div>
-              <div className="rounded-2xl border border-border bg-card p-5 sm:p-7">
+              <div className="rounded-card border border-border bg-card p-5 sm:p-7">
                 <div className="mb-6 flex items-center gap-2" aria-label={`Step ${step} of 4`}>
                   {[1, 2, 3, 4].map((number) => (
                     <span
@@ -280,7 +291,7 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
         </section>
 
         {confirmed && (
-          <section className="container-lux py-12" aria-busy={loading}>
+          <section id="results" className="container-lux scroll-mt-28 py-12" aria-busy={loading}>
             <div className="flex flex-col justify-between gap-5 border-b border-border pb-6 sm:flex-row sm:items-end">
               <div>
                 <p className="text-xs tracking-[0.18em] text-champagne uppercase">
@@ -355,6 +366,10 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
             </div>
           </section>
         )}
+
+        {/* Quiet credibility, placed after the results rather than between the
+            hero and the form. */}
+        <DeveloperAlliances />
       </main>
       {selectedCompare.length > 0 && (
         <aside className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[min(92vw,42rem)] items-center justify-between gap-4 rounded-2xl border border-champagne/40 bg-lux-black/95 px-5 py-4 shadow-2xl backdrop-blur">

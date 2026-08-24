@@ -89,6 +89,13 @@
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-label:
     "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Landing page only. A high-contrast editorial serif carries the marketing
+     headlines; every portal, legal and methodology route stays on Plus Jakarta
+     Sans. Scoped through [data-page="landing"] — see @layer base below.
+     Instrument Serif ships at 400 only, so no other weight may be requested:
+     `font-synthesis-weight: none` on html means a missing weight snaps to the
+     nearest loaded one rather than being faked. */
+  --font-landing: "Instrument Serif", "Plus Jakarta Sans", Georgia, "Times New Roman", serif;
 
   /* Partner marquee — duration is overridden inline by useMarqueeSpeed so the
      scroll velocity stays constant regardless of track length or viewport size. */
@@ -461,6 +468,27 @@ html.theme-anim * {
   }
   h1 {
     font-weight: 800 !important;
+  }
+  /* Landing-page display type. This override MUST live inside @layer base and
+     win on specificity — an unlayered `!important` would lose, because for
+     important declarations the cascade-layer order inverts and unlayered
+     important sorts lowest. [data-page="landing"] :is(h1,h2,h3) is (0,1,1),
+     which beats both `h1` (0,0,1) and `.font-display` (0,1,0) above.
+     The attribute is set by LandingSections and nowhere else. */
+  /* `.landing-display` exists for the hero's decorative inverted copy, which
+     must match the real heading pixel-for-pixel but must NOT be a second <h1>
+     in the document. */
+  [data-page="landing"] :is(h1, h2, h3),
+  [data-page="landing"] .landing-display {
+    font-family: var(--font-landing);
+    font-weight: 400 !important;
+    letter-spacing: -0.015em;
+    line-height: 1.02;
+  }
+  /* The global `font-style: normal !important` reset has to be escaped
+     deliberately for the one italic accent the hero uses. */
+  [data-page="landing"] .landing-italic {
+    font-style: italic !important;
   }
   strong,
   b {
@@ -1108,4 +1136,107 @@ body,
 .hover\:bg-champagne:hover {
   background-color: var(--brand) !important;
   color: var(--brand-ink) !important;
+}
+
+/* =========================================================
+   LANDING PAGE
+   A 3D property carousel drives the hero. Everything here is
+   scoped under [data-page="landing"] so it cannot reach the
+   admin, developer, legal or methodology routes.
+   ========================================================= */
+
+[data-page="landing"] {
+  /* Shadows carry the background hue rather than neutral black — a pure black
+     shadow on a warm ground reads as dirt, not depth. */
+  --shadow-card:
+    0 24px 60px -32px color-mix(in oklab, var(--foreground) 45%, transparent),
+    0 2px 8px -4px color-mix(in oklab, var(--foreground) 18%, transparent);
+
+  /* Carousel geometry. At N = 8 the radius where card edges exactly touch is
+     1.2071 x width — but edge-to-edge cards read as a flat filmstrip, so the
+     ring is opened out to 1.85 to put real air between them and let the
+     perspective do its work. */
+  --card-w: clamp(9.5rem, 15vw, 14rem);
+  --card-radius: calc(var(--card-w) * 1.65);
+}
+
+/* Data columns must align digit-for-digit — this is a comparison product. */
+[data-page="landing"] .tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "kern" 1;
+}
+
+/* ---------- 3D carousel ---------- */
+
+[data-page="landing"] .carousel-viewport {
+  perspective: 1150px;
+  /* Vertical panning still scrolls the page; horizontal drag spins the ring. */
+  touch-action: pan-y;
+  cursor: grab;
+}
+[data-page="landing"] .carousel-viewport:active {
+  cursor: grabbing;
+}
+
+/* Pushes the whole ring away from the camera by its own radius, so the card
+   facing the viewer sits at roughly z = 0 instead of z = +radius. Without this
+   the near card is magnified by perspective / (perspective - radius) — over 2x
+   — and swallows the frame. */
+[data-page="landing"] .carousel-depth {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--card-radius) * -1));
+}
+
+[data-page="landing"] .carousel-ring {
+  position: relative;
+  transform-style: preserve-3d;
+  /* rotateY is written from rAF; declaring it here keeps the first paint stable. */
+  transform: rotateY(0deg);
+  will-change: transform;
+}
+
+[data-page="landing"] .carousel-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--card-w);
+  margin-left: calc(var(--card-w) / -2);
+  margin-top: calc(var(--card-w) * -0.667);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  outline: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+  outline-offset: -1px;
+  /* Hides the far half of the ring, so the eye reads a front arc of cards
+     rather than a confusing mirror of the back ones. */
+  backface-visibility: hidden;
+}
+
+[data-page="landing"] .carousel-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+/* Fades the ring into the page at its left and right edges. */
+[data-page="landing"] .carousel-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The ring stops drifting on its own; dragging it still works, because that
+     is user-initiated rather than ambient motion. */
+  [data-page="landing"] .carousel-ring {
+    transition: none;
+  }
 }

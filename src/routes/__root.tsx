@@ -20,6 +20,7 @@ import { AdvisorPill } from "@/components/layout/AdvisorPill";
 import { PageFade } from "@/components/layout/PageFade";
 import { ThemeProvider } from "../context/ThemeContext";
 import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 function NotFoundComponent() {
   return (
@@ -91,16 +92,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Compare ultra-luxury residences side by side.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "PropCompare" },
+      { property: "og:url", content: SITE_URL },
+      // `summary_large_image` was already declared but had no image behind it,
+      // so every share rendered as a bare text card.
+      { property: "og:image", content: absoluteUrl("/og-image.jpg") },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      {
+        property: "og:image:alt",
+        content: "Two Ahmedabad residential towers at dusk, side by side",
+      },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.jpg") },
+      { name: "theme-color", content: "#ffffff" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
+        // One stylesheet request for all three families, so the two preconnects
+        // above still cover the whole font load. Instrument Serif is landing-page
+        // display type and ships at 400 only — see --font-landing in styles.css.
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=Instrument+Serif:ital@0;1&display=swap",
       },
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "alternate icon", href: "/favicon-96.png", sizes: "96x96" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   // The property catalog now lives in the database. Loading it here (once per

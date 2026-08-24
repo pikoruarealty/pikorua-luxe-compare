@@ -41,8 +41,8 @@ const PARTNERS: Partner[] = [
   },
   { name: "Godrej Properties", logo: "/partners/godrej.png", width: 1783, height: 854 },
   { name: "Goyal & Co.", logo: "/partners/goyal.png", width: 139, height: 68 },
-  { name: "HN Safal", logo: "/partners/hnsafal.png", width: 300, height: 165 },
-  { name: "Maruti Group", logo: "/partners/maruti.png", width: 200, height: 52 },
+  { name: "HN Safal", logo: "/partners/hnsafal-dark.png", width: 300, height: 165 },
+  { name: "Maruti Group", logo: "/partners/maruti-dark.png", width: 200, height: 52 },
   {
     name: "Ravi Desai Group",
     logo: "/partners/ravidesai.png",

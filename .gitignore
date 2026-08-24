@@ -58,3 +58,4 @@ supabase/.temp/
 WORK-SPLIT.md
 *.worklog.md
 *.scratch.md
+.claude
