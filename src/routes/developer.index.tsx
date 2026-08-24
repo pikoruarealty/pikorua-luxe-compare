@@ -143,7 +143,9 @@ function DeveloperDashboard() {
                         <Link
                           to="/developer/submissions/$id"
                           params={{ id: s.id }}
-                          title={s.status === "rejected" ? "Fix and resubmit" : "Edit this submission"}
+                          title={
+                            s.status === "rejected" ? "Fix and resubmit" : "Edit this submission"
+                          }
                           className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/50 focus-visible:outline-none"
                         >
                           <Pencil className="h-4 w-4" />

@@ -186,7 +186,13 @@ function loadConfirmed(): Map<string, Confirmed> {
   return out;
 }
 
-type Target = { name: string; entityId: number; regNo: string | null; source: string; path: string };
+type Target = {
+  name: string;
+  entityId: number;
+  regNo: string | null;
+  source: string;
+  path: string;
+};
 
 function loadTargets(): Target[] {
   const confirmed = loadConfirmed();

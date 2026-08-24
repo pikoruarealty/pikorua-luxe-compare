@@ -78,7 +78,12 @@ const PLOT_ONLY_FIELDS = ["plotSuperArea", "plotCarpetArea"] as const;
 // multiple towers of stacked units — a bungalow, villa or plot project is a
 // single structure per unit, so these fields are hidden (and can't block
 // submission) for those categories.
-const HIDDEN_FOR_PLOT_FIELDS = ["totalTowers", "totalFloors", "unitsPerFloor", "podiumStructure"] as const;
+const HIDDEN_FOR_PLOT_FIELDS = [
+  "totalTowers",
+  "totalFloors",
+  "unitsPerFloor",
+  "podiumStructure",
+] as const;
 
 // A property that's already ready has no duration/estimate left to track —
 // these two fields exist only to date-stamp a still-pending possession claim.
@@ -356,14 +361,8 @@ export function PropertyForm({
             <NaField name="proposedStartDateRera" label="Proposed start date (RERA)">
               <Input {...register("proposedStartDateRera")} placeholder="e.g. Jan 2025" />
             </NaField>
-            <NaField
-              name="registeredCompletionDateRera"
-              label="Registered completion date (RERA)"
-            >
-              <Input
-                {...register("registeredCompletionDateRera")}
-                placeholder="e.g. Dec 2027"
-              />
+            <NaField name="registeredCompletionDateRera" label="Registered completion date (RERA)">
+              <Input {...register("registeredCompletionDateRera")} placeholder="e.g. Dec 2027" />
             </NaField>
             <NaField name="constructionProgressRera" label="Construction progress (RERA)">
               <Input
@@ -384,10 +383,7 @@ export function PropertyForm({
                 <Input {...register("podiumStructure")} placeholder="e.g. 2-Level Podium" />
               </NaField>
             )}
-            <NaField
-              name="liftsPerTower"
-              label={isPlot ? "Lifts per unit" : "Lifts per tower"}
-            >
+            <NaField name="liftsPerTower" label={isPlot ? "Lifts per unit" : "Lifts per tower"}>
               <Input {...register("liftsPerTower")} placeholder="e.g. 3" />
             </NaField>
             <NaField name="openSpace" label="Open space">

@@ -53,7 +53,10 @@ function newestPerProperty(): { name: string; extraction: PropertyExtraction }[]
     if (!extraction?.basics) continue;
     const property = String(extraction.basics?.property_name?.value ?? "").trim();
     if (!property) continue;
-    const key = property.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const key = property
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
     const name = (extraction.source_files ?? []).join(", ") || file;
     const score = (extraction.configurations ?? []).reduce((n, v) => n + (v.rooms?.length ?? 0), 0);
     if (!best.has(key) || best.get(key)!.score < score) best.set(key, { score, name, extraction });
@@ -93,8 +96,13 @@ for (const { name, extraction } of brochures) {
   const report = buildReviewReport(diffs);
   const gaps = findMappingGaps(extraction);
 
-  const byCategory = { failing: 0, conflict: 0, gap_fill: 0, cosmetic: 0, silent_accept: 0 } as
-    Record<DiffCategory, number>;
+  const byCategory = {
+    failing: 0,
+    conflict: 0,
+    gap_fill: 0,
+    cosmetic: 0,
+    silent_accept: 0,
+  } as Record<DiffCategory, number>;
   for (const diff of diffs) byCategory[diff.category] += 1;
 
   rows.push({

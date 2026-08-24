@@ -371,8 +371,8 @@ export function ExtractedFieldsReview({
     <div ref={reviewRootRef} className="max-w-2xl">
       <p className="text-sm text-muted-foreground">
         Here's everything we found. Check each value against the source, fix anything wrong, then
-        approve it — or skip it if it's not something you want to publish yet. All{" "}
-        {allItems.length} need a decision — one at a time, on purpose.
+        approve it — or skip it if it's not something you want to publish yet. All {allItems.length}{" "}
+        need a decision — one at a time, on purpose.
       </p>
 
       {missing.length > 0 && (
@@ -463,7 +463,10 @@ export function ExtractedFieldsReview({
                   // re-derive the number from the live list rather than showing a
                   // count that's gone stale the moment the reviewer edits anything.
                   const displayLabel = item.values
-                    ? item.label.replace(/\(\d+\)$/, `(${(listValues[item.key] ?? item.values).length})`)
+                    ? item.label.replace(
+                        /\(\d+\)$/,
+                        `(${(listValues[item.key] ?? item.values).length})`,
+                      )
                     : item.label;
                   return (
                     <div

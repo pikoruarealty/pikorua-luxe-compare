@@ -7,11 +7,7 @@ import {
   type ExtractionResponse,
   type MergeRow,
 } from "@/lib/brochure-field-mapping";
-import {
-  CONFIG_BUCKETS,
-  emptyPropertyForm,
-  type PropertyFormValues,
-} from "@/lib/property-schema";
+import { CONFIG_BUCKETS, emptyPropertyForm, type PropertyFormValues } from "@/lib/property-schema";
 
 /** Lets an existing property be topped up from a brochure: whatever is still
  *  blank gets filled, and anything that disagrees with what's already saved has

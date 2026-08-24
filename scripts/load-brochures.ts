@@ -33,7 +33,11 @@ import {
   type PropertyExtraction,
   type ExtractedField,
 } from "@/lib/brochure-field-mapping";
-import { emptyPropertyForm, propertyFormSchema, type PropertyFormValues } from "@/lib/property-schema";
+import {
+  emptyPropertyForm,
+  propertyFormSchema,
+  type PropertyFormValues,
+} from "@/lib/property-schema";
 import type { ConfigurationKind } from "@/generated/property-contract";
 
 const JOBS_DIR = resolve("property-ocr-suite/backend/storage/jobs");
@@ -69,7 +73,10 @@ function text(field: unknown): string {
  *  collapse; the richest extraction wins rather than the newest file, since a
  *  re-upload that extracted fewer configurations is a worse source. */
 function dedupeKey(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function loadJobs(): Job[] {
@@ -254,9 +261,8 @@ async function ensureAccounts() {
 }
 
 async function publish(plans: Plan[]) {
-  const { saveDeveloperRevision, submitDeveloperWorkflow } = await import(
-    "@/repositories/submission-workflow.repository.server"
-  );
+  const { saveDeveloperRevision, submitDeveloperWorkflow } =
+    await import("@/repositories/submission-workflow.repository.server");
   const { publishWorkflow } = await import("@/repositories/publication.repository.server");
   const { developerId, reviewerId } = await ensureAccounts();
 
