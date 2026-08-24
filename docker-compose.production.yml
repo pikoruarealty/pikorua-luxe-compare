@@ -84,6 +84,28 @@ services:
     mem_limit: 1g
     cpus: 1
 
+  ocr-api:
+    image: ${OCR_API_IMAGE:?Set OCR_API_IMAGE}
+    build:
+      context: ./property-ocr-suite/backend
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: /run/propcompare/ocr.env
+    environment:
+      APP_ENV: production
+    expose: ["8000"]
+    mem_limit: 512m
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   nginx:
     image: nginx:1.29-alpine
     restart: unless-stopped

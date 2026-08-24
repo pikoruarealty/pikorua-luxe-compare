@@ -28,7 +28,7 @@ sudo --preserve-env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_STAFF_M
   --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
   --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
   --build-arg VITE_STAFF_MFA_ENFORCE="$VITE_STAFF_MFA_ENFORCE" \
-  web-blue ocr-worker
+  web-blue ocr-worker ocr-api
 
 sudo docker run --rm --network propcompare-production \
   -v "$REPO_DIR":/repo -w /repo \
@@ -40,7 +40,7 @@ sudo docker compose --env-file .env.deploy -f docker-compose.production.yml \
 
 sudo docker compose --env-file .env.deploy \
   -f docker-compose.production.yml -f docker-compose.override.yml \
-  up -d --no-deps db web-blue ocr-worker
+  up -d --no-deps db web-blue ocr-worker ocr-api
 
 sudo docker image prune -f
 sudo docker builder prune -f --filter until=72h
