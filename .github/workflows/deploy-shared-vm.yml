@@ -38,4 +38,4 @@ jobs:
             --project "$PROJECT_ID" \
             --zone "$VM_ZONE" \
             --tunnel-through-iap --quiet \
-            --command="bash ~/propcompare/ops/deploy-shared-vm.sh"
+            --command="sudo bash /opt/propcompare/ops/deploy-shared-vm.sh"

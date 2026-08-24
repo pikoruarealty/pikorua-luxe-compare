@@ -10,9 +10,10 @@
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
-cd ~/propcompare
-git fetch origin main
-git reset --hard origin/main
+REPO_DIR=/opt/propcompare
+cd "$REPO_DIR"
+sudo git fetch origin main
+sudo git reset --hard origin/main
 
 sudo bash ops/fetch-secrets.sh
 
@@ -23,7 +24,7 @@ sudo docker compose --env-file .env.deploy \
   build web-blue ocr-worker
 
 sudo docker run --rm --network propcompare-production \
-  -v "$(pwd)":/repo -w /repo \
+  -v "$REPO_DIR":/repo -w /repo \
   -e PGURL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}" \
   postgres:16-alpine sh -c "apk add --no-cache bash >/dev/null && bash ops/db/migrate.sh"
 
@@ -37,4 +38,4 @@ sudo docker compose --env-file .env.deploy \
 sudo docker image prune -f
 sudo docker builder prune -f --filter until=72h
 
-echo "deploy complete: $(git rev-parse --short HEAD)"
+echo "deploy complete: $(sudo git rev-parse --short HEAD)"
