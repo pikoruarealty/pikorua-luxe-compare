@@ -26,9 +26,16 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
 
       - name: Deploy over IAP SSH
+        env:
+          VM_NAME: ${{ vars.GCP_VM_NAME }}
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          VM_ZONE: ${{ vars.GCP_VM_ZONE }}
         run: |
-          gcloud compute ssh "${{ vars.GCP_VM_NAME }}" \
-            --project "${{ vars.GCP_PROJECT_ID }}" \
-            --zone "${{ vars.GCP_VM_ZONE }}" \
+          VM_NAME=$(echo "$VM_NAME" | tr -d '[:space:]')
+          PROJECT_ID=$(echo "$PROJECT_ID" | tr -d '[:space:]')
+          VM_ZONE=$(echo "$VM_ZONE" | tr -d '[:space:]')
+          gcloud compute ssh "$VM_NAME" \
+            --project "$PROJECT_ID" \
+            --zone "$VM_ZONE" \
             --tunnel-through-iap --quiet \
             --command="bash ~/propcompare/ops/deploy-shared-vm.sh"
