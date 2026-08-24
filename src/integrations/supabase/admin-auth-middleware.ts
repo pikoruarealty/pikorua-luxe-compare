@@ -17,7 +17,9 @@ export const requireAdminAuth = createMiddleware({ type: "function" })
   .middleware([requireSupabaseAuth])
   .server(async ({ next, context }) => {
     const enforceMfa =
-      process.env.STAFF_MFA_ENFORCE === "1" || process.env.NODE_ENV === "production";
+      process.env.STAFF_MFA_ENFORCE === "0"
+        ? false
+        : process.env.STAFF_MFA_ENFORCE === "1" || process.env.NODE_ENV === "production";
     if (enforceMfa && (context.claims as { aal?: string }).aal !== "aal2") {
       throw new Error("MFA verification required");
     }

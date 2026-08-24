@@ -18,14 +18,16 @@ sudo git reset --hard origin/main
 sudo bash ops/fetch-secrets.sh
 
 export $(sudo cat /run/propcompare/db.env | xargs)
-export $(sudo grep -E '^VITE_SUPABASE_(URL|PUBLISHABLE_KEY)=' /run/propcompare/web.env | sed -E 's/="(.*)"$/=\1/' | xargs)
+export $(sudo grep -E '^VITE_SUPABASE_(URL|PUBLISHABLE_KEY)=|^VITE_STAFF_MFA_ENFORCE=' /run/propcompare/web.env | sed -E 's/="(.*)"$/=\1/' | xargs)
+VITE_STAFF_MFA_ENFORCE="${VITE_STAFF_MFA_ENFORCE:-}"
 
-sudo --preserve-env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY \
+sudo --preserve-env=VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_STAFF_MFA_ENFORCE \
   docker compose --env-file .env.deploy \
   -f docker-compose.production.yml -f docker-compose.override.yml \
   build \
   --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
   --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
+  --build-arg VITE_STAFF_MFA_ENFORCE="$VITE_STAFF_MFA_ENFORCE" \
   web-blue ocr-worker
 
 sudo docker run --rm --network propcompare-production \
