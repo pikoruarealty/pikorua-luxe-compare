@@ -21,6 +21,7 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { LandingSections } from "@/components/landing/LandingSections";
+import { PropertyShowcase } from "@/components/landing/PropertyShowcase";
 import { DeveloperAlliances } from "@/components/marketing/DeveloperAlliances";
 import { PREFERENCES } from "@/components/landing/landing-content";
 import { scrollToId } from "@/lib/scroll-to-id";
@@ -367,8 +368,9 @@ export function V2CataloguePage({ markets }: { markets: CatalogueMarket[] }) {
           </section>
         )}
 
-        {/* Quiet credibility, placed after the results rather than between the
-            hero and the form. */}
+        {/* Placed after the results rather than between the hero and the
+            form, which has to stay directly beneath the hero. */}
+        <PropertyShowcase />
         <DeveloperAlliances />
       </main>
       {selectedCompare.length > 0 && (

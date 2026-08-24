@@ -17,8 +17,15 @@ export const HERO = {
   headlineLead: "India's smartest way",
   headlineMid: "to choose a",
   headlineAccent: "home",
-  standfirst: "You'll live here for ten years. Give it more than ten browser tabs.",
+  standfirst: "You'll live here for ten years. Give it more than ten comparisons.",
   primaryCta: "Find my home",
+} as const;
+
+/** The staggered image band near the foot of the page. */
+export const SHOWCASE = {
+  eyebrow: "On PropCompare",
+  headline: "Homes worth",
+  headlineEmphasis: "taking your time over.",
 } as const;
 
 /** Framing for the requirements form, which sits directly beneath the hero. */

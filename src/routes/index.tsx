@@ -28,6 +28,7 @@ import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.funct
 import { V2CataloguePage } from "@/components/catalogue/V2CataloguePage";
 import { DeveloperAlliances } from "@/components/marketing/DeveloperAlliances";
 import { LandingSections } from "@/components/landing/LandingSections";
+import { PropertyShowcase } from "@/components/landing/PropertyShowcase";
 import { scrollToId } from "@/lib/scroll-to-id";
 
 export const Route = createFileRoute("/")({
@@ -218,6 +219,9 @@ function IndexContent() {
 
       {/* ============ RECENTLY VIEWED ============ */}
       <RecentlyViewed />
+
+      {/* ============ SHOWCASE ============ */}
+      <PropertyShowcase />
 
       {/* ============ DEVELOPER ALLIANCES ============ */}
       <DeveloperAlliances />

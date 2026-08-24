@@ -4,11 +4,13 @@ import { CAROUSEL } from "@/lib/landing-assets";
 
 /** Degrees of drift per millisecond — one full turn takes about 50 seconds. */
 const AUTO_SPEED = 0.0072;
-/** Screen pixels to degrees when dragging. */
+/** Screen pixels to degrees while dragging. */
 const DRAG_SENSITIVITY = 0.22;
+/** Screen pixels to degrees while merely hovering — deliberately gentler. */
+const HOVER_SENSITIVITY = 0.11;
 /** Per-16ms multiplier applied to fling velocity once the pointer is released. */
 const FRICTION = 0.94;
-/** Below this the fling is over and ambient drift resumes. */
+/** Below this the fling is over and ambient drift takes back over. */
 const REST_VELOCITY = 0.0006;
 
 const STEP = 360 / CAROUSEL.length;
@@ -16,12 +18,16 @@ const STEP = 360 / CAROUSEL.length;
 /**
  * A ring of property cards you can spin like a globe.
  *
+ * Three ways to turn it, layered:
+ *   - it drifts on its own, always;
+ *   - moving a cursor across it steers it, gently, on top of that drift;
+ *   - pressing and dragging takes full control and flings it with momentum.
+ *
  * The rotation is written straight to the element's transform from a rAF loop
- * rather than held in React state: at 60fps this would otherwise re-render the
- * whole subtree every frame, and — more importantly — a state value that only
- * exists on the client would have to differ from the server's first paint. The
- * ring is declared at `rotateY(0deg)` in CSS, so SSR and hydration agree and
- * the drift starts afterwards.
+ * rather than held in React state: at 60fps that would re-render the whole
+ * subtree every frame, and a client-only state value would have to differ from
+ * the server's first paint. The ring is declared at `rotateY(0deg)` in CSS, so
+ * SSR and hydration agree and all motion starts afterwards.
  */
 export function PropertyCarousel3D() {
   const ringRef = useRef<HTMLDivElement | null>(null);
@@ -29,7 +35,8 @@ export function PropertyCarousel3D() {
   /** Degrees per millisecond carried over from a fling. */
   const velocity = useRef(0);
   const dragging = useRef(false);
-  const hovering = useRef(false);
+  /** True once we have a cursor position to measure movement against. */
+  const tracking = useRef(false);
   const lastX = useRef(0);
   const lastTime = useRef(0);
 
@@ -47,9 +54,10 @@ export function PropertyCarousel3D() {
         if (Math.abs(velocity.current) > REST_VELOCITY) {
           angle.current += velocity.current * elapsed;
           velocity.current *= Math.pow(FRICTION, elapsed / 16);
-        } else if (!reduceMotion.matches && !hovering.current) {
-          // Ambient drift. Pauses under a cursor so the visitor can actually
-          // look at a card, and never runs for reduced-motion users.
+        } else if (!reduceMotion.matches) {
+          // Ambient drift. Runs even under the cursor — hovering steers the
+          // ring rather than stopping it. Never runs for reduced-motion users,
+          // for whom only their own drag moves it.
           angle.current += AUTO_SPEED * elapsed;
         }
       }
@@ -66,6 +74,7 @@ export function PropertyCarousel3D() {
 
   const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     dragging.current = true;
+    tracking.current = true;
     velocity.current = 0;
     lastX.current = event.clientX;
     lastTime.current = performance.now();
@@ -73,13 +82,31 @@ export function PropertyCarousel3D() {
   }, []);
 
   const onPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging.current) return;
     const now = performance.now();
-    const delta = (event.clientX - lastX.current) * DRAG_SENSITIVITY;
-    angle.current += delta;
-    // Feeds the fling that continues after release.
-    velocity.current = delta / Math.max(now - lastTime.current, 1);
-    lastX.current = event.clientX;
+    const x = event.clientX;
+
+    // First sighting of this pointer — record where it is and wait for the next
+    // event, so the ring doesn't jump by the full distance from the last one.
+    if (!tracking.current) {
+      tracking.current = true;
+      lastX.current = x;
+      lastTime.current = now;
+      return;
+    }
+
+    const travelled = x - lastX.current;
+    if (dragging.current) {
+      const delta = travelled * DRAG_SENSITIVITY;
+      angle.current += delta;
+      // Feeds the fling that continues after release.
+      velocity.current = delta / Math.max(now - lastTime.current, 1);
+    } else if (event.pointerType === "mouse") {
+      // Hover steering. No momentum is banked: let go of the mouse and the ring
+      // simply carries on drifting, rather than coasting off from a stray flick.
+      angle.current += travelled * HOVER_SENSITIVITY;
+    }
+
+    lastX.current = x;
     lastTime.current = now;
   }, []);
 
@@ -91,18 +118,21 @@ export function PropertyCarousel3D() {
     }
   }, []);
 
+  const onPointerLeave = useCallback(() => {
+    tracking.current = false;
+  }, []);
+
   return (
     <div
       className="carousel-viewport carousel-mask relative w-full select-none"
-      style={{ height: "calc(var(--card-w) * 1.55)" }}
+      style={{ height: "calc(var(--card-h) * 1.16)" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      onMouseEnter={() => (hovering.current = true)}
-      onMouseLeave={() => (hovering.current = false)}
-      /* Decorative: the homes themselves are listed below with real names and
-         data, so a screen reader gains nothing from eight unlabelled photos. */
+      onPointerLeave={onPointerLeave}
+      /* Decorative: the homes appear below with real names and data, so a
+         screen reader gains nothing from eight unlabelled photographs. */
       aria-hidden
     >
       <div className="carousel-depth w-full">
@@ -120,8 +150,8 @@ export function PropertyCarousel3D() {
                 alt=""
                 width={900}
                 height={1200}
-                // The first card is the one facing the visitor at rest, so it is
-                // the LCP candidate; the rest are angled away or behind.
+                // The first card faces the visitor at rest, so it is the LCP
+                // candidate; the rest are angled away or behind it.
                 loading={index === 0 ? "eager" : "lazy"}
                 fetchPriority={index === 0 ? "high" : undefined}
                 decoding="async"
