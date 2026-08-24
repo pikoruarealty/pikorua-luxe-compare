@@ -14,40 +14,79 @@ function StaffMfa() {
   const [secret, setSecret] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
+  const [setupAttempt, setSetupAttempt] = useState(0);
+
   useEffect(() => {
-    supabase.auth.mfa
-      .listFactors()
-      .then(async ({ data, error }) => {
-        if (error) throw error;
-        const existing = data.totp.find((factor) => factor.status === "verified");
-        if (existing) {
-          setFactorId(existing.id);
-          return;
-        }
-        const enrolled = await supabase.auth.mfa.enroll({
-          factorType: "totp",
-          friendlyName: "PropCompare staff",
-        });
-        if (enrolled.error) throw enrolled.error;
-        setFactorId(enrolled.data.id);
-        setQr(enrolled.data.totp.qr_code);
-        setSecret(enrolled.data.totp.secret);
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    setQr("");
+    setSecret("");
+    setFactorId("");
+
+    (async () => {
+      const { data, error: listError } = await supabase.auth.mfa.listFactors();
+      if (listError) throw listError;
+
+      const verified = data.totp.find((factor) => factor.status === "verified");
+      if (verified) {
+        if (!cancelled) setFactorId(verified.id);
+        return;
+      }
+
+      // Any factor left here is an abandoned enroll attempt (page closed
+      // mid-setup, expired session, etc.) — Supabase caps how many TOTP
+      // factors an account can hold, so leaving these around eventually
+      // makes every future enroll() call fail with no visible cause.
+      for (const stale of data.totp) {
+        await supabase.auth.mfa.unenroll({ factorId: stale.id });
+      }
+
+      const enrolled = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        friendlyName: "PropCompare staff",
+      });
+      if (enrolled.error) throw enrolled.error;
+      if (cancelled) return;
+      setFactorId(enrolled.data.id);
+      setQr(enrolled.data.totp.qr_code);
+      setSecret(enrolled.data.totp.secret);
+    })()
+      .catch((cause) => {
+        if (cancelled) return;
+        setError(cause instanceof Error ? cause.message : "MFA setup failed");
       })
-      .catch((cause) => toast.error(cause instanceof Error ? cause.message : "MFA setup failed"))
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setupAttempt]);
+
   const verify = async () => {
-    const challenge = await supabase.auth.mfa.challenge({ factorId });
-    if (challenge.error) return toast.error(challenge.error.message);
-    const verified = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challenge.data.id,
-      code: code.replace(/\D/g, ""),
-    });
-    if (verified.error) return toast.error(verified.error.message);
-    toast.success("MFA verified");
-    navigate({ to: "/admin" });
+    setVerifying(true);
+    try {
+      const challenge = await supabase.auth.mfa.challenge({ factorId });
+      if (challenge.error) return toast.error(challenge.error.message);
+      const verified = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.data.id,
+        code: code.replace(/\D/g, ""),
+      });
+      if (verified.error) return toast.error(verified.error.message);
+      toast.success("MFA verified");
+      navigate({ to: "/admin" });
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Verification failed");
+    } finally {
+      setVerifying(false);
+    }
   };
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
       <section className="w-full max-w-md rounded-3xl border border-border bg-card p-7">
@@ -59,6 +98,17 @@ function StaffMfa() {
         </p>
         {loading ? (
           <p className="mt-6 text-sm text-muted-foreground">Preparing secure setup…</p>
+        ) : error ? (
+          <div className="mt-6">
+            <p className="text-sm text-red-500">{error}</p>
+            <button
+              type="button"
+              onClick={() => setSetupAttempt((n) => n + 1)}
+              className="mt-4 h-11 w-full rounded-full border border-border text-sm font-semibold"
+            >
+              Try again
+            </button>
+          </div>
         ) : (
           <>
             {qr && (
@@ -82,11 +132,11 @@ function StaffMfa() {
             />
             <button
               type="button"
-              disabled={!factorId || code.length !== 6}
+              disabled={!factorId || code.length !== 6 || verifying}
               onClick={verify}
               className="mt-4 h-11 w-full rounded-full bg-champagne text-sm font-semibold text-lux-black disabled:opacity-40"
             >
-              Verify and continue
+              {verifying ? "Verifying…" : "Verify and continue"}
             </button>
           </>
         )}
