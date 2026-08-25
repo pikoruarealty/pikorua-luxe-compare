@@ -25,7 +25,7 @@ import { join, resolve } from "node:path";
 import { eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client.server";
-import { configurationOptions, markets } from "@/db/schema";
+import { configurationOptions, markets, properties } from "@/db/schema";
 import { buildPublicationRevision } from "@/domain/publication-mapping.server";
 import { publicationRevisionSchema, type PublicationRevision } from "@/domain/publication";
 import {
@@ -225,7 +225,7 @@ function buildPlan(job: Job, lookup: Awaited<ReturnType<typeof loadLookup>>): Pl
 async function ensureAccounts() {
   const db = getDatabase();
   const wanted = [
-    { email: "brochure-import@propcompare.local", role: "developer", name: "Brochure import" },
+    { email: "brochure-reviewer@pikorua.dev", role: "developer", name: "Brochure Reviewer" },
     { email: "owner@propcompare.local", role: "owner", name: "PropCompare Owner" },
   ] as const;
   // Raw SQL throughout: the Drizzle mirror of admin_profiles carries only
@@ -260,16 +260,36 @@ async function ensureAccounts() {
   return { developerId: ids[0], reviewerId: ids[1] };
 }
 
+/** Names already live in the catalogue (current_publication_version_id set),
+ *  keyed the same loose way as on-disk dedup. `saveDeveloperRevision` always
+ *  inserts a fresh workflow/property when called without a workflowId, so
+ *  this is the only thing standing between a re-run and a duplicate. */
+async function alreadyPublished(): Promise<Set<string>> {
+  const db = getDatabase();
+  const rows = await db
+    .select({ name: properties.name })
+    .from(properties)
+    .where(sql`${properties.currentPublicationVersionId} is not null`);
+  return new Set(rows.map((row) => dedupeKey(row.name)));
+}
+
 async function publish(plans: Plan[]) {
   const { saveDeveloperRevision, submitDeveloperWorkflow } =
     await import("@/repositories/submission-workflow.repository.server");
   const { publishWorkflow } = await import("@/repositories/publication.repository.server");
   const { developerId, reviewerId } = await ensureAccounts();
+  const live = await alreadyPublished();
 
   let published = 0;
+  let skipped = 0;
   for (const plan of plans) {
     if (!plan.revision) {
       console.log(`  skip   ${plan.name} — ${plan.blockers.length} blocker(s)`);
+      continue;
+    }
+    if (live.has(dedupeKey(plan.name))) {
+      console.log(`  skip   ${plan.name} — already published`);
+      skipped += 1;
       continue;
     }
     try {
@@ -277,6 +297,7 @@ async function publish(plans: Plan[]) {
       await submitDeveloperWorkflow(workflowId, developerId);
       const result = await publishWorkflow(workflowId, reviewerId);
       published += 1;
+      live.add(dedupeKey(plan.name));
       console.log(`  publish ${plan.name} -> property ${result.propertyId}`);
     } catch (error) {
       console.log(
@@ -284,7 +305,7 @@ async function publish(plans: Plan[]) {
       );
     }
   }
-  console.log(`\npublished ${published} of ${plans.length}`);
+  console.log(`\npublished ${published} of ${plans.length}${skipped ? `, ${skipped} already live` : ""}`);
 }
 
 async function main() {

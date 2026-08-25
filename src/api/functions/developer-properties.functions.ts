@@ -27,9 +27,53 @@ export interface DeveloperSubmission {
   reviewedAt: string | null;
 }
 
+/** V1 properties own their own name/developer/location columns. V2 (the local
+ *  Postgres catalogue populated by scripts/load-brochures.ts) has no such
+ *  columns — everything lives inside the current publication version's
+ *  jsonb snapshot, same as the public detail page reads it (see
+ *  public-detail.repository.server.ts). The inner join on
+ *  currentPublicationVersionId means only published V2 properties can ever
+ *  appear here, so isPublished is always true and hasPendingUpdate is always
+ *  false — V2 has no pending-edit concept reachable from this account yet. */
+async function getMyV2Properties(developerId: string): Promise<DeveloperProperty[]> {
+  const { eq } = await import("drizzle-orm");
+  const { getDatabase } = await import("@/db/client.server");
+  const { properties, propertyPublicationVersions, markets } = await import("@/db/schema");
+  const db = getDatabase();
+  const rows = await db
+    .select({
+      id: properties.id,
+      snapshot: propertyPublicationVersions.publicSnapshot,
+      cityName: markets.cityName,
+    })
+    .from(properties)
+    .innerJoin(
+      propertyPublicationVersions,
+      eq(properties.currentPublicationVersionId, propertyPublicationVersions.id),
+    )
+    .innerJoin(markets, eq(propertyPublicationVersions.marketId, markets.id))
+    .where(eq(properties.createdBy, developerId));
+
+  const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+  return rows.map((row) => {
+    const snapshot = row.snapshot as Record<string, unknown>;
+    return {
+      id: row.id,
+      name: text(snapshot.name) ?? "Untitled property",
+      developer: text(snapshot.developerName) ?? "-",
+      location: text(snapshot.addressLine) ?? text(snapshot.cityName) ?? row.cityName ?? "-",
+      isPublished: true,
+      hasPendingUpdate: false,
+    };
+  });
+}
+
 /** Developer-only: their live properties plus their full submission history —
  *  the dashboard renders both (live ones are editable, submissions show what's
- *  pending/rejected/approved). */
+ *  pending/rejected/approved). Properties come from two systems (V1: hosted
+ *  Supabase, V2: local Postgres catalogue) that don't otherwise talk to each
+ *  other — see getMyV2Properties. Submissions stay V1-only; V2 has no review
+ *  workflow reachable from this dashboard. */
 export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
   .handler(
@@ -39,7 +83,7 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const developerId = context.adminProfile.id;
 
-      const [{ data: props, error: propsError }, { data: subs, error: subsError }] =
+      const [{ data: props, error: propsError }, { data: subs, error: subsError }, v2Props] =
         await Promise.all([
           supabaseAdmin
             .from("properties")
@@ -53,6 +97,7 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
             )
             .eq("developer_id", developerId)
             .order("created_at", { ascending: false }),
+          getMyV2Properties(developerId),
         ]);
       if (propsError)
         throwSafeError("getDeveloperProperties", propsError, "Could not load properties");
@@ -66,14 +111,17 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
       );
 
       return {
-        properties: (props ?? []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          developer: p.developer ?? "-",
-          location: p.location ?? "-",
-          isPublished: p.is_published,
-          hasPendingUpdate: pendingUpdateIds.has(p.id),
-        })),
+        properties: [
+          ...(props ?? []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            developer: p.developer ?? "-",
+            location: p.location ?? "-",
+            isPublished: p.is_published,
+            hasPendingUpdate: pendingUpdateIds.has(p.id),
+          })),
+          ...v2Props,
+        ],
         submissions: (subs ?? []).map((s) => ({
           id: s.id,
           action: s.action,
