@@ -801,6 +801,50 @@ Owner signed off on the `DROP TABLE` migration (drop both, recommended). Committ
 (`admin_profiles` → local Postgres, wiring `admin-auth-middleware.ts` and
 `admin-developers.functions.ts`), which finishes Phase A.
 
+### Phase A, sub-phase 1B — admin_profiles + auth-middleware role lookup (2026-08-26)
+
+**Correction to the earlier note above:** the local synthetic `admin_profiles` rows from
+`load-brochures.ts`'s `ensureAccounts()` are `brochure-import@propcompare.local` and
+`owner@propcompare.local` (confirmed by querying local Postgres directly), not
+`brochure-reviewer@pikorua.dev` as previously assumed. Neither email collides with a real
+hosted-Supabase staff account, so there was no actual id conflict to resolve — just a backfill.
+
+- `scripts/backfill-local-identity.ts`: reads every row from hosted Supabase `admin_profiles`
+  (owner + 5 developers + 1 legacy test-role row = 7 rows, confirmed via a direct query), upserts
+  each into local Postgres **keyed on the same id** (also seeding the local `auth.users` shim
+  those rows FK onto, same pattern as `ensureAccounts()`). Idempotent, dry-run by default
+  (`--apply` to write). Ran dry-run then `--apply` against local Postgres (tunneled to the VM on
+  127.0.0.1:5433) after owner sign-off — 7 clean inserts, zero email/role conflicts. Re-ran to
+  confirm idempotency: second run showed the same 7 rows as no-op updates, nothing new written.
+  Owner noted they may only hold working credentials for 1-2 of these 7 accounts — expected, some
+  are dormant/test rows; the backfill mirrors what Supabase actually has regardless, both for
+  correctness and because a future cleanup pass can safely delete/deactivate unused ones later.
+- `admin-profile.repository.server.ts`: added `listDeveloperProfiles`, `insertDeveloperProfile`
+  (also seeds the `auth.users` shim row, mirroring `ensureAccounts()`), `setDeveloperActive`.
+- `admin-auth-middleware.ts`'s `requireAdminAuth`: role lookup now calls
+  `getAdminProfileById` (local Postgres) instead of `supabaseAdmin.from("admin_profiles")`. JWT
+  verification (who the request is) stays on Supabase Auth until the Phase D rebuild — only the
+  role/is_active lookup moved. This gates every admin/developer/owner request, so it's the
+  highest-risk change in 1B.
+- `admin-developers.functions.ts`: `listDevelopers`'s `admin_profiles` read moved to local
+  Postgres; `createDeveloper`'s profile insert and `setDeveloperActive`'s update moved to local
+  Postgres (auth-user creation/deletion stays on `supabaseAdmin.auth.admin.*` — identity creation
+  is still Supabase-side until Phase D). Also fixed a pre-existing bug found while touching this
+  file: `listDevelopers` was reading `developer_intelligence_entitlements` via `supabaseAdmin`,
+  but `setDeveloperIntelligenceEntitlement`/`upsertEntitlement` had always written that table via
+  Drizzle/local Postgres only — the two were reading and writing different databases, so the
+  owner dashboard's intelligence-access column was stale/wrong for any Supabase-only developer.
+  Added `listAllEntitlements()` to `developer-intelligence.repository.server.ts` and switched the
+  read to match the write. `developer_submission_counts` (a view over V1 `property_submissions`,
+  which has no local equivalent) deliberately stays on `supabaseAdmin` — Phase C scope.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean (one prettier fix on the new
+script, applied), `bun run test` 138/138 (28 files), `bun run db:drift` clean (40 mirrored tables).
+
+**Still open:** commit, push, deploy, then verify live (owner login still works, developer
+dashboard's intelligence-access column now shows correctly for the 3 real Supabase-only
+developers, `createDeveloper`/`setDeveloperActive` work end-to-end) — that finishes Phase A.
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)

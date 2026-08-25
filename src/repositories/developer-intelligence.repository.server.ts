@@ -27,6 +27,11 @@ export async function findEntitlement(developerId: string) {
   return row ?? null;
 }
 
+/** Owner dashboard: every entitlement at once, keyed by developer id. */
+export async function listAllEntitlements() {
+  return getDatabase().select().from(developerIntelligenceEntitlements);
+}
+
 export function entitlementView(
   entitlement: Awaited<ReturnType<typeof findEntitlement>>,
   now = new Date(),

@@ -23,13 +23,9 @@ export const requireAdminAuth = createMiddleware({ type: "function" })
     if (enforceMfa && (context.claims as { aal?: string }).aal !== "aal2") {
       throw new Error("MFA verification required");
     }
-    const { supabaseAdmin } = await import("./client.server");
-    const { data, error } = await supabaseAdmin
-      .from("admin_profiles")
-      .select("id, role, email, is_active")
-      .eq("id", context.userId)
-      .maybeSingle();
-    if (error || !data || !data.is_active) {
+    const { getAdminProfileById } = await import("@/repositories/admin-profile.repository.server");
+    const data = await getAdminProfileById(context.userId);
+    if (!data || !data.isActive) {
       throw new Error("Unauthorized: not an active admin");
     }
     if (!["owner", "reviewer", "support", "developer"].includes(data.role)) {
@@ -39,7 +35,7 @@ export const requireAdminAuth = createMiddleware({ type: "function" })
       id: data.id,
       role: data.role as AdminProfileContext["role"],
       email: data.email,
-      isActive: data.is_active,
+      isActive: data.isActive,
     };
     return next({ context: { adminProfile } });
   });

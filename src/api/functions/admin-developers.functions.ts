@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { throwSafeError } from "@/lib/safe-error";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import {
+  insertDeveloperProfile,
+  listDeveloperProfiles,
+  setDeveloperActive as setDeveloperActiveRow,
+} from "@/repositories/admin-profile.repository.server";
+import { listAllEntitlements } from "@/repositories/developer-intelligence.repository.server";
 export { setDeveloperIntelligenceEntitlement } from "./developer-intelligence.functions";
 
 export interface DeveloperAccount {
@@ -25,14 +31,10 @@ export interface DeveloperAccount {
 export const listDevelopers = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
   .handler(async (): Promise<DeveloperAccount[]> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: devs, error } = await supabaseAdmin
-      .from("admin_profiles")
-      .select("id, email, full_name, is_active, created_at")
-      .eq("role", "developer")
-      .order("created_at", { ascending: false });
-    if (error) throwSafeError("listDevelopers", error, "Could not load developers");
+    const devs = await listDeveloperProfiles();
 
+    // property_submissions (V1) has no local equivalent yet — Phase C scope.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     type CountRow = {
       developer_id: string;
       pending_submissions: number;
@@ -51,54 +53,32 @@ export const listDevelopers = createServerFn({ method: "GET" })
     }
     const countsByDeveloper = new Map((counts ?? []).map((row) => [row.developer_id, row]));
 
-    type EntitlementRow = {
-      developer_id: string;
-      access_level: "trial" | "paid";
-      status: "active" | "suspended";
-      starts_at: string;
-      ends_at: string | null;
-    };
-    const { data: entitlementRows, error: entitlementError } = await (
-      supabaseAdmin as unknown as {
-        from: (table: string) => {
-          select: (columns: string) => Promise<{ data: EntitlementRow[] | null; error: unknown }>;
-        };
-      }
-    )
-      .from("developer_intelligence_entitlements")
-      .select("developer_id, access_level, status, starts_at, ends_at");
-    if (entitlementError) {
-      throwSafeError(
-        "listDevelopers.entitlements",
-        entitlementError,
-        "Could not load intelligence access",
-      );
-    }
-    const entitlements = new Map((entitlementRows ?? []).map((row) => [row.developer_id, row]));
+    const entitlementRows = await listAllEntitlements();
+    const entitlements = new Map(entitlementRows.map((row) => [row.developerId, row]));
     const now = Date.now();
 
-    return (devs ?? []).map((d) => {
+    return devs.map((d) => {
       const counts = countsByDeveloper.get(d.id);
       const entitlement = entitlements.get(d.id);
       const active = Boolean(
         entitlement &&
         entitlement.status === "active" &&
-        new Date(entitlement.starts_at).getTime() <= now &&
-        (!entitlement.ends_at || new Date(entitlement.ends_at).getTime() > now),
+        entitlement.startsAt.getTime() <= now &&
+        (!entitlement.endsAt || entitlement.endsAt.getTime() > now),
       );
       return {
         id: d.id,
         email: d.email,
-        fullName: d.full_name,
-        isActive: d.is_active,
-        createdAt: d.created_at,
+        fullName: d.fullName,
+        isActive: d.isActive,
+        createdAt: d.createdAt.toISOString(),
         pendingSubmissions: Number(counts?.pending_submissions ?? 0),
         totalSubmissions: Number(counts?.total_submissions ?? 0),
         intelligence: {
-          accessLevel: entitlement?.access_level ?? null,
-          status: entitlement?.status ?? "missing",
-          startsAt: entitlement?.starts_at ?? null,
-          endsAt: entitlement?.ends_at ?? null,
+          accessLevel: (entitlement?.accessLevel as "trial" | "paid" | undefined) ?? null,
+          status: (entitlement?.status as "active" | "suspended" | undefined) ?? "missing",
+          startsAt: entitlement?.startsAt.toISOString() ?? null,
+          endsAt: entitlement?.endsAt?.toISOString() ?? null,
           active,
         },
       };
@@ -133,15 +113,14 @@ export const createDeveloper = createServerFn({ method: "POST" })
       throwSafeError("createDeveloper.auth", authError, "Could not create the developer's login");
     }
 
-    const { error: profileError } = await supabaseAdmin.from("admin_profiles").insert({
-      id: created.user.id,
-      role: "developer",
-      email: data.email,
-      full_name: data.fullName,
-      is_active: true,
-      created_by: context.adminProfile.id,
-    });
-    if (profileError) {
+    try {
+      await insertDeveloperProfile({
+        id: created.user.id,
+        email: data.email,
+        fullName: data.fullName,
+        createdBy: context.adminProfile.id,
+      });
+    } catch (profileError) {
       // Don't leave an orphaned auth user behind if the profile insert failed.
       await supabaseAdmin.auth.admin.deleteUser(created.user.id).catch(() => {});
       throwSafeError("createDeveloper.profile", profileError, "Could not create developer profile");
@@ -159,12 +138,6 @@ export const setDeveloperActive = createServerFn({ method: "POST" })
     return { id: data.id, isActive: Boolean(data.isActive) };
   })
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("admin_profiles")
-      .update({ is_active: data.isActive })
-      .eq("id", data.id)
-      .eq("role", "developer");
-    if (error) throwSafeError("setDeveloperActive", error, "Could not update developer");
+    await setDeveloperActiveRow(data.id, data.isActive);
     return { ok: true };
   });
