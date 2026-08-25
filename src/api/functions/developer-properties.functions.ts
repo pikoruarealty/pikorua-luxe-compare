@@ -54,7 +54,8 @@ async function getMyV2Properties(developerId: string): Promise<DeveloperProperty
     .innerJoin(markets, eq(propertyPublicationVersions.marketId, markets.id))
     .where(eq(properties.createdBy, developerId));
 
-  const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+  const text = (value: unknown) =>
+    typeof value === "string" && value.trim() ? value.trim() : null;
   return rows.map((row) => {
     const snapshot = row.snapshot as Record<string, unknown>;
     return {

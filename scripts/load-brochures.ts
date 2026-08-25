@@ -305,7 +305,9 @@ async function publish(plans: Plan[]) {
       );
     }
   }
-  console.log(`\npublished ${published} of ${plans.length}${skipped ? `, ${skipped} already live` : ""}`);
+  console.log(
+    `\npublished ${published} of ${plans.length}${skipped ? `, ${skipped} already live` : ""}`,
+  );
 }
 
 async function main() {
