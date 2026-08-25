@@ -103,10 +103,29 @@ export const properties = pgTable("properties", {
   createdBy: uuid("created_by"),
   currentPublicationVersionId: uuid("current_publication_version_id"),
 });
-export const adminProfiles = pgTable("admin_profiles", {
-  id: uuid("id").primaryKey(),
-  role: text("role").notNull(),
-});
+export const adminProfiles = pgTable(
+  "admin_profiles",
+  {
+    id: uuid("id").primaryKey(),
+    role: text("role").notNull(),
+    email: text("email").notNull().unique(),
+    fullName: text("full_name"),
+    isActive: boolean("is_active").notNull().default(true),
+    // No .references() here: admin_profiles.created_by is self-referencing,
+    // and Drizzle's self-FK typing needs an AnyPgColumn escape hatch the rest
+    // of this file already avoids elsewhere (see publication_versions'
+    // previousVersionId) — the FK still exists at the SQL level.
+    createdBy: uuid("created_by"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "admin_profiles_role_check",
+      sql`${table.role} in ('owner', 'reviewer', 'support', 'developer')`,
+    ),
+  ],
+);
 
 export const developerIntelligenceEntitlements = pgTable(
   "developer_intelligence_entitlements",
@@ -138,11 +157,36 @@ export const developerIntelligenceEntitlements = pgTable(
   ],
 );
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(),
-  phone: text("phone").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  phone: text("phone").notNull().unique(),
   name: text("name"),
+  email: text("email"),
+  profession: text("profession"),
+  businessName: text("business_name"),
+  quizAnswers: jsonb("quiz_answers").$type<Record<string, unknown>>(),
   analyticsOptOut: boolean("analytics_opt_out").notNull().default(false),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
 });
+
+export const customerActivity = pgTable(
+  "customer_activity",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id").references(() => profiles.id, { onDelete: "cascade" }),
+    sessionKey: text("session_key"),
+    eventType: text("event_type").notNull(),
+    propertySlug: text("property_slug"),
+    metadata: jsonb("metadata").notNull().default({}).$type<Record<string, unknown>>(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check(
+      "customer_activity_event_type_check",
+      sql`${table.eventType} in ('signup', 'quiz_completed', 'property_view', 'compare_add', 'compare_open', 'favorite_add', 'contact_click', 'gate_shown', 'gate_unlocked', 'alternative_clicked', 'weighting_changed', 'comparison_feedback')`,
+    ),
+  ],
+);
 
 export const markets = pgTable(
   "markets",

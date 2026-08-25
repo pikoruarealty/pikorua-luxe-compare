@@ -190,14 +190,9 @@ export const logActivity = createServerFn({ method: "POST" })
       const session = await useSession<VisitorSession>(sessionConfig());
       const profileId = session.data?.profileId ?? null;
 
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       if (profileId) {
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("analytics_opt_out")
-          .eq("id", profileId)
-          .maybeSingle();
-        if ((profile as { analytics_opt_out?: boolean } | null)?.analytics_opt_out) {
+        const { getAnalyticsOptOut } = await import("@/repositories/profile.repository.server");
+        if (await getAnalyticsOptOut(profileId)) {
           return { ok: false };
         }
       }
@@ -212,12 +207,14 @@ export const logActivity = createServerFn({ method: "POST" })
           metadata,
         });
       } else {
-        await supabaseAdmin.from("customer_activity").insert({
-          profile_id: profileId,
-          session_key: data.sessionKey,
-          event_type: data.event,
-          property_slug: data.propertySlug,
-          metadata: metadata as never,
+        const { recordActivity } =
+          await import("@/repositories/customer-activity.repository.server");
+        await recordActivity({
+          profileId,
+          sessionKey: data.sessionKey,
+          eventType: data.event,
+          propertySlug: data.propertySlug,
+          metadata,
         });
       }
       return { ok: true };

@@ -3,6 +3,9 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
 const migrationFiles = [
+  "20260625095015_0ccc8fbf-f9df-43c3-9e92-0814360c6a01.sql",
+  "20260719120000_admin_portal_schema.sql",
+  "20260720120000_customer_activity.sql",
   "20260816120000_v2_canonical_foundation.sql",
   "20260816130000_atomic_publication.sql",
   "20260816140000_durable_ocr_uploads.sql",
@@ -21,6 +24,9 @@ const migration = (
 const drizzle = await readFile(resolve(root, "src/db/schema.ts"), "utf8");
 
 const mirroredTables = [
+  "profiles",
+  "admin_profiles",
+  "customer_activity",
   "markets",
   "configuration_options",
   "market_configuration_options",

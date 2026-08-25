@@ -25,23 +25,23 @@ vi.mock("@/server/rate-limit.server", () => ({
   clientIp: async () => "test-ip",
   POLICIES: { ACCOUNT_LOOKUP: {}, LOGIN: {} },
 }));
-vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: {
-    from: () => ({
-      select: () => ({
-        eq: async (_column: string, value: string) => {
-          lookupMethod = "eq";
-          lookupValue = value;
-          return { data: [], error: null };
-        },
-        ilike: async (_column: string, value: string) => {
-          lookupMethod = "ilike";
-          lookupValue = value;
-          return { data: [], error: null };
-        },
-      }),
-    }),
+// checkAccountExists resolves to an exact-equality Drizzle lookup (findProfilesByEmail /
+// findProfilesByPhone, both `eq()` under the hood) — this test guards that no wildcard-style
+// pattern match (e.g. ilike) is ever reachable from a caller-supplied identity.
+vi.mock("@/repositories/profile.repository.server", () => ({
+  findProfilesByEmail: async (value: string) => {
+    lookupMethod = "email";
+    lookupValue = value;
+    return [];
   },
+  findProfilesByPhone: async (value: string) => {
+    lookupMethod = "phone";
+    lookupValue = value;
+    return [];
+  },
+}));
+vi.mock("@/repositories/customer-activity.repository.server", () => ({
+  recordActivity: async () => {},
 }));
 
 async function call(data: unknown) {
@@ -61,7 +61,7 @@ describe("exact email identity lookup", () => {
 
   it("uses an exact lookup for a normalized address", async () => {
     await call({ channel: "email", identity: "Buyer@Example.com" });
-    expect(lookupMethod).toBe("eq");
+    expect(lookupMethod).toBe("email");
     expect(lookupValue).toBe("buyer@example.com");
   });
 });

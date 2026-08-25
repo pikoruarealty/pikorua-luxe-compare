@@ -1,8 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { throwSafeError } from "@/lib/safe-error";
 import type { PendingSession, VisitorSession } from "@/server/session.server";
+import {
+  findProfilesByEmail,
+  findProfilesByPhone,
+  getProfileById,
+  insertProfile,
+  updateProfile as updateProfileRow,
+  updateQuizAnswers,
+  upsertProfileByPhone,
+  type ProfileRow,
+} from "@/repositories/profile.repository.server";
+import { recordActivity } from "@/repositories/customer-activity.repository.server";
 
 export interface QuizAnswersDTO {
   state?: string;
@@ -86,23 +96,15 @@ async function verifyEmailToken(token?: string | null) {
   return claim?.email ? claim.email.trim().toLowerCase() : null;
 }
 
-function toDTO(row: {
-  id: string;
-  phone: string;
-  name: string | null;
-  email: string | null;
-  profession: string | null;
-  business_name: string | null;
-  quiz_answers: unknown;
-}): ProfileDTO {
+function toDTO(row: ProfileRow): ProfileDTO {
   return {
     id: row.id,
     phone: row.phone,
     name: row.name,
     email: row.email,
     profession: row.profession,
-    businessName: row.business_name,
-    quizAnswers: (row.quiz_answers as QuizAnswersDTO | null) ?? null,
+    businessName: row.businessName,
+    quizAnswers: (row.quizAnswers as QuizAnswersDTO | null) ?? null,
   };
 }
 
@@ -145,35 +147,20 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
       throw new Error("That email doesn't match the one you verified.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
     // Phone is the unique key, so an address already tied to a different
     // number would leave two accounts sharing one login identity.
-    const { data: emailOwners, error: emailOwnersError } = await supabaseAdmin
-      .from("profiles")
-      .select("phone")
-      .eq("email", data.email);
-    if (emailOwnersError) throw new Error("Couldn't check email availability");
-    if ((emailOwners ?? []).some((r) => r.phone !== phone)) {
+    const emailOwners = await findProfilesByEmail(data.email);
+    if (emailOwners.some((r) => r.phone !== phone)) {
       throw new Error("That email is already linked to another account. Try signing in instead.");
     }
 
-    const { data: row, error } = await supabaseAdmin
-      .from("profiles")
-      .upsert(
-        {
-          phone,
-          name: data.name,
-          email: data.email,
-          profession: data.profession,
-          business_name: data.businessName,
-        },
-        { onConflict: "phone" },
-      )
-      .select("id, phone, name, email, profession, business_name, quiz_answers")
-      .single();
-    if (error) throwSafeError("upsertProfileAfterOtp", error, "Failed to save profile");
-    if (!row) throw new Error("Failed to save profile");
+    const row = await upsertProfileByPhone({
+      phone,
+      name: data.name,
+      email: data.email,
+      profession: data.profession,
+      businessName: data.businessName,
+    });
 
     const session = await visitorSession();
     await session.update({ profileId: row.id, phone: row.phone });
@@ -181,9 +168,13 @@ export const upsertProfileAfterOtp = createServerFn({ method: "POST" })
 
     // Record the sign-up for the admin activity view (best-effort).
     try {
-      await supabaseAdmin
-        .from("customer_activity")
-        .insert({ profile_id: row.id, event_type: "signup", metadata: {} as never });
+      await recordActivity({
+        profileId: row.id,
+        sessionKey: null,
+        eventType: "signup",
+        propertySlug: null,
+        metadata: {},
+      });
     } catch {
       // analytics must never block sign-up
     }
@@ -219,33 +210,17 @@ export const upsertPhoneProfileAfterOtp = createServerFn({ method: "POST" })
 
     const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
     await enforce(POLICIES.LOGIN, `ip:${await clientIp()}`);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing, error: existingError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("phone", phone)
-      .maybeSingle();
-    if (existingError)
-      throwSafeError("upsertPhoneProfile.lookup", existingError, "Could not create account");
-    if (existing) throw new Error("This phone already has an account. Sign in instead.");
+
+    const existing = await findProfilesByPhone(phone);
+    if (existing.length > 0) throw new Error("This phone already has an account. Sign in instead.");
 
     if (email) {
-      const { data: emailOwner, error: emailError } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
-      if (emailError)
-        throwSafeError("upsertPhoneProfile.email", emailError, "Could not create account");
-      if (emailOwner) throw new Error("That Google account is already linked. Sign in instead.");
+      const emailOwners = await findProfilesByEmail(email);
+      if (emailOwners.length > 0)
+        throw new Error("That Google account is already linked. Sign in instead.");
     }
 
-    const { data: row, error } = await supabaseAdmin
-      .from("profiles")
-      .insert({ phone, name: data.name, email, profession: null })
-      .select("id, phone, name, email, profession, business_name, quiz_answers")
-      .single();
-    if (error || !row) throwSafeError("upsertPhoneProfile", error, "Could not create account");
+    const row = await insertProfile({ phone, name: data.name, email, profession: null });
 
     const session = await visitorSession();
     await session.update({ profileId: row.id, phone: row.phone });
@@ -282,14 +257,11 @@ export const checkAccountExists = createServerFn({ method: "POST" })
     const { enforce, clientIp, POLICIES } = await import("@/server/rate-limit.server");
     await enforce(POLICIES.ACCOUNT_LOOKUP, `ip:${await clientIp()}`);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const query = supabaseAdmin.from("profiles").select("id");
-    const { data: rows, error } =
+    const rows =
       data.channel === "email"
-        ? await query.eq("email", data.identity)
-        : await query.eq("phone", data.identity);
-    if (error) throwSafeError("checkAccountExists", error, "Could not check account");
-    return { exists: (rows ?? []).length > 0 };
+        ? await findProfilesByEmail(data.identity)
+        : await findProfilesByPhone(data.identity);
+    return { exists: rows.length > 0 };
   });
 
 /** Sign-in step 2: exchange a verified-channel proof for a real session.
@@ -308,17 +280,9 @@ export const completeLogin = createServerFn({ method: "POST" })
     const email = phone ? null : await verifyEmailToken(data.emailToken);
     if (!phone && !email) throw new Error("Verification expired. Please start again.");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const columns = "id, phone, name, email, profession, business_name, quiz_answers";
-    const { data: rows, error } = phone
-      ? await supabaseAdmin.from("profiles").select(columns).eq("phone", phone)
-      : await supabaseAdmin
-          .from("profiles")
-          .select(columns)
-          .eq("email", email as string);
-    if (error) throwSafeError("completeLogin", error, "Could not complete sign-in");
-
-    const matches = rows ?? [];
+    const matches = phone
+      ? await findProfilesByPhone(phone)
+      : await findProfilesByEmail(email as string);
     if (matches.length === 0) {
       throw new Error("No account found. Please sign up first.");
     }
@@ -344,13 +308,8 @@ export const getSessionProfile = createServerFn({ method: "GET" }).handler(async
   const session = await visitorSession();
   const profileId = session.data?.profileId;
   if (!profileId) return null;
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: row, error } = await supabaseAdmin
-    .from("profiles")
-    .select("id, phone, name, email, profession, business_name, quiz_answers")
-    .eq("id", profileId)
-    .maybeSingle();
-  if (error || !row) return null;
+  const row = await getProfileById(profileId);
+  if (!row) return null;
   return toDTO(row);
 });
 
@@ -366,12 +325,7 @@ export const saveQuizAnswers = createServerFn({ method: "POST" })
     const session = await visitorSession();
     const profileId = session.data?.profileId;
     if (!profileId) throw new Error("Not signed in");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({ quiz_answers: data.answers as never })
-      .eq("id", profileId);
-    if (error) throwSafeError("saveQuizAnswers", error, "Could not save preferences");
+    await updateQuizAnswers(profileId, data.answers);
     return { ok: true };
   });
 
@@ -405,13 +359,8 @@ export const updateProfile = createServerFn({ method: "POST" })
     const session = await visitorSession();
     const profileId = session.data?.profileId;
     if (!profileId) throw new Error("Not signed in");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: current, error: currentError } = await supabaseAdmin
-      .from("profiles")
-      .select("email")
-      .eq("id", profileId)
-      .single();
-    if (currentError || !current) throw new Error("Profile not found");
+    const current = await getProfileById(profileId);
+    if (!current) throw new Error("Profile not found");
     if (data.email && data.email !== current.email) {
       const verifiedEmail = await verifyEmailToken(data.emailToken);
       if (verifiedEmail !== data.email) {
@@ -424,27 +373,17 @@ export const updateProfile = createServerFn({ method: "POST" })
     // could type in somebody else's address and take it. That locks the real
     // owner out of email sign-in, because completeLogin refuses to guess
     // between two matches.
-    const emailOwnersResult = data.email
-      ? await supabaseAdmin.from("profiles").select("id").eq("email", data.email)
-      : { data: [], error: null };
-    const { data: emailOwners, error: ownersError } = emailOwnersResult;
-    if (ownersError) throw new Error("Couldn't check that email. Please try again.");
-    if ((emailOwners ?? []).some((r: { id: string }) => r.id !== profileId)) {
+    const emailOwners = data.email ? await findProfilesByEmail(data.email) : [];
+    if (emailOwners.some((r) => r.id !== profileId)) {
       throw new Error("That email is already linked to another account.");
     }
 
-    const { data: row, error } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        name: data.name,
-        email: data.email,
-        profession: data.profession,
-        business_name: data.businessName,
-      })
-      .eq("id", profileId)
-      .select("id, phone, name, email, profession, business_name, quiz_answers")
-      .single();
-    if (error) throwSafeError("updateProfile", error, "Failed to update profile");
+    const row = await updateProfileRow(profileId, {
+      name: data.name,
+      email: data.email,
+      profession: data.profession,
+      businessName: data.businessName,
+    });
     if (!row) throw new Error("Failed to update profile");
     return toDTO(row);
   });

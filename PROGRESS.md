@@ -716,6 +716,81 @@ five-session reporting floor.
 
 ---
 
+## Supabase retirement plan — Phase A (started 2026-08-26)
+
+Separate initiative from the phases above: retiring Supabase entirely (Postgres, Auth, Storage)
+onto the GCP VM's self-hosted Postgres and GCS, in four independently-deployable phases per
+`melodic-petting-codd.md` (owner's plan; not checked into this repo). Full file:line findings
+backing this phase live in `SUPABASE_CUTOVER_NOTES.md` (repo root, untracked scratch notes).
+
+Order is fixed and must not be skipped: **A** (profiles/admin_profiles/customer_activity → local
+Postgres) → **B** (property-images storage → GCS) → **C** (collapse V1/V2 properties, retire
+dead V1 code) → **D** (staff/admin/developer auth rebuild on better-auth). Each phase ships and
+is verified live before the next starts.
+
+### Phase A, sub-phase 1A — schema + non-auth call sites (in progress, not yet deployed)
+
+**Live-schema correction before writing anything:** the plan assumed `admin_profiles`/`profiles`
+needed new columns and a widened `role` CHECK. Queried the actual local dev Postgres schema
+directly first — `ops/db/migrate.sh` replays *all* 24 migration files (not just the 9
+`check-drizzle-schema.ts` tracks), so the physical tables already carry every column the plan
+wanted, including the widened CHECK (`20260816120000_v2_canonical_foundation.sql`). Only
+`src/db/schema.ts`'s Drizzle mirror was a bare stub. This cut the actual migration need down to
+two `DROP TABLE IF EXISTS` statements for confirmed-dead tables.
+
+- `src/db/schema.ts`: widened `adminProfiles` and `profiles` from bare stubs to their full real
+  columns (matching what's already live), added `customerActivity` (previously absent from the
+  Drizzle mirror entirely) with its 12-value event-type CHECK.
+- `scripts/check-drizzle-schema.ts`: registered all three tables' migration files + table names
+  so `bun run db:drift` actually covers them (it silently didn't before).
+- New repositories, all Drizzle-over-`getDatabase()`, no `supabaseAdmin`:
+  `src/repositories/profile.repository.server.ts`,
+  `src/repositories/customer-activity.repository.server.ts`,
+  `src/repositories/admin-profile.repository.server.ts` (the last one is written but **not yet
+  wired in** — see 1B below).
+- Swapped every non-admin `supabaseAdmin.from("profiles"|"customer_activity")` call site onto the
+  new repositories: `src/api/functions/customers.functions.ts`,
+  `src/api/functions/activity.functions.ts`, `src/api/functions/profile.functions.ts` (all 7
+  handlers), `src/server/developer-intelligence-analytics.server.ts`.
+  `customers.functions.ts`'s `getAdminStats` is now a deliberate hybrid — customer/activity
+  counts on local Postgres, `properties`/`property_submissions` counts stay on `supabaseAdmin`
+  until Phase C.
+- `src/api/functions/profile-email.functions.test.ts` updated to mock the new repository
+  functions instead of `supabaseAdmin`; still asserts the same thing (an exact-equality lookup,
+  never a wildcard-style pattern match).
+- New migration `supabase/migrations/20260826120000_drop_dead_identity_tables.sql`: drops
+  `profile_email_conflicts` (one-time audit artifact from the 2026-08-14 email-uniqueness
+  migration, job already done) and `field_provenance` (schema for a feature that was never wired
+  up, zero inserts ever). Both confirmed dead by grepping `src/` and `scripts/` for every
+  reference. **Destructive — not yet run against any live database. Needs explicit owner
+  sign-off before this ships**, even though both tables are confirmed dead, per the standing
+  rule on hard-to-revert steps.
+
+**Deliberately left alone, deferred to 1B:** `admin_profiles` reads/writes.
+`admin-auth-middleware.ts`'s role lookup, and `admin-developers.functions.ts`
+(`listDevelopers`/`createDeveloper`/`setDeveloperActive`) all key off the *same id* as the
+Supabase Auth user (`createDeveloper` literally does `supabaseAdmin.auth.admin.createUser()` then
+inserts `admin_profiles` with that user's id). Moving any of this to local Postgres before local
+`admin_profiles` has been backfilled with matching ids would either orphan new developer accounts
+or lock out real staff logins on deploy. 1B is: write `scripts/backfill-local-identity.ts`
+(idempotent, dry-run default, reports id conflicts rather than overwriting — known conflict case:
+`scripts/load-brochures.ts`'s synthetic `brochure-reviewer@pikorua.dev`/`owner@propcompare.local`
+rows already exist locally with different ids than their real hosted-Supabase counterparts), run
+it on the VM, verify, *then* wire `admin-profile.repository.server.ts` into
+`admin-auth-middleware.ts` and `admin-developers.functions.ts` as its own commit/deploy.
+
+**Verification (1A only, local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+138/138 (28 files), `bun run db:drift` clean (40 mirrored tables). `bun run check` was not used
+as the verification gate here — `check-brochures.ts` (one of its five sub-scripts) is
+independently red on unmodified `main` (an "unparsed sizes: 3, up from 2" OCR-corpus regression,
+confirmed pre-existing by stashing this session's changes and getting byte-identical output) —
+unrelated to this work, tracked separately, not blocking this phase.
+
+**Still open before 1A can deploy:** owner sign-off on the `DROP TABLE` migration; commit and
+push.
+
+---
+
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
 
 - No exact price on any consumer surface, ever. No published claim without a traceable

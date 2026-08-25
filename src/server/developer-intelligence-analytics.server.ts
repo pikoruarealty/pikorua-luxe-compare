@@ -150,19 +150,17 @@ export async function getLocalBehaviour(
   now = new Date(),
 ) {
   const { previousStart } = reportingPeriods(now);
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("customer_activity")
-    .select("event_type, profile_id, session_key, metadata, created_at")
-    .in("event_type", ["compare_open", "comparison_feedback"])
-    .gte("created_at", previousStart.toISOString())
-    .lt("created_at", now.toISOString());
-  if (error) throw new Error("Could not load local product analytics");
-  const events: RawIntelligenceEvent[] = (data ?? []).map((row) => ({
-    eventName: row.event_type as RawIntelligenceEvent["eventName"],
-    actorKey: row.profile_id ?? row.session_key,
-    occurredAt: row.created_at,
-    metadata: (row.metadata ?? {}) as Record<string, unknown>,
+  const { getBehaviourEvents } = await import("@/repositories/customer-activity.repository.server");
+  const rows = await getBehaviourEvents(
+    ["compare_open", "comparison_feedback"],
+    previousStart,
+    now,
+  );
+  const events: RawIntelligenceEvent[] = rows.map((row) => ({
+    eventName: row.eventType as RawIntelligenceEvent["eventName"],
+    actorKey: row.profileId ?? row.sessionKey,
+    occurredAt: row.createdAt.toISOString(),
+    metadata: row.metadata,
   }));
   return aggregateBehaviour(events, targetSlug, propertyBudgetBandId, now);
 }
