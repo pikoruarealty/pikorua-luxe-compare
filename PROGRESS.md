@@ -786,8 +786,20 @@ independently red on unmodified `main` (an "unparsed sizes: 3, up from 2" OCR-co
 confirmed pre-existing by stashing this session's changes and getting byte-identical output) —
 unrelated to this work, tracked separately, not blocking this phase.
 
-**Still open before 1A can deploy:** owner sign-off on the `DROP TABLE` migration; commit and
-push.
+Owner signed off on the `DROP TABLE` migration (drop both, recommended). Committed and pushed to
+`main` (commit `2936765`); the CI-gated `deploy-shared-vm.yml` workflow deployed it automatically.
+
+**Post-deploy verification (2026-08-26) — passed:**
+- `supabase_migrations.schema_migrations` shows `20260826120000` applied at `2026-08-25 20:01:40 UTC`.
+- `\dt public.profile_email_conflicts` / `\dt public.field_provenance` both report no such relation —
+  both dead tables are gone.
+- `docker compose ... ps`: `db` healthy (32h uptime, unaffected — migration ran via a throwaway
+  container, not a restart), `web-blue` healthy (3 min old container — picked up the new image),
+  `ocr-api`/`ocr-worker` healthy.
+
+**1A is done and live.** Next: write `scripts/backfill-local-identity.ts` and ship 1B
+(`admin_profiles` → local Postgres, wiring `admin-auth-middleware.ts` and
+`admin-developers.functions.ts`), which finishes Phase A.
 
 ---
 
