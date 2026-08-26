@@ -1380,7 +1380,7 @@ C4 only wires the two paths the current screen actually has.
 tests — no new pure-domain logic, all reused repository functions already covered), `bun run db:drift`
 clean at 41 tables. No migration, no deploy changes.
 
-#### C7 — map free-text amenities onto `amenity_catalog` (code shipped local, live backfill not yet run)
+#### C7 — map free-text amenities onto `amenity_catalog`, then OCR-priority re-enrichment (code shipped local, live run not yet applied)
 
 `property_amenities` has been schema-complete since the C1-era `canonical_dictionary` migration but had
 **zero producers** — nothing ever wrote a row. It is not dead code: `public-detail.repository.server.ts`'s
@@ -1441,9 +1441,58 @@ backfill, per the standing "confirm before a live-data write" rule.
 
 **Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 153/153 (9 new,
 `amenity-mapping.test.ts`), `bun run db:drift` clean at 41 tables. No migration — `property_amenities`
-and `amenity_catalog` already existed with no schema change needed. **Not yet applied against
-production** — code is committed/pushed; the live backfill of the 24 properties is a separate, explicitly
-confirmed step still pending.
+and `amenity_catalog` already existed with no schema change needed.
+
+**Production dry run of `backfill-amenities.ts` (VM) found the plan itself was wrong, not just the
+code.** 22 of 24 properties would republish with amenity matches, 2 (`amaris`, `rashmi-skyscape`) skipped
+as having zero amenities — but the owner flagged `amaris` specifically: its OCR extraction has 87
+amenities, not 0. Investigation (read-only, `supabaseAdmin` queries against V1) proved **100% of the 24
+properties' live `presentation` block is sourced from V1 Supabase's own columns**, not from the richer
+OCR job files (`property-ocr-suite/backend/storage/jobs/*.json`) — every one of the 24 V1 `amenities`
+column counts matched the dry run's matched+unmatched sum exactly. Root cause: C6's
+`republish-with-presentation.ts` (`presentationFromV1()`) never touched OCR data at all. V1 is
+column-thin and stale; the OCR extractions are richer and already human-reviewed. Confirmed with the
+owner via `AskUserQuestion` (twice, given the scope kept growing): OCR should be priority for
+**everything** a revision holds — not just amenities — falling back to whatever's live only where OCR
+found nothing, using OCR's plain `found` flag as the bar (not a confidence/validation_warning gate), and
+including identity fields (name/developer/category/location/city/state) and configuration variants, with
+a per-property review dump for configs since variant-matching is fuzzier than a scalar swap. The plain
+`backfill-amenities.ts --apply` run originally planned here is **paused**, not proceeding — running it
+now would lock in V1-sourced content this discovery already disproved as the better source.
+
+**Shipped, C7 follow-up — `scripts/enrich-from-ocr.ts`:** per property, turns the current live revision
+back into form shape (`buildFormValuesFromRevision`, C3a's reverse mapper), finds its OCR job file by
+loose name match (same `dedupeKey` as `load-brochures.ts`), runs it through `mapExtractedPayload` (which
+returns only fields OCR actually found), and merges `{ ...currentFormValues, ...ocrPartial }` — a plain
+object spread, so any field with no OCR mapping at all (`gallery`, `presentation.possessionAsOf` — brochures
+never print it, confirmed 0/29 jobs; its real source is `possessionConfirmedAsOf` off the RERA record via
+`scripts/rera-enrich.ts`) survives unconditionally as whatever's live today. `configs` is the one
+coarse-grained field — OCR matching any BHK variant replaces the whole `configs` object, all buckets, no
+per-variant merge — so every run writes a full old/new diff dump per property to
+`property-ocr-suite/backend/storage/ocr-enrichment-review/<slug>.json` (gitignored, same as
+`publication-plan/`) for a human skim before `--apply`. Republishes through the real state machine
+(`saveDeveloperRevision` → `submitDeveloperWorkflow` → `publishWorkflow`), same as C6 and
+`backfill-amenities.ts`. Because `publishWorkflow` already maps `presentation.amenities` on every publish
+(C7 above), a property this script enriches gets its `property_amenities` rows as a side effect —
+`backfill-amenities.ts` is now only needed for a property this script skips (no OCR match, or a merge/
+validation failure).
+
+**Local dry run of both scripts found all 24 local-DB properties' current revisions fail today's schema
+parse** (missing `details.registeredCompletionDateRera`/`registeredCompletionDateReraState`/
+`constructionProgressRera`/`constructionProgressReraState` — fields added in `4b4a550`, well before C6).
+This is very likely a **local-only staleness artifact**, not a production risk: C6's own script makes the
+identical unguarded `publicationRevisionSchema.parse(revision.payload)` call, and it published 24 of 24
+against production with 0 failures — if production's revisions had the same gap, that run would have
+thrown the same error and it did not. The local dev Postgres was seeded once (`load-brochures.ts`) before
+that schema addition and has never been kept in sync since.
+
+**Verification (local, `enrich-from-ocr.ts`):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+153/153 (unchanged — no new domain logic, this is an orchestration script), `bun run db:drift` clean at 41
+tables.
+
+**Not yet run against production** — plan is to dry-run `enrich-from-ocr.ts` on the VM (no `--apply`),
+review the per-property diff dumps (especially any `configsChanged: true`) together with the owner, then
+apply only after that explicit confirmation, per the standing "confirm before a live-data write" rule.
 
 ---
 
