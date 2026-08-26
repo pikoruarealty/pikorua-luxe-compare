@@ -941,10 +941,24 @@ before the fix landed): owner uploaded a test image through the admin portal, co
 resulting URL is `https://storage.googleapis.com/project-2f5d7375-d77f-44ae-b19-propcompare-images/...`
 and renders correctly in the browser.
 
-**Next:** B2 (`scripts/migrate-property-images-to-gcs.ts`, not yet written) — backfill existing
-V1/V2 `property-images` URLs from Supabase Storage onto this bucket, using
-`createReviewerCorrection` for already-published V2 snapshots per the plan doc, run on the VM
-against production data, `--dry-run` by default.
+**B2 written 2026-08-26** (`scripts/migrate-property-images-to-gcs.ts`, `tsc`/lint/`db:drift`
+clean) — backfills existing Supabase-Storage-hosted images onto this bucket for both V1
+(`properties.image_url`/`gallery`, written back via supabase-js) and V2
+(`propertyPublicationVersions.publicSnapshot.heroImageUrl`, the only image field V2's real
+publication schema has). Dry-run by default; `--apply` to write.
+
+Deviates from the plan doc's literal wording: the plan says to use `createReviewerCorrection` for
+already-published V2 snapshots, but that function requires an active `"in_review"` workflow state,
+which doesn't exist for these properties (they're already `"published"`; the retroactive-review
+step that would open one is Phase C6, not started). Went with a direct update of `heroImageUrl`
+inside the current `propertyPublicationVersions.publicSnapshot` JSONB row instead — relocating where
+a file is hosted isn't a content edit, so it doesn't need a new version or a review workflow. Only
+the *current* publication version per property is touched; older versions keep their original URLs
+(harmless until Supabase Storage is torn down in Phase D).
+
+Not yet run anywhere. Next: dry-run locally against dev data, then hand the user exact commands to
+run `--apply` on the VM against production (no direct VM access — commands only, real output
+required back).
 
 ### Deploy pipeline fix — build in CI, push to Artifact Registry (shipped and verified live) — 2026-08-26
 
