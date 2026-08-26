@@ -1333,6 +1333,53 @@ tests — no new pure-domain logic, just repository plumbing reusing already-tes
 db:drift` clean at 41 tables. No migration, no deploy changes — application code only, so nothing new
 to verify live beyond the existing CI deploy.
 
+#### C4 — V2-native admin review queue (local, 2026-08-26)
+
+C3b gave developers a way to submit V2 edits, but nothing could act on them: `admin-submissions.functions.ts`
+only ever read/wrote V1's `property_submissions`, so every C3b submission landed in `property_submission_workflows`
+as `in_review` with no reviewer able to see it.
+
+**One merged queue, not two screens.** `src/routes/admin.submissions.tsx` and
+`src/api/queries/submissions.queries.ts` needed **zero changes** — both already treat a submission's
+`id` as an opaque string. The fix is entirely in `admin-submissions.functions.ts`: a `v2:`-prefixed id
+(stapled onto `property_submission_workflows.id`) is how `getSubmission`/`approveSubmission`/
+`rejectSubmission` tell the two systems apart server-side; the frontend never needs to know.
+
+**Shipped, all in `src/api/functions/admin-submissions.functions.ts`:**
+- **`listV2Submissions`** — reads `property_submission_workflows` in `in_review`/`rejected`/`published`
+  (the only persisted states reachable in this synchronous-only release; `draft` never got submitted),
+  batch-joins each workflow's current-revision payload for the property name and its latest
+  `review_actions` row for the reviewed-note/date, and returns `SubmissionListItem`s with
+  `developerName`/`developerEmail` left blank. `listSubmissions` merges these with V1's rows, resolves
+  *all* developer names/emails together from `admin_profiles` (shared identity, so one lookup covers
+  both), and returns everything newest-first.
+- **`getV2Submission`** — loads the workflow's current revision and runs it through C3a's reverse
+  mapper (`buildFormValuesFromRevision`), so the review dialog's existing `PayloadPreview` — built for
+  V1's flat `PropertyFormValues` — renders a V2 submission with no changes of its own.
+- **`approveSubmission`** — a `v2:` id calls `publishWorkflow` directly. V1's approve path exists
+  because a V1 submission's payload still needs a `properties` row built from it; a V2 revision is
+  already validated and immutable, so publishing an `in_review` workflow *is* the approval, with no
+  separate write step.
+- **`rejectSubmission`** — a `v2:` id calls `adjudicateWorkflow(id, reviewerId, "rejected", note)`,
+  the state-machine transition already written for this in C1's submission-workflow repository. A
+  small pre-check (state must be `in_review`) exists only so an already-reviewed V2 submission fails
+  with the same "This submission has already been reviewed" text V1 gives, instead of the state
+  machine's more technical `Invalid submission transition: ...` message.
+
+**`publishV2Catalogue` stays, deliberately not touched.** It's still how a V1-approved *create* (or an
+edit to a property not yet migrated to V2) gets mirrored into the V2 catalogue — V1 creates aren't
+V2-native yet, so V1's approve path still needs it. It only becomes dead code once creates themselves
+move onto V2 or V1 is retired in C5, whichever comes first — not before.
+
+**No "request changes" action.** `adjudicateWorkflow` supports a `changes_requested` transition (lets
+a developer edit and resubmit the same workflow rather than starting over), but the existing admin UI
+only has Approve/Reject buttons — building that third action is a UI change nobody asked for yet, so
+C4 only wires the two paths the current screen actually has.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 144/144 (no new
+tests — no new pure-domain logic, all reused repository functions already covered), `bun run db:drift`
+clean at 41 tables. No migration, no deploy changes.
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
