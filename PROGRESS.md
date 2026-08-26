@@ -1046,7 +1046,7 @@ happen *last*, after everything else has been live for days. Executing as
 **C1 → C2 → C3a → C6 → C3b → C4 → C7 → C5a → C5b**. C3 split in two because enriching V2's *shape*
 (C3a) has to precede moving any reader or writer onto it, and C6 (republish the 24) was promoted
 ahead of C3b: until the live snapshots actually carry the new fields, nothing downstream can be
-repointed at them. C7 is new — see C3a.
+repointed at them. C7 is new — see C3a. **C1, C2, C3a and C6 are now done — next up is C3b.**
 
 **Three landmines found by checking the plan's assumptions against real code before writing any:**
 1. `submissionTransitions` (`src/domain/publication.ts:198-208`) allows `published → superseded`
@@ -1228,6 +1228,57 @@ Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "###
 ahead, verify B1 live before B2; VM has no direct psql/ssh access — hand over exact copy-paste
 commands and wait for real output; commit/push phase-wise; never add Claude as commit co-author;
 never write session-handoff files — summarize in chat.
+
+#### C6 — republish the 24 live properties onto the enriched V2 schema (deployed, applied and verified live, 2026-08-26)
+
+Publication versions are immutable, so the only way an already-live property gains C3a's
+`presentation` block is a brand-new version pushed through the real state machine —
+`saveDeveloperRevision(developerId, {...revision, presentation}, undefined, propertyId) →
+submitDeveloperWorkflow → publishWorkflow`, attributed to the property's original
+developer/reviewer rather than to whoever runs the script. `scripts/republish-with-presentation.ts`
+(`ff4c4f8`), dry-run by default, idempotent (skips a property whose grafted presentation already
+matches what's live, so a re-run after a partial failure only republishes what's left).
+
+**Matching V1 → V2 by slug found only 12 of 24.** This was the one unverified assumption flagged
+before running anything. `scripts/diagnose-slug-mismatch.ts` (no-op) printed both sides plus a
+normalized-name suggestion for each gap: 7 resolved automatically, 2 more by hand (a dropped brand
+prefix — `luxor`/`satyamev-luxor` — and a superset title —
+`swati-senor-residential-project-at-ambli-road-ahmedabad`/`swati-senor`). `the-capstone` vs
+`capstone` ("The Beaumonde") was confirmed with the owner as the same project renamed.
+
+**`shantigram` and `the-north-park-at-shantigram` looked like they might both be the same V1 row**
+(`northpark`, "The North Park") — V1 had only one name match for two live V2 properties. Rather than
+guess from names, `scripts/diagnose-shantigram.ts` (no-op) pulled each side's RERA registration
+number, and each was looked up directly against GujRERA's public registry
+(`POST /project_reg/public/global-search`, see `scripts/rera-pilot.ts` for the transport — one
+scoped `https.Agent` for this host's legacy TLS renegotiation requirement, no Playwright needed).
+The registry settled it outright: `RAA15538` (shantigram) is registered as **"BELROSA"**, and
+`RAA01824` (the-north-park-at-shantigram) is registered as **"NORTH PARK (Phase-2 and 3)"** — two
+distinct Adani sub-projects sharing the same Shantigram township address, not one duplicated. V1
+turned out to already have a `belrosa` row (Adani Realty, location "Shantigram") that the slug-only
+match had missed entirely. All 12 gaps resolved into a `SLUG_OVERRIDES` map committed in
+`415ea49`, taking the match rate to 24 of 24.
+
+**On publishing without a human clicking approve:** every one of these 24 properties is already
+public via V1 — this republish relocates existing editorial content into V2's snapshot, it does not
+put anything new in front of a visitor that wasn't already live. It also mirrors exactly how these
+24 were originally published: `scripts/load-brochures.ts` calls the identical
+`saveDeveloperRevision → submitDeveloperWorkflow → publishWorkflow` sequence, script-driven, using
+the same two synthetic accounts (`brochure-reviewer@pikorua.dev`, role `developer` — the name is
+misleading, it is the *developer of record*, not a reviewer — and `owner@propcompare.local`, role
+`owner`, which actually approves). There is also, today, no admin UI that could review a
+V2-native `property_submission_workflows` row even if C6 stopped short of publishing —
+`admin-submissions.functions.ts`'s `listSubmissions`/`getSubmission`/`approveSubmission` all read
+exclusively from V1's `property_submissions` table; that queue is exactly what C4 has yet to build.
+
+**Applied against production 2026-08-26**, via the documented `oven/bun:1.3.14-alpine` one-off
+script pattern (`ops/RUNBOOK.md:155-172`; the VM checkout at `/opt/propcompare` was first advanced
+with `git fetch && git reset --hard origin/main` run on the host directly — the runner image has no
+`git` binary, so that step cannot run inside the same container). **Republished 24 of 24, 0
+failures.** Verified live via `psql`: `public_snapshot->>'tagline'`, `->>'status'`,
+`->>'possession'` and the `amenities` array length are populated on spot-checked rows (`shantigram`,
+`the-north-park-at-shantigram`, `the-west-park`) — the presentation fields are spread into
+`public_snapshot`'s top level alongside identity, not nested under a `presentation` key.
 
 ---
 
