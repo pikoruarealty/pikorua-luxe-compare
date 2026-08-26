@@ -892,7 +892,7 @@ assume a local script reaches production, even if it "worked last time." See
 
 Phase A is now fully done and verified live.
 
-### Phase B, sub-phase B1 — new uploads onto GCS (code done, not yet deployed) — 2026-08-26
+### Phase B, sub-phase B1 — new uploads onto GCS (deployed and verified live) — 2026-08-26
 
 Phase B moves `property-images` storage off Supabase Storage onto GCS, split into B1 (new uploads
 go to GCS) and B2 (backfill existing images), mirroring Phase A's 1A/1B split — B1 ships and is
@@ -931,22 +931,22 @@ verified live before B2 touches any existing data.
 (28 files, unchanged count — no new test added, existing coverage adjusted to match the swap),
 `bun run db:drift` clean (40 mirrored tables, no schema touched this phase).
 
-**Manual infra step, not done yet — blocks deploying/verifying B1:**
-1. Create a new GCS bucket (same Mumbai region as `GCS_PRIVATE_SOURCE_BUCKET`), e.g.
-   `propcompare-images-mumbai`.
-2. Grant `allUsers` → `Storage Object Viewer` at the **bucket level** (uniform bucket-level
-   access, not per-object ACLs).
-3. Confirm the VM's attached service account (same one already writing
-   `GCS_PRIVATE_SOURCE_BUCKET`) can write to the new bucket.
-4. Add `GCS_PUBLIC_IMAGES_BUCKET=propcompare-images-mumbai` to the `propcompare-web-env` secret in
-   GCP Secret Manager.
+**Manual infra (all done):** bucket `project-2f5d7375-d77f-44ae-b19-propcompare-images` created in
+Mumbai, `allUsers: Storage Object Viewer` granted at the bucket level, VM service account confirmed
+able to write, `GCS_PUBLIC_IMAGES_BUCKET` added to the `propcompare-web-env` Secret Manager entry.
 
-**Still open after that:** deploy, verify by uploading a test image through both the admin and
-developer flows, confirm it renders from `storage.googleapis.com` with no GCP credentials on the
-requesting machine — then B2 (`scripts/migrate-property-images-to-gcs.ts`, backfilling existing
-V1/V2 image URLs, run on the VM against production data).
+**Deployed and verified live 2026-08-26** (commit `11efb59`, riding on the CI-build/Artifact-
+Registry fix below since the original deploy for this commit, `996a267`, OOM-killed on the VM
+before the fix landed): owner uploaded a test image through the admin portal, confirmed the
+resulting URL is `https://storage.googleapis.com/project-2f5d7375-d77f-44ae-b19-propcompare-images/...`
+and renders correctly in the browser.
 
-### Deploy pipeline fix — build in CI, push to Artifact Registry (blocks B1's deploy) — 2026-08-26
+**Next:** B2 (`scripts/migrate-property-images-to-gcs.ts`, not yet written) — backfill existing
+V1/V2 `property-images` URLs from Supabase Storage onto this bucket, using
+`createReviewerCorrection` for already-published V2 snapshots per the plan doc, run on the VM
+against production data, `--dry-run` by default.
+
+### Deploy pipeline fix — build in CI, push to Artifact Registry (shipped and verified live) — 2026-08-26
 
 The push that should have shipped B1 (`996a267`) instead exposed a pre-existing problem:
 `deploy-shared-vm.yml` builds `web-blue`, `ocr-worker` and `ocr-api` directly on
@@ -979,26 +979,24 @@ shared-VM pipeline instead of designing a new one:
 **Verification (local):** `bunx tsc --noEmit` clean, `bun run lint` clean (no source files
 touched, only workflow YAML and a VM-side shell script).
 
-**Manual steps, not done yet — block this from working on the next push:**
-1. Add two GitHub Actions repo **variables** (Settings → Secrets and variables → Actions →
-   Variables): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` — same values already in the
-   VM's `/run/propcompare/web.env`. (`VITE_STAFF_MFA_ENFORCE` is intentionally skipped — see above.)
-2. Confirm the Artifact Registry repo `propcompare` (region `asia-south1`) exists and the CI
-   deploy service account (`GCP_DEPLOY_SERVICE_ACCOUNT`) can push to it — it already does for
-   `deploy-production.yml`, so likely already fine, just needs a quick check.
-3. Grant the **VM's** service account (`795659717457-compute@developer.gserviceaccount.com`)
-   `roles/artifactregistry.reader` on that same repo — new requirement, the VM has never pulled
-   from Artifact Registry before (it only ever built locally).
-4. Confirm the `gcloud` CLI is installed on the VM (`gcloud auth configure-docker` now runs as
-   part of every deploy) — GCE VMs from a standard image usually have it, but not guaranteed.
-5. Confirm `.env.deploy` on the VM already defines `WEB_BLUE_IMAGE=`, `OCR_WORKER_IMAGE=` and
-   `OCR_API_IMAGE=` lines (even placeholder values) — the deploy script's `sed` replaces existing
-   lines, it does not add new ones.
+**Manual infra (all done):** GitHub Actions repo variables `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` added (`VITE_STAFF_MFA_ENFORCE` intentionally skipped — see above).
+Artifact Registry repo `propcompare` (region `asia-south1`) did not already exist — despite
+`deploy-production.yml` referencing that path, it had apparently never been run/verified against
+real infra — so it was created fresh. Granted `Artifact Registry Writer` on that repo to the CI
+deploy service account (`propcompare-github-deploy@project-2f5d7375-d77f-44ae-b19
+.iam.gserviceaccount.com`) and `Artifact Registry Reader` to the VM's service account
+(`795659717457-compute@developer.gserviceaccount.com`). Confirmed on the VM: `gcloud` 572.0.0
+already installed, and `.env.deploy` already had `WEB_BLUE_IMAGE=`, `OCR_WORKER_IMAGE=`,
+`OCR_API_IMAGE=` placeholder lines for the `sed` to replace.
 
-**Still open after that:** push to `main` (or re-run the workflow) to exercise the new pipeline
-end-to-end, confirm the deploy completes without OOM, then resume B1's live verification.
-Separately unresolved: whether to also resize the VM from 2GB→4GB RAM for runtime headroom under
-real traffic — deferred by the owner in favor of this fix, not decided against.
+**Deployed and verified live 2026-08-26** (commit `11efb59`, pushed after all manual infra above
+was in place): `Deploy (shared VM)` GitHub Actions run completed green end-to-end — `verify` →
+`build-and-push` (three images built in CI, pushed to Artifact Registry) → `deploy` (VM pulled
+them, no local build, no OOM). This was the same push that finally shipped Phase B1 above.
+
+**Open, deferred by owner:** whether to also resize the VM from 2GB→4GB RAM for runtime headroom
+under real traffic — not decided against, just not blocking this fix.
 
 Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
 (`property-images` → GCS)" section. Standing rules still apply: exact phase order, no skipping
