@@ -160,9 +160,20 @@ async function main() {
     const workflowIds = sql`(select id from property_submission_workflows where property_id in ${ids})`;
 
     const counts: Record<string, number> = {};
+    // postgres-js (not node-postgres) is the driver here — see
+    // src/db/client.server.ts. Its result is an *array* carrying the affected
+    // row count on `.count`; `.rowCount` is node-postgres's spelling and is
+    // simply undefined, which read as "0 rows deleted" and tripped the
+    // assertion below on the first real run. Both are accepted so this can't
+    // silently under-report again if the driver is ever swapped.
+    const affected = (result: unknown): number => {
+      const r = result as { count?: unknown; rowCount?: unknown };
+      if (typeof r.count === "number") return r.count;
+      if (typeof r.rowCount === "number") return r.rowCount;
+      throw new Error("Could not read affected row count from the database driver");
+    };
     const run = async (label: string, statement: ReturnType<typeof sql>) => {
-      const result = await tx.execute(statement);
-      counts[label] = result.rowCount ?? 0;
+      counts[label] = affected(await tx.execute(statement));
     };
 
     // 20260816130000_atomic_publication.sql puts a BEFORE UPDATE OR DELETE
