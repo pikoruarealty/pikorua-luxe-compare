@@ -27,9 +27,9 @@
  *   bun scripts/backfill-brochure-jobs.ts           # dry run
  *   bun scripts/backfill-brochure-jobs.ts --apply   # writes
  */
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client.server";
-import { brochureJobs } from "@/db/schema";
+import { adminProfiles, brochureJobs } from "@/db/schema";
 
 const APPLY = process.argv.includes("--apply");
 
@@ -59,19 +59,23 @@ async function main() {
   // The admin_profile_id FK is ON DELETE CASCADE and NOT NULL — an insert for
   // an owner that doesn't exist locally would fail the whole batch, so check
   // up front and report instead.
+  //
+  // Via the query builder, not db.execute + `any(${ids})`: drizzle binds a JS
+  // array as a single parameter, and postgres-js sends it as a scalar, so
+  // `any()` receives a bare UUID string and Postgres rejects it as a malformed
+  // array literal. `inArray` expands to a real IN list.
   const ownerIds = [...new Set(rows.map((row) => row.admin_profile_id))];
-  const localOwners = (await db.execute(
-    sql`select id from admin_profiles where id = any(${ownerIds})`,
-  )) as unknown as { id: string }[];
+  const localOwners = await db
+    .select({ id: adminProfiles.id })
+    .from(adminProfiles)
+    .where(inArray(adminProfiles.id, ownerIds));
   const known = new Set(localOwners.map((row) => row.id));
 
   const insertable = rows.filter((row) => known.has(row.admin_profile_id));
   const orphaned = rows.filter((row) => !known.has(row.admin_profile_id));
 
-  const existing = (await db.execute(sql`select job_id from brochure_jobs`)) as unknown as {
-    job_id: string;
-  }[];
-  const alreadyLocal = new Set(existing.map((row) => row.job_id));
+  const existing = await db.select({ jobId: brochureJobs.jobId }).from(brochureJobs);
+  const alreadyLocal = new Set(existing.map((row) => row.jobId));
   const fresh = insertable.filter((row) => !alreadyLocal.has(row.job_id));
 
   console.log(
