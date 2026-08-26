@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client.server";
 import {
+  amenityCatalog,
   auditEvents,
   cacheInvalidationOutbox,
   commercialTerms,
@@ -10,6 +11,7 @@ import {
   configurationVariantRooms,
   configurationVariants,
   properties,
+  propertyAmenities,
   propertyAssets,
   propertyPublicationDetails,
   propertyPublicationVersions,
@@ -18,6 +20,7 @@ import {
   publicationAssets,
   reviewActions,
 } from "@/db/schema";
+import { matchAmenities, mergeAmenitiesOther } from "@/domain/amenity-mapping";
 import { calculatePrivatePriceBounds } from "@/domain/private-pricing.server";
 import {
   assertSubmissionTransition,
@@ -151,6 +154,28 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
       .returning({ id: propertyPublicationVersions.id });
     if (!publication) throw new Error("Could not create publication version");
 
+    const catalogRows = await tx
+      .select({ code: amenityCatalog.code, displayName: amenityCatalog.displayName })
+      .from(amenityCatalog);
+    const { matched: matchedAmenities, unmatched: unmatchedAmenities } = matchAmenities(
+      revision.presentation.amenities,
+      catalogRows,
+    );
+    const mergedAmenitiesOther = mergeAmenitiesOther(
+      revision.details.amenitiesOther,
+      unmatchedAmenities,
+    );
+    if (matchedAmenities.length) {
+      await tx.insert(propertyAmenities).values(
+        matchedAmenities.map((match) => ({
+          publicationVersionId: publication.id,
+          amenityCode: match.code,
+          displayName: match.rawText,
+          valueState: "stated" as const,
+        })),
+      );
+    }
+
     await tx.insert(propertyPublicationDetails).values({
       publicationVersionId: publication.id,
       plotSizeValue: revision.details.plotSizeValue?.toString() ?? null,
@@ -209,7 +234,7 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
       registeredCompletionDateReraState: revision.details.registeredCompletionDateReraState,
       constructionProgressRera: revision.details.constructionProgressRera,
       constructionProgressReraState: revision.details.constructionProgressReraState,
-      amenitiesOther: revision.details.amenitiesOther,
+      amenitiesOther: mergedAmenitiesOther,
     });
 
     for (const [sortOrder, configuration] of revision.configurations.entries()) {

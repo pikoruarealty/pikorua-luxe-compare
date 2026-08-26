@@ -149,12 +149,12 @@ const publicationPresentationSchema = z
         masterBedroom: z.string().url().nullable(),
       })
       .strict(),
-    /** Free text, matching how V1 stores them. The canonical home is
-     *  `property_amenities` against the `amenity_catalog` controlled
-     *  vocabulary, which has had zero producers since it was created — mapping
-     *  these strings onto those codes is its own sub-phase (C7). Carrying them
-     *  verbatim here loses nothing in the meantime and does not make amenity
-     *  comparability any worse than it already is. */
+    /** Free text, matching how V1 stores them. `publishWorkflow` maps these
+     *  onto `amenity_catalog` codes into `property_amenities` (see
+     *  `src/domain/amenity-mapping.ts`, C7); unmatched strings fall through
+     *  into `amenitiesOther` instead of being dropped. This field itself is
+     *  still carried verbatim into the snapshot as the developer's source of
+     *  truth for what to re-match on a future re-publish. */
     amenities: z.array(z.string().trim().min(1).max(200)).max(100),
     advantages: z.array(z.string().trim().min(1).max(200)).max(100),
   })

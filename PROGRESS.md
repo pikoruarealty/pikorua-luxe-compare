@@ -1380,6 +1380,71 @@ C4 only wires the two paths the current screen actually has.
 tests — no new pure-domain logic, all reused repository functions already covered), `bun run db:drift`
 clean at 41 tables. No migration, no deploy changes.
 
+#### C7 — map free-text amenities onto `amenity_catalog` (code shipped local, live backfill not yet run)
+
+`property_amenities` has been schema-complete since the C1-era `canonical_dictionary` migration but had
+**zero producers** — nothing ever wrote a row. It is not dead code: `public-detail.repository.server.ts`'s
+`findPublicPropertyDetail` sources its entire `amenities` response field from this table alone (never
+from `public_snapshot.amenities`, the free text that's flowed through since C3a), so every V2 property's
+detail-page amenities section has been rendering empty this whole time, including the 24 C6 republished.
+`comparison.repository.server.ts` also joins it into the comparison matrix's `publicFacts.amenities`.
+
+**Two design forks, both resolved by explicit user decision (`AskUserQuestion`), not a unilateral call:**
+1. **Matching strategy — exact/normalized dictionary**, not fuzzy matching and not a manual-curation
+   admin UI. No new dependency (`fast-levenshtein`/`natural-compare` are eslint's transitive deps only,
+   not real runtime dependencies).
+2. **Timing — map at publish time, backfill the 24 already-live properties via republish** (not
+   publish-time-only with the 24 left ungapped).
+
+**Shipped:**
+- **`src/domain/amenity-mapping.ts`** (pure, no `.server` suffix) — `matchAmenities(rawAmenities, catalog)`
+  normalizes (trim/lowercase/strip punctuation/collapse whitespace) each string and matches first against
+  normalized `amenity_catalog.displayName`s, then a ~70-entry hand-written synonym map built from the
+  real 43-code seed list and observed OCR-extraction variants ("Kid Pool"→`kids_pool`, "Business
+  Center"→`co_working`, "VDP"→`video_door_phone`, "DG Backup"→`power_backup`, …). Anything unmatched is
+  returned as-is, never dropped. `mergeAmenitiesOther(existing, unmatched)` folds the overflow into the
+  existing (developer-typed) `amenitiesOther` free text, deduping case-insensitively so a re-publish of
+  an unchanged revision doesn't pile up the same overflow twice.
+- **`src/domain/amenity-mapping.test.ts`** — 9 cases: exact matches, synonym matches, punctuation/whitespace
+  tolerance, floor-plan-legend noise ("TOILET", "MANAGER CABIN") and uncatalogued items ("Club House")
+  staying unmatched, raw phrasing preserved as the row's `displayName` rather than the canonical name, and
+  `mergeAmenitiesOther`'s null/join/dedupe behavior.
+- **`publishWorkflow`** (`src/repositories/publication.repository.server.ts`) now fetches `amenity_catalog`,
+  runs the matcher against `revision.presentation.amenities` right after the publication-version insert
+  (needs `publication.id`), inserts a `property_amenities` row per match (`displayName` = the developer's
+  original phrase, not the catalog's canonical name — that distinction already existed in the schema),
+  and writes the merged `amenitiesOther` into `property_publication_details` instead of the raw
+  developer-typed value. This runs inside the same transaction as everything else `publishWorkflow` does,
+  so a `property_amenities` gap and its snapshot can never diverge.
+- **`scripts/backfill-amenities.ts`** — cannot reuse `scripts/republish-with-presentation.ts` (C6): that
+  script is idempotent on whether `presentation` changed, and for these 24 properties `presentation` is
+  already current post-C6, so it would skip all 24 and never trigger the new amenity-mapping step. This
+  script instead republishes each live property's *current* revision completely unchanged, purely to run
+  it through the now-upgraded `publishWorkflow`. Skips a property if its current publication version
+  already has `property_amenities` rows (idempotent re-run), if there's nothing to map, or if the current
+  revision fails to parse against today's schema (reported per-property via `safeParse`, not thrown — one
+  bad revision doesn't abort the batch). Dry-run by default, `--apply` to publish, same pattern as C6.
+- Updated the `presentation.amenities` doc comment in `src/domain/publication.ts` — it used to point at
+  C7 as future work; now it points at the mapper.
+
+**Local dry run found all 24 local-DB properties' current revisions fail today's schema parse**
+(missing `details.registeredCompletionDateRera`/`registeredCompletionDateReraState`/
+`constructionProgressRera`/`constructionProgressReraState` — fields added in `4b4a550`, well before C6).
+This is very likely a **local-only staleness artifact**, not a production risk: C6's own script makes the
+identical unguarded `publicationRevisionSchema.parse(revision.payload)` call, and it published 24 of 24
+against production with 0 failures — if production's revisions had the same gap, that run would have
+thrown the same error and it did not. The local dev Postgres was seeded once (`load-brochures.ts`) before
+that schema addition and has never been kept in sync since; this is the same local/production split C6
+itself documented, not something new. **Not yet confirmed against production** — the plan is to dry-run
+`scripts/backfill-amenities.ts` on the VM first (no `--apply`) as a sanity check before running the real
+backfill, per the standing "confirm before a live-data write" rule.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 153/153 (9 new,
+`amenity-mapping.test.ts`), `bun run db:drift` clean at 41 tables. No migration — `property_amenities`
+and `amenity_catalog` already existed with no schema change needed. **Not yet applied against
+production** — code is committed/pushed; the live backfill of the 24 properties is a separate, explicitly
+confirmed step still pending.
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
