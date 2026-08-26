@@ -15,7 +15,11 @@ const BUCKET_TO_KIND: Record<(typeof CONFIG_BUCKETS)[number]["key"], Configurati
   duplex: "duplex",
 };
 
-const ROOM_LABELS = new Set([
+/** The subset of VARIANT_FIELDS that describes a room rather than a
+ *  measurement or a price. Exported so the reverse mapper
+ *  (publication-to-form.server.ts) filters on exactly the same set and the two
+ *  directions can't disagree about which fields round-trip through `rooms`. */
+export const ROOM_LABELS = new Set([
   "livingArea",
   "kitchen",
   "bedroom1",
@@ -326,6 +330,23 @@ export function buildPublicationRevision(
     },
     configurations,
     assetIds: [],
+    presentation: {
+      tagline: nz(values.tagline),
+      status: nz(values.status),
+      possession: nz(values.possession),
+      possessionAsOf: nz(values.possessionAsOf),
+      expertNote: nz(values.expertNote),
+      availableBhkTypes: nz(values.availableBhkTypes),
+      reraUrl: nz(values.reraUrl),
+      gallery: {
+        livingRoom: nz(values.gallery?.livingRoom),
+        pool: nz(values.gallery?.pool),
+        clubhouse: nz(values.gallery?.clubhouse),
+        masterBedroom: nz(values.gallery?.masterBedroom),
+      },
+      amenities: values.amenities.map((entry) => entry.trim()).filter(Boolean),
+      advantages: values.advantages.map((entry) => entry.trim()).filter(Boolean),
+    },
     details: {
       plotSizeValue,
       plotSizeUnit: plotSizeValue !== null ? "sq_ft" : null,

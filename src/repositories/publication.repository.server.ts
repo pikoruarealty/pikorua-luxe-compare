@@ -123,8 +123,15 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
 
     assertSubmissionTransition(workflow.state as SubmissionState, "approved");
     const verifiedAt = new Date();
+    // `presentation` carries the editorial content the public property page
+    // renders (tagline, possession, amenities, gallery, …). It spreads into
+    // the snapshot alongside identity because every V2 reader reaches for one
+    // jsonb blob; keeping it a separate key would mean touching each of them.
+    // Revisions written before C3a parse with an empty presentation default,
+    // so their snapshots simply carry nulls rather than failing to publish.
     const publicSnapshot = {
       ...revision.property,
+      ...revision.presentation,
       verifiedDataCompleteness: calculateVerifiedCompleteness(revision),
       reraManuallyVerified: Boolean(revision.reraVerification),
     };

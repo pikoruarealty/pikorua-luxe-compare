@@ -104,6 +104,77 @@ const configurationRoomSchema = z
   })
   .strict();
 
+/** Editorial and presentational content that the public property page shows
+ *  but the canonical catalogue had nowhere to put.
+ *
+ *  Until Phase C3a these ten fields existed only on V1's flat `properties`
+ *  table: `buildPublicationRevision` dropped every one of them, and
+ *  `publishWorkflow`'s snapshot was `{...revision.property}` — identity
+ *  columns only. That was survivable while the public listing/detail page read
+ *  V1 directly, but it meant V2 could not represent what the site actually
+ *  displays, so V1 could never be retired and any developer editing through V2
+ *  would have published their own tagline, possession and amenities away.
+ *
+ *  These live here rather than on `property` because `property` maps 1:1 onto
+ *  the identity columns `createPropertyIdentity` writes; this is content that
+ *  only ever travels in the jsonb snapshot. Nothing here is a measurement or a
+ *  comparable fact — those all belong in `details` or `configurations`, which
+ *  carry an explicit `*State` field so a gap publishes as `not_stated` rather
+ *  than an inferred value.
+ *
+ *  Optional with a full default, deliberately: publication revisions are
+ *  immutable, so the ones already stored can never gain this key, and
+ *  `publishWorkflow` re-parses stored payloads at publish time
+ *  (publication.repository.server.ts:93). A required field here would break
+ *  every in-flight submission that predates it. */
+const publicationPresentationSchema = z
+  .object({
+    tagline: gatedText(200),
+    status: gatedText(200),
+    /** Free-text duration as the brochure states it ("Dec 2027", "36 months").
+     *  Distinct from `property.possessionDate`, which is a real calendar date
+     *  and is usually null because a brochure rarely prints one. */
+    possession: gatedText(200),
+    /** When the free-text `possession` above was last confirmed accurate, so
+     *  the public site can age it rather than showing it frozen. */
+    possessionAsOf: gatedText(200),
+    expertNote: gatedText(5000),
+    availableBhkTypes: gatedText(200),
+    reraUrl: z.string().url().nullable(),
+    gallery: z
+      .object({
+        livingRoom: z.string().url().nullable(),
+        pool: z.string().url().nullable(),
+        clubhouse: z.string().url().nullable(),
+        masterBedroom: z.string().url().nullable(),
+      })
+      .strict(),
+    /** Free text, matching how V1 stores them. The canonical home is
+     *  `property_amenities` against the `amenity_catalog` controlled
+     *  vocabulary, which has had zero producers since it was created — mapping
+     *  these strings onto those codes is its own sub-phase (C7). Carrying them
+     *  verbatim here loses nothing in the meantime and does not make amenity
+     *  comparability any worse than it already is. */
+    amenities: z.array(z.string().trim().min(1).max(200)).max(100),
+    advantages: z.array(z.string().trim().min(1).max(200)).max(100),
+  })
+  .strict();
+
+export const emptyPublicationPresentation = (): PublicationPresentation => ({
+  tagline: null,
+  status: null,
+  possession: null,
+  possessionAsOf: null,
+  expertNote: null,
+  availableBhkTypes: null,
+  reraUrl: null,
+  gallery: { livingRoom: null, pool: null, clubhouse: null, masterBedroom: null },
+  amenities: [],
+  advantages: [],
+});
+
+export type PublicationPresentation = z.infer<typeof publicationPresentationSchema>;
+
 export const publicationRevisionSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -161,6 +232,7 @@ export const publicationRevisionSchema = z
       .min(1)
       .max(50),
     assetIds: z.array(z.string().uuid()).max(50),
+    presentation: publicationPresentationSchema.default(emptyPublicationPresentation),
     details: publicationDetailsSchema,
     reraVerification: z
       .object({

@@ -1042,6 +1042,12 @@ deliberately): the plan lists V1 deletion as item 5 of 6, but its own prose says
 happen *last*, after everything else has been live for days. Executing as
 **C1 → C2 → C3 → C4 → C6 → C5a → C5b**, with C5 (V1 retirement) genuinely last.
 
+**Revised again on 2026-08-26 after the C3a discovery below** to
+**C1 → C2 → C3a → C6 → C3b → C4 → C7 → C5a → C5b**. C3 split in two because enriching V2's *shape*
+(C3a) has to precede moving any reader or writer onto it, and C6 (republish the 24) was promoted
+ahead of C3b: until the live snapshots actually carry the new fields, nothing downstream can be
+repointed at them. C7 is new — see C3a.
+
 **Three landmines found by checking the plan's assumptions against real code before writing any:**
 1. `submissionTransitions` (`src/domain/publication.ts:198-208`) allows `published → superseded`
    only. C6 cannot move a published workflow back into review.
@@ -1162,6 +1168,60 @@ complete set.
 **Known short gap, accepted:** between the container swap and the backfill, the resume-extraction
 dropdown read an empty local table and any in-flight job id would have failed its ownership check.
 Nobody was mid-extraction, and the backfill followed immediately.
+
+#### C3a — give V2 somewhere to put the content the public site actually shows (local, 2026-08-26)
+
+**The discovery that forced the split.** Before repointing any reader or writer at V2, I checked
+what V2 can actually represent against what the live public property page renders. It cannot
+represent it. `buildPublicationRevision` silently dropped ten fields — `tagline`, `status`,
+`possession`, `possessionAsOf`, `expertNote`, `gallery` (4 URLs), `amenities[]`, `advantages[]`,
+`availableBhkTypes`, `reraUrl` — and `publishWorkflow`'s `public_snapshot` was
+`{...revision.property}`, i.e. identity columns only. All ten are read from V1 today by
+`src/api/functions/properties.functions.ts:29-184`.
+
+There are genuinely **two live read paths**: V1 serves listing + detail, V2 serves comparison,
+PropScore, recommendations and locations. That is why this went unnoticed — the surfaces reading V2
+never needed a tagline. Consequences if C3 had proceeded as planned: a developer editing through V2
+would have published their own tagline, possession, amenities and gallery away, and C5 could never
+have retired V1 because V1 was still the only home for that content.
+
+**Cost: no migration.** `public_snapshot` and the revision payload are both `jsonb`, so this is a
+contract + mapper change only.
+
+**Shipped:**
+- `publicationPresentationSchema` in `src/domain/publication.ts`, `.strict()`, added to the revision
+  as `presentation` **with a full default** (`emptyPublicationPresentation`). The default is
+  load-bearing, not tidiness: publication revisions are immutable, so stored payloads can never gain
+  the key, and `publishWorkflow` re-parses them at publish time
+  (`publication.repository.server.ts:93`). A required field would have broken every in-flight
+  submission that predates C3a.
+- `buildPublicationRevision` now emits all ten.
+- `publishWorkflow`'s snapshot spreads `...revision.presentation` alongside identity — one jsonb
+  blob, because every V2 reader reaches for exactly one.
+- **`src/domain/publication-to-form.server.ts` — the reverse mapper, written from scratch.** This is
+  landmine 3 above, which the plan doc never budgeted for. Fidelity comes from replaying the raw
+  text the forward mapper preserved (`areas[].rawText`, `rooms[].dimensionRaw`) rather than
+  re-printing parsed numbers: "133.93 SQ.MT." is stored as 1441.6 sq ft, and printing that back into
+  a field the developer last saw as "133.93 SQ.MT." would silently rewrite their own wording.
+  `ROOM_LABELS` was exported from the forward mapper so both directions filter on one set.
+- `src/domain/publication-to-form.test.ts` — 6 tests, the strongest being a **full-field round trip**
+  asserting every form key survives forward-then-back.
+
+**Known-lossy on the round trip, deliberately and asserted in the test:** `state`/`city` (V2 stores
+codes, so the mapper takes display names via a lookup arg), `isPublished` (not a revision concept),
+`servantRoom` prose (V2 reduced it to a boolean, so it returns as "Yes"/"No"), and `plotSize` units
+(the forward mapper ran a unit-unaware `parseNumberOrNull`, so "5 acres" → `5` → `"5"`).
+
+**C7 spun out.** `property_amenities` — V2's normalized amenity home, against the `amenity_catalog`
+controlled vocabulary — has **zero producers**, as its own migration says at
+`20260818120000_canonical_dictionary.sql:210`. Rather than block C3a on building that mapping,
+`presentation.amenities` carries free text exactly as V1 stores it (owner's call: free text now,
+vocabulary within Phase C). This loses nothing today and makes amenity comparability no worse than
+it already is. C7 maps the strings onto catalogue codes and populates `property_amenities`.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 144/144
+(6 new), `bun run db:drift` clean at 41 tables. Nothing is repointed at the new field yet — C3a is
+shape only, so there is no live behaviour change to verify until C6 republishes the 24.
 
 Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
 (`property-images` → GCS)" and "### Phase C" sections. Standing rules still apply: exact phase order, no skipping
