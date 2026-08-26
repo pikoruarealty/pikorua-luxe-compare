@@ -132,10 +132,18 @@ export function matchAmenities(
 
   const matched: AmenityMatch[] = [];
   const unmatched: string[] = [];
+  const matchedCodes = new Set<string>();
   for (const raw of rawAmenities) {
     const key = normalize(raw);
     const code = byNormalizedName.get(key) ?? SYNONYMS[key];
     if (code) {
+      // A brochure often restates one amenity under several phrasings
+      // ("Yoga Zone", "Meditation Zone", "YOGA DECK" all mean yoga_deck).
+      // `property_amenities` has a UNIQUE (publication_version_id,
+      // amenity_code) constraint, so only the first phrasing per code
+      // becomes a row — later restatements are redundant, not new data.
+      if (matchedCodes.has(code)) continue;
+      matchedCodes.add(code);
       matched.push({ code, rawText: raw.trim() });
     } else {
       unmatched.push(raw.trim());

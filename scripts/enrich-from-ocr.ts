@@ -54,6 +54,7 @@
  *
  *   bun scripts/enrich-from-ocr.ts           # dry run, writes review dumps
  *   bun scripts/enrich-from-ocr.ts --apply   # publishes
+ *   bun scripts/enrich-from-ocr.ts --apply --only=slug-a,slug-b   # retry a subset
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -90,6 +91,8 @@ import {
 } from "@/repositories/submission-workflow.repository.server";
 
 const APPLY = process.argv.includes("--apply");
+const onlyArg = process.argv.find((arg) => arg.startsWith("--only="));
+const ONLY = onlyArg ? new Set(onlyArg.slice("--only=".length).split(",")) : null;
 const JOBS_DIR = resolve("property-ocr-suite/backend/storage/jobs");
 const REVIEW_DIR = resolve("property-ocr-suite/backend/storage/ocr-enrichment-review");
 
@@ -214,6 +217,7 @@ async function main() {
     .where(and(eq(properties.isPublished, true), isNotNull(properties.currentPublicationVersionId)))
     .orderBy(properties.slug);
   console.log(`Live V2 properties: ${live.length}`);
+  if (ONLY) console.log(`--only filter: ${[...ONLY].join(", ")}`);
 
   const versionIds = live.map((row) => row.currentVersionId as string);
   const versionRows = await db
@@ -260,6 +264,7 @@ async function main() {
   mkdirSync(REVIEW_DIR, { recursive: true });
 
   for (const property of live) {
+    if (ONLY && !ONLY.has(property.slug)) continue;
     const versionId = property.currentVersionId as string;
     const version = versions.get(versionId);
     if (!version?.sourceRevisionId) {

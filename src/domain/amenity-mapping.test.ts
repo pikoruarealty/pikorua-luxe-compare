@@ -64,6 +64,15 @@ describe("matchAmenities", () => {
     const result = matchAmenities(["Infinity Pool"], catalog);
     expect(result.matched).toEqual([{ code: "swimming_pool", rawText: "Infinity Pool" }]);
   });
+
+  it("dedupes multiple phrasings that map to the same catalog code, keeping the first", () => {
+    const result = matchAmenities(["Yoga Zone", "Gymnasium", "Meditation Zone"], catalog);
+    expect(result.matched).toEqual([
+      { code: "yoga_deck", rawText: "Yoga Zone" },
+      { code: "gym", rawText: "Gymnasium" },
+    ]);
+    expect(result.unmatched).toEqual([]);
+  });
 });
 
 describe("mergeAmenitiesOther", () => {

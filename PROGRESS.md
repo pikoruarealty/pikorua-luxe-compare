@@ -1490,9 +1490,45 @@ that schema addition and has never been kept in sync since.
 153/153 (unchanged — no new domain logic, this is an orchestration script), `bun run db:drift` clean at 41
 tables.
 
-**Not yet run against production** — plan is to dry-run `enrich-from-ocr.ts` on the VM (no `--apply`),
-review the per-property diff dumps (especially any `configsChanged: true`) together with the owner, then
-apply only after that explicit confirmation, per the standing "confirm before a live-data write" rule.
+**Production dry run (VM)** matched all 24 properties, planned to republish all 24, flagged 3
+`configsChanged: true` (`amaris` 17 fields, `shaligram-luxuria` 19, `the-west-park` 14). Reviewed every
+diff before applying: a field-name-only scan across all 24 review dumps found no identity field changed
+anywhere except `city` (`amaris`, `the-bellagio`) — traced through `buildPublicationRevision`
+(`src/domain/publication-mapping.server.ts`) and confirmed `stateCode`/`cityCode` in a published revision
+come only from the fixed enabled-market `lookup`, never from the form's `city`/`state` text, so that diff
+is inert. Full `configs` diffs for the 3 flagged properties showed `shaligram-luxuria` and `the-west-park`
+changing only cosmetically (`price` gaining a "Cr" suffix); `amaris` had one variant where a garbage OCR
+string ("BLOCK-C,D") landed in `area`/`carpet`/`price` fields, traced through `parseNumberOrNull`
+(`publication-mapping.server.ts:37-44`, strips to `null` on no-digit input — identical to the field's
+current live `null`) and confirmed inert. Owner approved `--apply` after this review.
+
+**`--apply` ran 2026-08-26: 19 of 24 published, 5 failed** (`amaris`, `anamika-high-point`, `the-bellagio`,
+`the-park`, `the-west-park`) — all with the same Postgres error on the `property_amenities` insert.
+Root cause: `property_amenities` has a DB-level `UNIQUE (publication_version_id, amenity_code)` constraint
+(`supabase/migrations/20260816120000_v2_canonical_foundation.sql:201`), but `matchAmenities`
+(`src/domain/amenity-mapping.ts`) never deduped by catalog *code* — only by input string. OCR-extracted
+amenity lists frequently restate one amenity under several phrasings (amaris: "Yoga Zone" / "Meditation
+Zone" / "YOGA DECK" all map to `yoga_deck`; anamika-high-point: "Sauna/Steam" / "Steam & Sauna" both map to
+`steam_sauna`), so the batch insert produced two rows with the same `(publication_version_id,
+amenity_code)` pair and the whole insert — and with it the whole `publishWorkflow` transaction — rolled
+back. This is a pre-existing bug in shared production code, not something `enrich-from-ocr.ts` introduced;
+it just never fired before because no prior amenity list had this many near-duplicate phrasings for one
+canonical amenity. **Fixed**: `matchAmenities` now tracks seen codes and keeps only the first phrasing per
+code, folding later restatements away rather than emitting a second row for the same code. Added a
+regression test (`amenity-mapping.test.ts` — "dedupes multiple phrasings that map to the same catalog
+code"). Because `saveDeveloperRevision` is always called with no `workflowId` (creates a fresh workflow
+each run), the 5 failed properties' now-orphaned `in_review` workflows from the rolled-back attempt don't
+block a retry — a fresh workflow starts clean. Also added `--only=slug-a,slug-b` to `enrich-from-ocr.ts` so
+a retry can target exactly the 5 failed properties without pointlessly re-publishing the 19 that already
+succeeded (idempotent-but-wasteful otherwise — those 19 would get a redundant near-zero-diff publication
+version).
+
+**Verification (local, amenity-mapping fix):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
+154/154 (1 new), `bun run db:drift` clean at 41 tables.
+
+**Not yet re-applied for the 5 failed properties** — plan is to push this fix, then run
+`enrich-from-ocr.ts --apply --only=amaris,anamika-high-point,the-bellagio,the-park,the-west-park` on the
+VM and confirm all 5 publish clean.
 
 ---
 
