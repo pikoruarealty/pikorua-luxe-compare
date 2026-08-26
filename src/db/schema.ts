@@ -818,6 +818,28 @@ export const ocrJobs = pgTable("ocr_jobs", {
   updatedAt: updatedAt(),
 });
 
+/** Who started which brochure extraction, so a job id from the OCR service
+ *  can be checked against the developer asking about it. Unrelated to
+ *  `ocr_jobs` above despite the similar name: that one is our own durable
+ *  work queue, this one is a thin ownership record for jobs the external
+ *  extractor service runs and owns.
+ *
+ *  `propertyId` is set once an extraction has actually become a property, so
+ *  the "resume an extraction" picker can hide jobs that are already done —
+ *  before this column existed, every job a developer had ever started stayed
+ *  in that dropdown forever. */
+export const brochureJobs = pgTable("brochure_jobs", {
+  jobId: text("job_id").primaryKey(),
+  adminProfileId: uuid("admin_profile_id")
+    .notNull()
+    .references(() => adminProfiles.id, { onDelete: "cascade" }),
+  // ON DELETE SET NULL, not cascade: if a property is ever removed the
+  // extraction is still a real thing that happened, and the job should return
+  // to the resume list rather than vanish or block the delete.
+  propertyId: uuid("property_id").references(() => properties.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+});
+
 export const ocrExtractionRevisions = pgTable(
   "ocr_extraction_revisions",
   {

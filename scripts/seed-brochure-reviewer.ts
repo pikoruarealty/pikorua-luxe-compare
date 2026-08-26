@@ -101,12 +101,17 @@ async function main() {
   const jobIds = jobIdsOnDisk();
   console.log(`  Found ${jobIds.length} extracted job(s) on disk.`);
 
-  const rows = jobIds.map((job_id) => ({ job_id, admin_profile_id: userId }));
-  if (rows.length > 0) {
-    const { error: jobsError } = await supabase
-      .from("brochure_jobs")
-      .upsert(rows, { onConflict: "job_id" });
-    if (jobsError) throw jobsError;
+  // brochure_jobs moved to local Postgres in Phase C2 — seeding it on Supabase
+  // would leave the resume flow empty, since that's no longer where the app
+  // reads ownership from. The profile above still goes to Supabase because
+  // login/JWT verification stays there until the Phase D auth rebuild.
+  if (jobIds.length > 0) {
+    const { getDatabase } = await import("@/db/client.server");
+    const { brochureJobs } = await import("@/db/schema");
+    await getDatabase()
+      .insert(brochureJobs)
+      .values(jobIds.map((jobId) => ({ jobId, adminProfileId: userId })))
+      .onConflictDoNothing();
   }
 
   console.log("\nDone.");

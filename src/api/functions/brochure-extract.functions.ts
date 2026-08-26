@@ -9,51 +9,11 @@ import type { ExtractionResponse, PropertyExtraction } from "@/lib/brochure-fiel
 const UPLOAD_TICKET_TTL_SECONDS = 900;
 const UPLOAD_TICKET_SCOPE = "upload:";
 
-interface BrochureJobsClient {
-  from: (table: "brochure_jobs") => {
-    insert: (row: { job_id: string; admin_profile_id: string }) => Promise<{
-      error: { message: string } | null;
-    }>;
-    select: (columns: "job_id" | "job_id, created_at") => {
-      eq: (
-        column: "job_id" | "admin_profile_id",
-        value: string,
-      ) => {
-        eq: (
-          column: "admin_profile_id",
-          value: string,
-        ) => {
-          maybeSingle: () => Promise<{
-            data: { job_id: string } | null;
-            error: { message: string } | null;
-          }>;
-        };
-        order: (
-          column: "created_at",
-          opts: { ascending: boolean },
-        ) => Promise<{
-          data: { job_id: string; created_at: string }[] | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-}
-
-async function brochureJobsClient(): Promise<BrochureJobsClient> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as BrochureJobsClient;
-}
-
 async function assertBrochureJobOwner(jobId: string, adminProfileId: string): Promise<void> {
-  const client = await brochureJobsClient();
-  const { data, error } = await client
-    .from("brochure_jobs")
-    .select("job_id")
-    .eq("job_id", jobId)
-    .eq("admin_profile_id", adminProfileId)
-    .maybeSingle();
-  if (error || !data) throw new Error("This brochure job doesn't belong to your account");
+  const { isBrochureJobOwnedBy } = await import("@/repositories/brochure-job.repository.server");
+  if (!(await isBrochureJobOwnedBy(jobId, adminProfileId))) {
+    throw new Error("This brochure job doesn't belong to your account");
+  }
 }
 
 export interface BrochureJobSummary {
@@ -69,22 +29,25 @@ export interface BrochureJobSummary {
  *  of surfacing as an entry the resume flow can't actually load. */
 const JOB_ID_RE = /^[a-f0-9]{12,32}$/;
 
-/** Every job this developer has ever started an extraction for, newest
- *  first — backs the "resume" dropdown so nobody has to know or type a raw
- *  job id. Doesn't distinguish finished-and-submitted jobs from abandoned
- *  ones: nothing in this schema links a job back to the property it became,
- *  so a job stays in this list even after its brochure was submitted. */
+/** The extractions this developer started that haven't become a property
+ *  yet, newest first — backs the "resume" dropdown so nobody has to know or
+ *  type a raw job id. Jobs whose extraction was submitted and published carry
+ *  a `property_id` and drop out of this list; before that column existed
+ *  every job a developer had ever started stayed here forever. */
 export const listBrochureJobs = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
   .handler(async ({ context }): Promise<BrochureJobSummary[]> => {
-    const client = await brochureJobsClient();
-    const { data, error } = await client
-      .from("brochure_jobs")
-      .select("job_id, created_at")
-      .eq("admin_profile_id", context.adminProfile.id)
-      .order("created_at", { ascending: false });
-    if (error) throw new Error("Couldn't load your brochure jobs");
-    const rows = (data ?? []).filter((row) => JOB_ID_RE.test(row.job_id));
+    const { listUnconsumedBrochureJobs } =
+      await import("@/repositories/brochure-job.repository.server");
+    let jobs: { jobId: string; createdAt: Date }[];
+    try {
+      jobs = await listUnconsumedBrochureJobs(context.adminProfile.id);
+    } catch {
+      throw new Error("Couldn't load your brochure jobs");
+    }
+    const rows = jobs
+      .filter((row) => JOB_ID_RE.test(row.jobId))
+      .map((row) => ({ job_id: row.jobId, created_at: row.createdAt.toISOString() }));
 
     // Best-effort: a name is a convenience for telling rows apart, not
     // something the picker should ever fail over. If the OCR service is
@@ -206,12 +169,12 @@ export const createBrochureUploadTicket = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<{ uploadUrl: string; token: string; jobId: string }> => {
     const { baseUrl, apiKey } = serviceConfig();
     const jobId = crypto.randomUUID().replaceAll("-", "").slice(0, 24);
-    const client = await brochureJobsClient();
-    const { error } = await client.from("brochure_jobs").insert({
-      job_id: jobId,
-      admin_profile_id: context.adminProfile.id,
-    });
-    if (error) throw new Error("Couldn't start a brochure extraction job");
+    const { insertBrochureJob } = await import("@/repositories/brochure-job.repository.server");
+    try {
+      await insertBrochureJob(jobId, context.adminProfile.id);
+    } catch {
+      throw new Error("Couldn't start a brochure extraction job");
+    }
     return {
       uploadUrl: `${baseUrl}/api/properties/extract?job_id=${encodeURIComponent(jobId)}`,
       token: await signTicket(apiKey, UPLOAD_TICKET_TTL_SECONDS, `${UPLOAD_TICKET_SCOPE}${jobId}:`),

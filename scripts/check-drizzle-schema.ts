@@ -15,6 +15,7 @@ const migrationFiles = [
   "20260818120000_canonical_dictionary.sql",
   "20260821120000_phase7_developer_intelligence.sql",
   "20260823120000_rera_registered_completion_progress.sql",
+  "20260814120000_brochure_job_ownership.sql",
 ];
 const migration = (
   await Promise.all(
@@ -64,6 +65,7 @@ const mirroredTables = [
   "property_verified_locations",
   "property_connectivity_snapshots",
   "developer_intelligence_entitlements",
+  "brochure_jobs",
 ] as const;
 
 const missing = mirroredTables.filter(
