@@ -165,6 +165,27 @@ async function main() {
       counts[label] = result.rowCount ?? 0;
     };
 
+    // 20260816130000_atomic_publication.sql puts a BEFORE UPDATE OR DELETE
+    // immutability trigger on three of the tables below, so published
+    // versions can never be altered or erased. That guarantee is deliberate
+    // and stays in force for the application — this script suspends it for
+    // exactly one transaction, by name, because these particular rows record
+    // an accidental double-run rather than real editorial history. The
+    // matching `audit_events` rows are deliberately left in place, so the
+    // permanent record that the double-run happened survives the cleanup.
+    //
+    // ALTER TABLE is transactional in Postgres: if anything below throws, the
+    // rollback restores these triggers along with the data. They are also
+    // re-enabled explicitly before the transaction returns.
+    const guarded: [table: string, trigger: string][] = [
+      ["public.property_publication_versions", "immutable_publication_versions"],
+      ["public.property_submission_revisions", "immutable_submission_revisions"],
+      ["private.commercial_terms", "immutable_commercial_terms"],
+    ];
+    for (const [table, trigger] of guarded) {
+      await tx.execute(sql.raw(`alter table ${table} disable trigger ${trigger}`));
+    }
+
     // Depth-first: grandchildren of configuration_variants, then variants,
     // then the publication version's own detail rows, then the versions, then
     // the workflow's revisions/review actions, then the workflows, then the
@@ -226,6 +247,10 @@ async function main() {
         `Deleted ${counts.properties} properties but expected ${EXPECT} — rolling back.`,
       );
     }
+
+    for (const [table, trigger] of guarded) {
+      await tx.execute(sql.raw(`alter table ${table} enable trigger ${trigger}`));
+    }
     return counts;
   });
 
@@ -245,6 +270,32 @@ async function main() {
     `\nAfter cleanup — properties: ${remaining.total} total, ${remaining.live} live, ` +
       `${remaining.orphans} orphan.`,
   );
+
+  // The immutability guarantee must be back in force. 'O' is Postgres's
+  // "enabled, origin" state (the normal one); 'D' means still disabled.
+  const triggerStates = (await db.execute(
+    sql`select tgname, tgenabled from pg_trigger
+        where tgname in (
+          'immutable_publication_versions',
+          'immutable_submission_revisions',
+          'immutable_commercial_terms'
+        )
+        order by tgname`,
+  )) as unknown as { tgname: string; tgenabled: string }[];
+  console.log("\nImmutability triggers:");
+  for (const row of triggerStates) {
+    console.log(
+      `  ${row.tgenabled === "O" ? "enabled " : `DISABLED (${row.tgenabled})`}  ${row.tgname}`,
+    );
+  }
+  const stillDisabled = triggerStates.filter((row) => row.tgenabled !== "O");
+  if (stillDisabled.length > 0) {
+    console.error(
+      `\nWARNING: ${stillDisabled.length} immutability trigger(s) did not come back enabled. ` +
+        `Re-enable them by hand before anything else writes to this database.`,
+    );
+    process.exit(1);
+  }
   console.log("\nDone.");
 }
 
