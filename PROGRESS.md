@@ -892,6 +892,35 @@ assume a local script reaches production, even if it "worked last time." See
 
 Phase A is now fully done and verified live.
 
+### Next: Phase B kickoff (not started)
+
+Phase B moves `property-images` storage off Supabase Storage onto GCS. Confirmed against current
+code (2026-08-26):
+
+- `src/server/gcs.server.ts` already has the ADC-based GCS pattern (`Storage` client,
+  `createPrivatePdfUploadUrl`, `createPrivateReviewEvidenceUploadUrl`, `deletePrivateObject`,
+  `getPrivateObjectMetadata`) — all signed-URL, all against **private** buckets. Phase B needs a
+  **public** upload/serve path (property images are public), which doesn't exist yet — likely a new
+  `uploadPublicObject`-style helper plus a public bucket, rather than reusing the signed-URL
+  helpers as-is.
+- Supabase Storage call sites still to migrate: `src/api/functions/property-images.functions.ts:103-108`
+  (`supabaseAdmin.storage.from("property-images").upload(...)` + `.getPublicUrl(...)`) and
+  `src/api/functions/brochure-extract.functions.ts:470-475` (same pattern, V2 OCR auto-publish path).
+  `src/repositories/engagement.repository.server.ts:532` uses a separate hardcoded
+  `"review-visit-evidence"` bucket — private, already GCS-shaped via
+  `createPrivateReviewEvidenceUploadUrl`, out of scope for this phase.
+- VM already has GCS infra: `GCS_PRIVATE_SOURCE_BUCKET` env var, ADC via the VM's attached service
+  account (no key file), same pattern mirrored in the Python OCR worker
+  (`property-ocr-suite/backend/app/durable_jobs.py`'s `GcsPrivateStorage`). A new **public** bucket
+  and its IAM (public read) will need to be provisioned — likely a manual VM/GCP-console step to
+  hand to the user, same as every other VM-side action this project.
+- Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
+  (`property-images` → GCS)" section.
+- Standing rules still apply: exact phase order, no skipping ahead, verify Phase B live before
+  Phase C; VM has no direct psql/ssh access — hand over exact copy-paste commands and wait for
+  real output; commit/push phase-wise; never add Claude as commit co-author; never write
+  session-handoff files — summarize in chat.
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
