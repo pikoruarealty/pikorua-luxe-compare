@@ -1108,6 +1108,61 @@ counts matched the rehearsal exactly: 109 `configuration_variant_areas`, 910
 `property_submission_workflows`, 23 `properties`. Final state: **24 total, 24 live, 0 orphan**, all
 three immutability triggers reporting enabled.
 
+#### C2 — `brochure_jobs` onto local Postgres (deployed, backfill run 2026-08-26)
+
+`brochure_jobs` (job id → owning developer) was the last table `brochure-extract.functions.ts`
+still reached through supabase-js. The table itself already existed in local Postgres — every
+migration in `supabase/migrations` replays there, `20260814120000_brochure_job_ownership.sql`
+included — so this was a client swap plus one new column, not a table build.
+
+- `supabase/migrations/20260826130000_brochure_jobs_property_link.sql`: adds
+  `brochure_jobs.property_id` (`ON DELETE SET NULL` — a deleted property shouldn't erase the record
+  that an extraction happened, or block the delete) and a partial index on the `property_id IS NULL`
+  side, which is the only side ever queried.
+- `src/db/schema.ts`: new `brochureJobs` table. `src/repositories/brochure-job.repository.server.ts`:
+  `isBrochureJobOwnedBy`, `listUnconsumedBrochureJobs`, `insertBrochureJob`,
+  `markBrochureJobConsumed`.
+- `brochure-extract.functions.ts`: all three Supabase call sites swapped; the hand-rolled
+  `BrochureJobsClient` interface (which existed only to type those three calls) deleted.
+  `listBrochureJobs` now filters consumed jobs in SQL, closing the gap its own doc comment had
+  flagged — previously every extraction a developer ever started stayed in the resume dropdown
+  forever, because nothing linked a job to the property it became.
+- **`markBrochureJobConsumed` is deliberately written but not yet called.** In both V1 and V2 the
+  property row doesn't exist until *approval* (V2 creates it inside `publishWorkflow` via
+  `createPropertyIdentity`), and `submitPropertyForReview` never receives the job id at all. The
+  stamp can only be wired once C3/C4 rebuild the submit/publish path — so until then the column
+  stays NULL for every row and the dropdown behaves exactly as before.
+- `scripts/backfill-brochure-jobs.ts`: copies ownership rows Supabase → local Postgres. Idempotent
+  (keyed on the `job_id` PK), dry-run by default. Skips and reports rows whose `admin_profile_id`
+  has no local `admin_profiles` row rather than failing the whole batch on the FK.
+  `property_id` is left NULL for every backfilled row: nothing in either database records which
+  extraction became which property, and guessing would hide real jobs from the resume list.
+- `scripts/seed-brochure-reviewer.ts` now seeds local Postgres too — it was writing to a table the
+  app no longer reads.
+
+**Second postgres-js driver mismatch, same family as C1's.** The first production dry run failed
+with `malformed array literal`. Drizzle binds a JS array passed into a raw `sql` template as a
+*single* parameter and postgres-js sends it as a scalar, so `any($1)` got a bare UUID string.
+Fixed in `6bc9953` by using the typed query builder's `inArray`, which expands to a real `IN` list.
+Standing lesson from C1 + C2: **raw `sql` templates on postgres-js do not behave the way
+node-postgres habits expect** — prefer the query builder, and never let a driver-shaped result read
+as a benign default.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 138/138,
+`bun run db:drift` clean (now 41 mirrored tables — `brochure_jobs` registered in
+`scripts/check-drizzle-schema.ts`, which had never covered it).
+
+**Deployed 2026-08-26** (`6485b07` + `6bc9953`). The migration applies automatically —
+`ops/deploy-shared-vm.sh:47-50` runs `ops/db/migrate.sh` before the container swap, so C2 needed no
+separate migration step. **Backfill run against production:** 27 Supabase rows, 0 skipped for
+unknown owner, 27 inserted; immediate re-run reported 27 already present / 0 to insert, confirming
+idempotency. That 27 matches the known count of OCR extractions, i.e. the Supabase table was the
+complete set.
+
+**Known short gap, accepted:** between the container swap and the backfill, the resume-extraction
+dropdown read an empty local table and any in-flight job id would have failed its ownership check.
+Nobody was mid-extraction, and the backfill followed immediately.
+
 Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
 (`property-images` → GCS)" and "### Phase C" sections. Standing rules still apply: exact phase order, no skipping
 ahead, verify B1 live before B2; VM has no direct psql/ssh access — hand over exact copy-paste
