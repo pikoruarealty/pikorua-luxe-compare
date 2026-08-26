@@ -913,10 +913,14 @@ verified live before B2 touches any existing data.
   ownership lookup) — that table's move to local Postgres is Phase C2, not this phase.
   `src/repositories/engagement.repository.server.ts:532`'s `"review-visit-evidence"` bucket is
   unrelated (already GCS, private) and untouched.
-- Added `GCS_PUBLIC_IMAGES_BUCKET=propcompare-images-mumbai` to `.env.example`. This var reaches
-  production the same way `GCS_PRIVATE_SOURCE_BUCKET` does — via the `propcompare-web-env` GCP
-  Secret Manager entry `ops/fetch-secrets.sh` pulls down — not any file in this repo, so it needs
-  a manual Secret Manager update, not a code change.
+- Added `GCS_PUBLIC_IMAGES_BUCKET=...` to `.env.example` (placeholder value there is stale — the
+  real bucket, created by the owner during this phase, is
+  `project-2f5d7375-d77f-44ae-b19-propcompare-images`; not yet corrected in the repo). This var
+  reaches production the same way `GCS_PRIVATE_SOURCE_BUCKET` does — via the `propcompare-web-env`
+  GCP Secret Manager entry `ops/fetch-secrets.sh` pulls down — not any file in this repo. The owner
+  has already created the bucket, granted it bucket-level `allUsers: objectViewer`, confirmed the
+  VM's service account can write to it, and added `GCS_PUBLIC_IMAGES_BUCKET` to the
+  `propcompare-web-env` secret — all four manual-infra steps below are done.
 - `property-images.functions.test.ts`'s stale `supabaseAdmin.storage` mock (never actually
   exercised — both existing tests reject before reaching the upload call) replaced with a
   `@/server/gcs.server` mock so it doesn't reference a client the handler no longer imports.
@@ -941,6 +945,57 @@ verified live before B2 touches any existing data.
 developer flows, confirm it renders from `storage.googleapis.com` with no GCP credentials on the
 requesting machine — then B2 (`scripts/migrate-property-images-to-gcs.ts`, backfilling existing
 V1/V2 image URLs, run on the VM against production data).
+
+### Deploy pipeline fix — build in CI, push to Artifact Registry (blocks B1's deploy) — 2026-08-26
+
+The push that should have shipped B1 (`996a267`) instead exposed a pre-existing problem:
+`deploy-shared-vm.yml` builds `web-blue`, `ocr-worker` and `ocr-api` directly on
+`instance-small-mumbai` (2GB RAM, shared with HRM/PropSight, already running `db`/`web-blue`/
+`ocr-api`/`ocr-worker` containers under load). The build deadlocked and was eventually OOM-killed
+(exit 137), confirmed via `free -h`, `docker ps -a`, `top`, `dmesg -T | grep -i "killed process"`,
+and `ps` showing unchanging `TIME` across repeated checks. The repo already had a working
+CI-build-and-push-to-Artifact-Registry pattern in `deploy-production.yml` (a separate,
+manual-only, blue/green pipeline) — this change ports that pattern onto the push-triggered
+shared-VM pipeline instead of designing a new one:
+
+- `.github/workflows/deploy-shared-vm.yml`: split the old single `deploy` job into
+  `build-and-push` (checks out, authenticates via Workload Identity Federation, builds all three
+  images — `web`, `ocr-worker`, `ocr-api` — tagged `asia-south1-docker.pkg.dev/$PROJECT_ID/
+  propcompare/<name>:$GITHUB_SHA`, pushes to Artifact Registry) and `deploy` (unchanged SSH
+  mechanism, now passes the three built image refs as positional args to
+  `ops/deploy-shared-vm.sh`). `web`'s build args (`VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_STAFF_MFA_ENFORCE`) move from VM-local secret files to
+  GitHub Actions repo variables — they're `VITE_`-prefixed (shipped to the browser bundle already,
+  not sensitive) but did not previously exist as GH vars; **owner needs to add them** (see below).
+- `ops/deploy-shared-vm.sh`: now takes `<web-image> <ocr-worker-image> <ocr-api-image>` as
+  positional args, writes them into `.env.deploy` (`sed`, same pattern `ops/deploy-slot.sh` already
+  uses), runs `gcloud auth configure-docker asia-south1-docker.pkg.dev` then `docker compose pull`
+  instead of `docker compose build`. Dropped the now-unneeded `VITE_*` env plumbing and
+  `docker builder prune` (no local build cache left to clean).
+
+**Verification (local):** `bunx tsc --noEmit` clean, `bun run lint` clean (no source files
+touched, only workflow YAML and a VM-side shell script).
+
+**Manual steps, not done yet — block this from working on the next push:**
+1. Add three GitHub Actions repo **variables** (Settings → Secrets and variables → Actions →
+   Variables): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_STAFF_MFA_ENFORCE` —
+   same values already in the VM's `/run/propcompare/web.env`.
+2. Confirm the Artifact Registry repo `propcompare` (region `asia-south1`) exists and the CI
+   deploy service account (`GCP_DEPLOY_SERVICE_ACCOUNT`) can push to it — it already does for
+   `deploy-production.yml`, so likely already fine, just needs a quick check.
+3. Grant the **VM's** service account (`795659717457-compute@developer.gserviceaccount.com`)
+   `roles/artifactregistry.reader` on that same repo — new requirement, the VM has never pulled
+   from Artifact Registry before (it only ever built locally).
+4. Confirm the `gcloud` CLI is installed on the VM (`gcloud auth configure-docker` now runs as
+   part of every deploy) — GCE VMs from a standard image usually have it, but not guaranteed.
+5. Confirm `.env.deploy` on the VM already defines `WEB_BLUE_IMAGE=`, `OCR_WORKER_IMAGE=` and
+   `OCR_API_IMAGE=` lines (even placeholder values) — the deploy script's `sed` replaces existing
+   lines, it does not add new ones.
+
+**Still open after that:** push to `main` (or re-run the workflow) to exercise the new pipeline
+end-to-end, confirm the deploy completes without OOM, then resume B1's live verification.
+Separately unresolved: whether to also resize the VM from 2GB→4GB RAM for runtime headroom under
+real traffic — deferred by the owner in favor of this fix, not decided against.
 
 Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
 (`property-images` → GCS)" section. Standing rules still apply: exact phase order, no skipping

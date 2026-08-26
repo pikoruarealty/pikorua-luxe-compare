@@ -8,8 +8,44 @@ jobs:
   verify:
     uses: ./.github/workflows/ci.yml
 
-  deploy:
+  build-and-push:
     needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
+      - name: Build and push images
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          RELEASE_SHA: ${{ github.sha }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_STAFF_MFA_ENFORCE: ${{ vars.VITE_STAFF_MFA_ENFORCE }}
+        run: |
+          WEB="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/web:$RELEASE_SHA"
+          OCR_WORKER="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-worker:$RELEASE_SHA"
+          OCR_API="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-api:$RELEASE_SHA"
+          docker build \
+            --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
+            --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
+            --build-arg VITE_STAFF_MFA_ENFORCE="$VITE_STAFF_MFA_ENFORCE" \
+            -t "$WEB" .
+          docker build -f property-ocr-suite/backend/Dockerfile.worker -t "$OCR_WORKER" property-ocr-suite/backend
+          docker build -f property-ocr-suite/backend/Dockerfile.api -t "$OCR_API" property-ocr-suite/backend
+          docker push "$WEB"
+          docker push "$OCR_WORKER"
+          docker push "$OCR_API"
+
+  deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,12 +66,16 @@ jobs:
           VM_NAME: ${{ vars.GCP_VM_NAME }}
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           VM_ZONE: ${{ vars.GCP_VM_ZONE }}
+          RELEASE_SHA: ${{ github.sha }}
         run: |
           VM_NAME=$(echo "$VM_NAME" | tr -d '[:space:]')
           PROJECT_ID=$(echo "$PROJECT_ID" | tr -d '[:space:]')
           VM_ZONE=$(echo "$VM_ZONE" | tr -d '[:space:]')
+          WEB="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/web:$RELEASE_SHA"
+          OCR_WORKER="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-worker:$RELEASE_SHA"
+          OCR_API="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-api:$RELEASE_SHA"
           gcloud compute ssh "$VM_NAME" \
             --project "$PROJECT_ID" \
             --zone "$VM_ZONE" \
             --tunnel-through-iap --quiet \
-            --command="sudo bash /opt/propcompare/ops/deploy-shared-vm.sh"
+            --command="sudo bash /opt/propcompare/ops/deploy-shared-vm.sh '$WEB' '$OCR_WORKER' '$OCR_API'"
