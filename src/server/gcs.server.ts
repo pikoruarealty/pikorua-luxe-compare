@@ -46,6 +46,19 @@ export async function createPrivateReviewEvidenceUploadUrl(
   return { url, expiresAt: new Date(expiresAt).toISOString() };
 }
 
+// Public bucket, uploaded directly (no signed URL) — the two callers already
+// receive the image buffer server-side. Public read is granted at the bucket
+// level (allUsers: objectViewer), not per-object, so no ACL call is needed here.
+export async function uploadPublicObject(
+  bucket: string,
+  objectPath: string,
+  buffer: Buffer,
+  contentType: string,
+) {
+  await client().bucket(bucket).file(objectPath).save(buffer, { contentType });
+  return `https://storage.googleapis.com/${bucket}/${objectPath}`;
+}
+
 export async function deletePrivateObject(bucket: string, objectPath: string) {
   await client().bucket(bucket).file(objectPath).delete({ ignoreNotFound: true });
 }

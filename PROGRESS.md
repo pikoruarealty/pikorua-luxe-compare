@@ -892,34 +892,61 @@ assume a local script reaches production, even if it "worked last time." See
 
 Phase A is now fully done and verified live.
 
-### Next: Phase B kickoff (not started)
+### Phase B, sub-phase B1 — new uploads onto GCS (code done, not yet deployed) — 2026-08-26
 
-Phase B moves `property-images` storage off Supabase Storage onto GCS. Confirmed against current
-code (2026-08-26):
+Phase B moves `property-images` storage off Supabase Storage onto GCS, split into B1 (new uploads
+go to GCS) and B2 (backfill existing images), mirroring Phase A's 1A/1B split — B1 ships and is
+verified live before B2 touches any existing data.
 
-- `src/server/gcs.server.ts` already has the ADC-based GCS pattern (`Storage` client,
-  `createPrivatePdfUploadUrl`, `createPrivateReviewEvidenceUploadUrl`, `deletePrivateObject`,
-  `getPrivateObjectMetadata`) — all signed-URL, all against **private** buckets. Phase B needs a
-  **public** upload/serve path (property images are public), which doesn't exist yet — likely a new
-  `uploadPublicObject`-style helper plus a public bucket, rather than reusing the signed-URL
-  helpers as-is.
-- Supabase Storage call sites still to migrate: `src/api/functions/property-images.functions.ts:103-108`
-  (`supabaseAdmin.storage.from("property-images").upload(...)` + `.getPublicUrl(...)`) and
-  `src/api/functions/brochure-extract.functions.ts:470-475` (same pattern, V2 OCR auto-publish path).
-  `src/repositories/engagement.repository.server.ts:532` uses a separate hardcoded
-  `"review-visit-evidence"` bucket — private, already GCS-shaped via
-  `createPrivateReviewEvidenceUploadUrl`, out of scope for this phase.
-- VM already has GCS infra: `GCS_PRIVATE_SOURCE_BUCKET` env var, ADC via the VM's attached service
-  account (no key file), same pattern mirrored in the Python OCR worker
-  (`property-ocr-suite/backend/app/durable_jobs.py`'s `GcsPrivateStorage`). A new **public** bucket
-  and its IAM (public read) will need to be provisioned — likely a manual VM/GCP-console step to
-  hand to the user, same as every other VM-side action this project.
-- Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
-  (`property-images` → GCS)" section.
-- Standing rules still apply: exact phase order, no skipping ahead, verify Phase B live before
-  Phase C; VM has no direct psql/ssh access — hand over exact copy-paste commands and wait for
-  real output; commit/push phase-wise; never add Claude as commit co-author; never write
-  session-handoff files — summarize in chat.
+- `src/server/gcs.server.ts`: added `uploadPublicObject(bucket, objectPath, buffer, contentType)`
+  — direct buffer upload (`.save()`, no signed URL, matching how both callers already receive the
+  image server-side), returns `https://storage.googleapis.com/{bucket}/{objectPath}`. Public read
+  comes from bucket-level `allUsers: objectViewer` IAM (owner's choice — one binding at bucket
+  creation vs. a `.makePublic()` call on every upload), not from this helper.
+- Swapped both Supabase Storage call sites onto it, reading the bucket name from
+  `GCS_PUBLIC_IMAGES_BUCKET` (same env-var-at-call-site convention as
+  `GCS_PRIVATE_SOURCE_BUCKET` in `ocr.repository.server.ts:23`, throws clearly if unset):
+  `src/api/functions/property-images.functions.ts` (`uploadPropertyImage`, now lines 78, 103-109) and
+  `src/api/functions/brochure-extract.functions.ts` (`importBrochureImage`, now lines ~461-474).
+  Both dropped their `supabaseAdmin` import — it was scoped to the handler and used only for
+  storage. `brochure-extract.functions.ts` keeps `supabaseAdmin` elsewhere (the `brochure_jobs`
+  ownership lookup) — that table's move to local Postgres is Phase C2, not this phase.
+  `src/repositories/engagement.repository.server.ts:532`'s `"review-visit-evidence"` bucket is
+  unrelated (already GCS, private) and untouched.
+- Added `GCS_PUBLIC_IMAGES_BUCKET=propcompare-images-mumbai` to `.env.example`. This var reaches
+  production the same way `GCS_PRIVATE_SOURCE_BUCKET` does — via the `propcompare-web-env` GCP
+  Secret Manager entry `ops/fetch-secrets.sh` pulls down — not any file in this repo, so it needs
+  a manual Secret Manager update, not a code change.
+- `property-images.functions.test.ts`'s stale `supabaseAdmin.storage` mock (never actually
+  exercised — both existing tests reject before reaching the upload call) replaced with a
+  `@/server/gcs.server` mock so it doesn't reference a client the handler no longer imports.
+  `brochure-extract.functions.test.ts` needed no change — it only covers
+  `getBrochureExtractionProgress`, not `importBrochureImage`.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 138/138
+(28 files, unchanged count — no new test added, existing coverage adjusted to match the swap),
+`bun run db:drift` clean (40 mirrored tables, no schema touched this phase).
+
+**Manual infra step, not done yet — blocks deploying/verifying B1:**
+1. Create a new GCS bucket (same Mumbai region as `GCS_PRIVATE_SOURCE_BUCKET`), e.g.
+   `propcompare-images-mumbai`.
+2. Grant `allUsers` → `Storage Object Viewer` at the **bucket level** (uniform bucket-level
+   access, not per-object ACLs).
+3. Confirm the VM's attached service account (same one already writing
+   `GCS_PRIVATE_SOURCE_BUCKET`) can write to the new bucket.
+4. Add `GCS_PUBLIC_IMAGES_BUCKET=propcompare-images-mumbai` to the `propcompare-web-env` secret in
+   GCP Secret Manager.
+
+**Still open after that:** deploy, verify by uploading a test image through both the admin and
+developer flows, confirm it renders from `storage.googleapis.com` with no GCP credentials on the
+requesting machine — then B2 (`scripts/migrate-property-images-to-gcs.ts`, backfilling existing
+V1/V2 image URLs, run on the VM against production data).
+
+Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
+(`property-images` → GCS)" section. Standing rules still apply: exact phase order, no skipping
+ahead, verify B1 live before B2; VM has no direct psql/ssh access — hand over exact copy-paste
+commands and wait for real output; commit/push phase-wise; never add Claude as commit co-author;
+never write session-handoff files — summarize in chat.
 
 ---
 

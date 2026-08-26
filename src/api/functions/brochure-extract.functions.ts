@@ -458,7 +458,7 @@ export const importBrochureImage = createServerFn({ method: "POST" })
     const buffer = Buffer.from(await res.arrayBuffer());
     if (buffer.length === 0) throw new Error("That image was empty");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { uploadPublicObject } = await import("@/server/gcs.server");
     const safe = (s: string) =>
       (s || "")
         .toLowerCase()
@@ -467,11 +467,13 @@ export const importBrochureImage = createServerFn({ method: "POST" })
     const ext = contentType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
     const objectPath = `${safe(data.folder) || "brochure"}/${safe(data.slot)}-${Date.now()}.${ext}`;
 
-    const { error } = await supabaseAdmin.storage
-      .from("property-images")
-      .upload(objectPath, buffer, { contentType, upsert: true });
-    if (error) throwSafeError("createBrochureUploadTicket", error, "Could not start extraction");
-
-    const { data: pub } = supabaseAdmin.storage.from("property-images").getPublicUrl(objectPath);
-    return { url: pub.publicUrl };
+    const bucket = process.env.GCS_PUBLIC_IMAGES_BUCKET;
+    if (!bucket) throw new Error("GCS_PUBLIC_IMAGES_BUCKET is required");
+    let url: string;
+    try {
+      url = await uploadPublicObject(bucket, objectPath, buffer, contentType);
+    } catch (error) {
+      throwSafeError("createBrochureUploadTicket", error, "Could not start extraction");
+    }
+    return { url };
   });

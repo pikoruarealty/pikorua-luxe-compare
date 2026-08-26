@@ -75,7 +75,7 @@ export const uploadPropertyImage = createServerFn({ method: "POST" })
     };
   })
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { uploadPublicObject } = await import("@/server/gcs.server");
 
     const base64 = data.fileBase64.includes(",")
       ? data.fileBase64.slice(data.fileBase64.indexOf(",") + 1)
@@ -100,11 +100,13 @@ export const uploadPropertyImage = createServerFn({ method: "POST" })
     // Timestamped so replacing an image busts any CDN/browser cache.
     const objectPath = `${data.folder}/${data.slot}-${Date.now()}.${ext}`;
 
-    const { error } = await supabaseAdmin.storage
-      .from("property-images")
-      .upload(objectPath, buffer, { contentType: data.contentType, upsert: true });
-    if (error) throwSafeError("uploadPropertyImage", error, "Could not upload image");
-
-    const { data: pub } = supabaseAdmin.storage.from("property-images").getPublicUrl(objectPath);
-    return { url: pub.publicUrl };
+    const bucket = process.env.GCS_PUBLIC_IMAGES_BUCKET;
+    if (!bucket) throw new Error("GCS_PUBLIC_IMAGES_BUCKET is required");
+    let url: string;
+    try {
+      url = await uploadPublicObject(bucket, objectPath, buffer, data.contentType);
+    } catch (error) {
+      throwSafeError("uploadPropertyImage", error, "Could not upload image");
+    }
+    return { url };
   });

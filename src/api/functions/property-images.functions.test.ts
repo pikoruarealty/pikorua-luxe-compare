@@ -20,15 +20,8 @@ vi.mock("@tanstack/react-start", () => ({
 }));
 
 vi.mock("@/integrations/supabase/admin-auth-middleware", () => ({ requireAdminAuth: {} }));
-vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: {
-    storage: {
-      from: () => ({
-        upload: async () => ({ error: null }),
-        getPublicUrl: () => ({ data: { publicUrl: "https://images.example/upload.jpg" } }),
-      }),
-    },
-  },
+vi.mock("@/server/gcs.server", () => ({
+  uploadPublicObject: async () => "https://images.example/upload.jpg",
 }));
 
 async function call(data: Record<string, unknown>) {
