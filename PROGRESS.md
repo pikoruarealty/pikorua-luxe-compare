@@ -956,6 +956,19 @@ a file is hosted isn't a content edit, so it doesn't need a new version or a rev
 the *current* publication version per property is touched; older versions keep their original URLs
 (harmless until Supabase Storage is torn down in Phase D).
 
+**Correction to the paragraph above, found during Phase C1 (2026-08-26):** that "direct update of
+`heroImageUrl`" path would **not** have worked. `property_publication_versions` carries a
+`BEFORE UPDATE OR DELETE` immutability trigger (`immutable_publication_versions`, from
+`20260816130000_atomic_publication.sql`) that raises `55000` on any update — so the
+`db.update(propertyPublicationVersions).set({ publicSnapshot: ... })` in
+`scripts/migrate-property-images-to-gcs.ts` would have thrown, not silently written. It only
+*appeared* to succeed because the V2 row count was 0 on both dry-run and `--apply`, so the branch
+never executed. **Nothing is broken live** — all 26 V1 properties genuinely were re-hosted, and the
+V2 snapshots were already GCS-hosted from B1. But the script's V2 branch is dead code that would
+fail if ever re-run against a non-empty V2 catalogue, and the technique is ruled out for the rest of
+Phase C: an already-published snapshot can only be changed by publishing a new version through the
+workflow, never by updating the row in place.
+
 **Run and verified live 2026-08-26**: dry-run locally against dev data matched production dry-run
 exactly (26 V1 rows, 0 V2). Ran on the VM against production via a throwaway `oven/bun:1.3.14-alpine`
 container on the `propcompare-production` network, sourcing `/run/propcompare/web.env` as a shell
@@ -1018,8 +1031,85 @@ them, no local build, no OOM). This was the same push that finally shipped Phase
 **Open, deferred by owner:** whether to also resize the VM from 2GB→4GB RAM for runtime headroom
 under real traffic — not decided against, just not blocking this fix.
 
+### Phase C — collapse the V1/V2 property system
+
+Phase C is the largest and riskiest phase: it retires the legacy hosted-Supabase `properties` /
+`property_submissions` tables ("V1") in favour of the local-Postgres publication catalogue ("V2" —
+`properties` + immutable `property_publication_versions` + `property_submission_workflows`).
+
+**Sub-phase order actually being followed** (this deviates from the plan doc's numbering, and
+deliberately): the plan lists V1 deletion as item 5 of 6, but its own prose says deletion must
+happen *last*, after everything else has been live for days. Executing as
+**C1 → C2 → C3 → C4 → C6 → C5a → C5b**, with C5 (V1 retirement) genuinely last.
+
+**Three landmines found by checking the plan's assumptions against real code before writing any:**
+1. `submissionTransitions` (`src/domain/publication.ts:198-208`) allows `published → superseded`
+   only. C6 cannot move a published workflow back into review.
+2. `saveDeveloperRevision` (`submission-workflow.repository.server.ts:41-43`) throws
+   "This submission is not editable" unless the workflow is `draft` or `changes_requested` — so C6
+   can't add a revision to an existing published workflow either. The workable path is
+   `saveDeveloperRevision(developerId, payload, undefined, propertyId)`, which opens a **new** draft
+   workflow bound to the same property, then `submitDeveloperWorkflow` → `in_review`. Neither
+   touches `currentPublicationVersionId`/`isPublished` (only `publishWorkflow` does), so the
+   properties stay live throughout.
+3. **Not budgeted in the plan at all:** `buildPublicationRevision`
+   (`src/domain/publication-mapping.server.ts:223`) is one-way (`PropertyFormValues` →
+   `PublicationRevision`). No reverse mapper exists anywhere in the repo, and C3's
+   `getMyPropertyForEdit` fix needs one. That mapper has to be written from scratch in C3.
+
+#### C1 — delete orphaned duplicate property rows (done and verified live, 2026-08-26)
+
+Production held 47 `properties` rows: 24 live and 23 orphans left by an unclean double-run of
+`scripts/load-brochures.ts --publish` on 2026-08-24, before that script's idempotency fix existed.
+
+- `scripts/cleanup-orphan-properties.ts` (commits `3a75419`, `981dfd4`, `6bac394`). Orphans are
+  identified **structurally** — `is_published = false AND current_publication_version_id IS NULL` —
+  never by name or slug. Dry-run by default; `--apply` additionally requires an explicit
+  `--expect=<n>`. It aborts if any orphan lacks a live twin by name, aborts if any
+  review/enquiry/field-visit/property-asset is attached, recomputes the orphan set *inside* the
+  transaction, and re-asserts the deleted count before committing. Every FK onto `properties` is
+  `ON DELETE RESTRICT`, so children are deleted explicitly in dependency order, all in one
+  transaction.
+- **Pre-flight on production:** verified all 23 orphans have a live twin, zero attached user data,
+  all 23 orphan workflows sit in state `published`, and no live publication version chains back to
+  an orphan via `previous_version_id`. Also confirmed hosted Supabase V1 holds exactly 26 rows —
+  no hidden pre-brochure catalogue, which is what unblocks C5.
+- **Backup taken first:** `pg_dump -Fc` to `/var/backups/propcompare/pre-c1-20260826-095808.dump`,
+  verified with `pg_restore --list` (483 TOC entries, CUSTOM format, PG 16.14). The first attempt
+  produced a corrupt file by piping binary through `docker compose exec … | sudo tee`; the working
+  method is dumping to a file *inside* the container (`-f /tmp/…`) and extracting with `docker cp`.
+- **Deviation from plan — immutability triggers suspended for one transaction.** The rehearsal
+  (the exact deletes wrapped in `BEGIN … ROLLBACK` against production) failed on
+  `ERROR: commercial_terms rows are immutable`. `20260816130000_atomic_publication.sql` puts
+  `BEFORE UPDATE OR DELETE` triggers on `property_publication_versions`,
+  `property_submission_revisions` and `private.commercial_terms`. Rather than work around it
+  silently, the options were put to the owner, who chose to override the triggers for exactly one
+  transaction. The script `ALTER TABLE … DISABLE TRIGGER` by name (transactional in Postgres, so a
+  rollback restores them), re-enables them explicitly before returning, and after commit re-queries
+  `pg_trigger` and exits non-zero if any isn't back to `'O'`. The audit guarantee stays in force
+  for the application — these particular rows record an accidental double-run, not editorial
+  history. The matching `audit_events` rows are deliberately **not** deleted, so the permanent
+  record that the double-run happened survives.
+- **Bug caught by the guard on the first real `--apply`:** every delete recorded 0 rows and the
+  transaction rolled back on its own assertion. Cause: the driver is postgres-js
+  (`src/db/client.server.ts`), whose result carries the affected count on `.count`; `.rowCount` is
+  node-postgres's spelling and was `undefined`, so `rowCount ?? 0` read every delete as a no-op.
+  Fixed in `6bac394` — reads either spelling and now *throws* rather than defaulting to 0, so an
+  unreadable count can never again be mistaken for a successful no-op. The failure was
+  fail-safe: nothing was written, and the rollback restored the triggers too.
+
+**Run against production 2026-08-26**, on the VM via a throwaway `oven/bun:1.3.14-alpine` container
+on the `propcompare-production` network sourcing `/run/propcompare/web.env` as a shell script (the
+`. web.env` pattern established in B2 — `docker run --env-file` does not strip quotes). Deleted
+counts matched the rehearsal exactly: 109 `configuration_variant_areas`, 910
+`configuration_variant_rooms`, 21 `private.commercial_terms`, 130 `configuration_variants`, 23
+`property_publication_details`, 0 `publication_assets`, 23 `review_actions`, 23
+`property_publication_versions`, 23 `property_submission_revisions`, 23
+`property_submission_workflows`, 23 `properties`. Final state: **24 total, 24 live, 0 orphan**, all
+three immutability triggers reporting enabled.
+
 Full phase plan: `C:\Users\Bhavarth\.claude\plans\melodic-petting-codd.md`, "### Phase B — Storage
-(`property-images` → GCS)" section. Standing rules still apply: exact phase order, no skipping
+(`property-images` → GCS)" and "### Phase C" sections. Standing rules still apply: exact phase order, no skipping
 ahead, verify B1 live before B2; VM has no direct psql/ssh access — hand over exact copy-paste
 commands and wait for real output; commit/push phase-wise; never add Claude as commit co-author;
 never write session-handoff files — summarize in chat.
@@ -1032,7 +1122,10 @@ never write session-handoff files — summarize in chat.
   source. Score/ranking is never purchasable. No fabricated data in the client payload,
   including behind the auth gate/blur. A gap in a brochure publishes as `not_stated`, never
   an inferred value.
-- Never commit to `main` directly.
+- ~~Never commit to `main` directly.~~ **Superseded 2026-08-26 by owner instruction:** commit and
+  push straight to `main`. `.github/workflows/deploy-shared-vm.yml` triggers on push to `main`, so
+  a branch/PR step sits in front of every deploy for no benefit at this team size. Commit
+  phase-wise (or sub-phase-wise wherever there's a distinct deploy/verify step).
 - Migrations must be idempotent, `GRANT ALL ... TO service_role`, `ENABLE ROW LEVEL
 SECURITY` with zero policies (deny-by-default — everything goes through service-role
   server functions).
