@@ -35,7 +35,9 @@
  * revision already holds are skipped, so a second run publishes nothing and the
  * script is safe to re-run after a partial failure.
  *
- * Matching is by slug. Any V2 property with no V1 row is reported and skipped —
+ * Matching is by slug, falling back to SLUG_OVERRIDES for the 12 properties
+ * whose V1 and V2 slugs diverged (verified by hand, see the comment on that
+ * map). Any V2 property with no V1 row at either is reported and skipped —
  * republishing it with an empty presentation would blank fields that a later
  * reader will expect to find.
  *
@@ -67,6 +69,32 @@ import {
 } from "@/repositories/submission-workflow.repository.server";
 
 const APPLY = process.argv.includes("--apply");
+
+/** V1's slug diverged from V2's for these 12 properties — renames, brand
+ *  prefixes dropped/added, or a name written out differently between the two
+ *  imports. Verified by hand (see scripts/diagnose-slug-mismatch.ts and
+ *  scripts/diagnose-shantigram.ts): "the-capstone" was confirmed with the
+ *  user as the same project renamed to "The Beaumonde"; "shantigram" and
+ *  "the-north-park-at-shantigram" were confirmed against GujRERA's public
+ *  registry directly (RAA15538 is registered as "BELROSA", RAA01824 as
+ *  "NORTH PARK (Phase-2 and 3)") rather than guessed from names, since both
+ *  are Adani sub-projects sharing the same Shantigram township address and a
+ *  name-only match would have picked the wrong one. Every other live V2
+ *  property matches its V1 row by slug directly and needs no entry here. */
+const SLUG_OVERRIDES: Record<string, string> = {
+  "360": "maruti-360",
+  "anamika-high-point": "anamika",
+  luxor: "satyamev-luxor",
+  "rashmi-skyscape": "rashm-sky-scape",
+  "riviera-select": "goyal-riviera-select",
+  shantigram: "belrosa",
+  "swati-senor-residential-project-at-ambli-road-ahmedabad": "swati-senor",
+  "the-bellagio": "belagio",
+  "the-capstone": "capstone",
+  "the-kimana-towers": "kimana",
+  "the-north-park-at-shantigram": "northpark",
+  "the-west-park": "westpark",
+};
 
 /** The V1 columns that feed `presentation`, and nothing else — this script has
  *  no business reading the rest of the row. */
@@ -248,9 +276,9 @@ async function main() {
       skipped.push(`${property.slug} — source revision ${version.sourceRevisionId} not found`);
       continue;
     }
-    const v1 = v1BySlug.get(property.slug);
+    const v1 = v1BySlug.get(property.slug) ?? v1BySlug.get(SLUG_OVERRIDES[property.slug] ?? "");
     if (!v1) {
-      skipped.push(`${property.slug} — no V1 row with this slug`);
+      skipped.push(`${property.slug} — no V1 row at this slug or its override`);
       continue;
     }
 
