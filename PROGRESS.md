@@ -1380,7 +1380,7 @@ C4 only wires the two paths the current screen actually has.
 tests — no new pure-domain logic, all reused repository functions already covered), `bun run db:drift`
 clean at 41 tables. No migration, no deploy changes.
 
-#### C7 — map free-text amenities onto `amenity_catalog`, then OCR-priority re-enrichment (code shipped local, live run not yet applied)
+#### C7 — map free-text amenities onto `amenity_catalog`, then OCR-priority re-enrichment (live, 24/24)
 
 `property_amenities` has been schema-complete since the C1-era `canonical_dictionary` migration but had
 **zero producers** — nothing ever wrote a row. It is not dead code: `public-detail.repository.server.ts`'s
@@ -1526,9 +1526,9 @@ version).
 **Verification (local, amenity-mapping fix):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test`
 154/154 (1 new), `bun run db:drift` clean at 41 tables.
 
-**Not yet re-applied for the 5 failed properties** — plan is to push this fix, then run
-`enrich-from-ocr.ts --apply --only=amaris,anamika-high-point,the-bellagio,the-park,the-west-park` on the
-VM and confirm all 5 publish clean.
+**Retry ran 2026-08-26: 5 of 5 published clean** (`amaris`, `anamika-high-point`, `the-bellagio`,
+`the-park`, `the-west-park`, via `--only=...`) — all 24 live V2 properties are now republished with
+OCR-priority content and have `property_amenities` rows. **C7 is fully live.**
 
 ---
 
