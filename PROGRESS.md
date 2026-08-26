@@ -1280,6 +1280,59 @@ failures.** Verified live via `psql`: `public_snapshot->>'tagline'`, `->>'status
 `the-north-park-at-shantigram`, `the-west-park`) — the presentation fields are spread into
 `public_snapshot`'s top level alongside identity, not nested under a `presentation` key.
 
+#### C3b — repoint the developer edit/submit path onto V2 (local, 2026-08-26)
+
+The 24 properties C6 just republished are, from this point on, V2-native — but the developer-facing
+edit form (`src/routes/developer.properties.$id.tsx` → `getMyPropertyForEdit` /
+`submitPropertyForReview` in `src/api/functions/developer-properties.functions.ts`) still only knew
+how to read and write V1's `properties` table. Left alone, a developer opening any of the 24 for
+editing would have hit "Property not found."
+
+**Disambiguation: try V1 first, fall back to V2 — no schema change, no frontend change.** V1
+(Supabase) and V2 (local Postgres) are physically separate databases with independently-generated
+UUIDs, so there's no collision risk in treating "not found in V1" as "look in V2." Both
+`getMyPropertyForEdit` and `submitPropertyForReview`'s `update` branch now do exactly that: run the
+existing V1 query/ownership-check unchanged, and only on a clean not-found (not a DB error) call a
+new V2 counterpart. The route and every "create" caller (`AddPropertyFlow.tsx`,
+`developer.properties.new.tsx`) are untouched — creates have no existing property to disambiguate by
+and always go through V1, same as before.
+
+**Shipped, all in `src/api/functions/developer-properties.functions.ts`:**
+- **`getMyV2PropertyForEdit`** — loads the property's *currently published* state, mirroring what
+  V1's path already does (reads the live row, not an in-flight draft). Follows
+  `properties.currentPublicationVersionId` → `property_publication_versions.sourceRevisionId` → the
+  immutable `PublicationRevision` in `property_submission_revisions.submittedPayload`, then runs it
+  through C3a's reverse mapper (`buildFormValuesFromRevision`) with the market's `stateName`/
+  `cityName` for the lossy state/city round-trip.
+- **`submitV2PropertyUpdate`** — mirrors `admin-submissions.functions.ts`'s existing
+  `publishV2Catalogue` helper (resolve an enabled market by case-insensitive exact match, build
+  `configurationOptionsByKind` from all `configuration_options`, call `buildPublicationRevision`) but
+  stops one step short: `saveDeveloperRevision(developerId, revision, undefined, propertyId) →
+  submitDeveloperWorkflow`, landing the edit as a new `in_review` workflow bound to the property —
+  deliberately **not** calling `publishWorkflow`. Publishing a developer's own edit without review is
+  a different (and wrong) product decision than C6 republishing content that was already public; that
+  stays reviewer-gated, which is exactly what C4's admin queue is for.
+- **`getMyV2Properties`'s `hasPendingUpdate`** — was hardcoded `false` since C1. Now a real batched
+  query against `property_submission_workflows`: outstanding = state in `submitted`, `validating`,
+  `in_review`, `changes_requested` (`draft` excluded — nothing submitted yet; `rejected`/`published`/
+  `superseded` excluded — closed, either dead or already live), matching
+  `submissionTransitions` in `src/domain/publication.ts`. One `inArray` query for all of a developer's
+  properties, not N+1.
+
+**`markBrochureJobConsumed` wiring deliberately left out of C3b, deferred to C4.** It only matters
+for the *create* flow (stamping a `brochure_jobs` row once its OCR extraction becomes a real
+property) — the edit flow's `BrochureEnrichPanel.tsx` never persists a `brochureJobId` at all, so
+C3b's edit/submit changes can't reach it regardless. Wiring the create path properly needs either a
+new column on V1's `property_submissions` (undesirable this late in retiring V1, and against the
+standing "don't build new Supabase-only infra" guidance) or a fragile payload-smuggling workaround;
+C2's own write-up already anticipated this landing in "C3/C4." Deferring the whole thing to C4, where
+the create/publish path gets rebuilt on the admin side anyway, avoids doing it twice.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 144/144 (no new
+tests — no new pure-domain logic, just repository plumbing reusing already-tested mappers), `bun run
+db:drift` clean at 41 tables. No migration, no deploy changes — application code only, so nothing new
+to verify live beyond the existing CI deploy.
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)

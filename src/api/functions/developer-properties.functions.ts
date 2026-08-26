@@ -33,12 +33,13 @@ export interface DeveloperSubmission {
  *  jsonb snapshot, same as the public detail page reads it (see
  *  public-detail.repository.server.ts). The inner join on
  *  currentPublicationVersionId means only published V2 properties can ever
- *  appear here, so isPublished is always true and hasPendingUpdate is always
- *  false — V2 has no pending-edit concept reachable from this account yet. */
+ *  appear here, so isPublished is always true. hasPendingUpdate reflects a
+ *  real outstanding submission workflow — see the non-terminal states below. */
 async function getMyV2Properties(developerId: string): Promise<DeveloperProperty[]> {
-  const { eq } = await import("drizzle-orm");
+  const { eq, and, inArray } = await import("drizzle-orm");
   const { getDatabase } = await import("@/db/client.server");
-  const { properties, propertyPublicationVersions, markets } = await import("@/db/schema");
+  const { properties, propertyPublicationVersions, markets, propertySubmissionWorkflows } =
+    await import("@/db/schema");
   const db = getDatabase();
   const rows = await db
     .select({
@@ -54,6 +55,28 @@ async function getMyV2Properties(developerId: string): Promise<DeveloperProperty
     .innerJoin(markets, eq(propertyPublicationVersions.marketId, markets.id))
     .where(eq(properties.createdBy, developerId));
 
+  const propertyIds = rows.map((row) => row.id);
+  // "Outstanding" = submitted for review and not yet resolved. `draft` is
+  // excluded (nothing submitted yet); `rejected`/`published`/`superseded` are
+  // excluded (closed — either dead or already live).
+  const pendingRows = propertyIds.length
+    ? await db
+        .select({ propertyId: propertySubmissionWorkflows.propertyId })
+        .from(propertySubmissionWorkflows)
+        .where(
+          and(
+            inArray(propertySubmissionWorkflows.propertyId, propertyIds),
+            inArray(propertySubmissionWorkflows.state, [
+              "submitted",
+              "validating",
+              "in_review",
+              "changes_requested",
+            ]),
+          ),
+        )
+    : [];
+  const pendingIds = new Set(pendingRows.map((row) => row.propertyId));
+
   const text = (value: unknown) =>
     typeof value === "string" && value.trim() ? value.trim() : null;
   return rows.map((row) => {
@@ -64,7 +87,7 @@ async function getMyV2Properties(developerId: string): Promise<DeveloperProperty
       developer: text(snapshot.developerName) ?? "-",
       location: text(snapshot.addressLine) ?? text(snapshot.cityName) ?? row.cityName ?? "-",
       isPublished: true,
-      hasPendingUpdate: false,
+      hasPendingUpdate: pendingIds.has(row.id),
     };
   });
 }
@@ -137,9 +160,60 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
     },
   );
 
+/** Developer-only: load one of THEIR OWN V2-published properties into the edit
+ *  form shape. V2 has no flat row to read — the current content lives in the
+ *  jsonb snapshot's *source revision* (a `PublicationRevision`, immutable),
+ *  which `buildFormValuesFromRevision` (C3a's reverse mapper) turns back into
+ *  the same form shape the V1 branch above returns. This always reflects the
+ *  last *published* state, matching V1's `getMyPropertyForEdit`, which also
+ *  reads the live row rather than a pending submission's draft. */
+async function getMyV2PropertyForEdit(
+  propertyId: string,
+  developerId: string,
+): Promise<(PropertyFormValues & { id: string }) | null> {
+  const { eq, and } = await import("drizzle-orm");
+  const { getDatabase } = await import("@/db/client.server");
+  const { properties, propertyPublicationVersions, propertySubmissionRevisions, markets } =
+    await import("@/db/schema");
+  const { publicationRevisionSchema } = await import("@/domain/publication");
+  const { buildFormValuesFromRevision } = await import("@/domain/publication-to-form.server");
+
+  const db = getDatabase();
+  const [row] = await db
+    .select({
+      sourceRevisionId: propertyPublicationVersions.sourceRevisionId,
+      stateName: markets.stateName,
+      cityName: markets.cityName,
+    })
+    .from(properties)
+    .innerJoin(
+      propertyPublicationVersions,
+      eq(properties.currentPublicationVersionId, propertyPublicationVersions.id),
+    )
+    .innerJoin(markets, eq(propertyPublicationVersions.marketId, markets.id))
+    .where(and(eq(properties.id, propertyId), eq(properties.createdBy, developerId)))
+    .limit(1);
+  if (!row?.sourceRevisionId) return null;
+
+  const [revisionRow] = await db
+    .select({ payload: propertySubmissionRevisions.submittedPayload })
+    .from(propertySubmissionRevisions)
+    .where(eq(propertySubmissionRevisions.id, row.sourceRevisionId))
+    .limit(1);
+  if (!revisionRow) return null;
+
+  const revision = publicationRevisionSchema.parse(revisionRow.payload);
+  const values = buildFormValuesFromRevision(revision, {
+    stateName: row.stateName,
+    cityName: row.cityName,
+  });
+  return { ...values, id: propertyId };
+}
+
 /** Developer-only: load one of THEIR OWN live properties into the edit form
  *  shape — same mapping as the owner's getPropertyForEdit, but ownership-
- *  checked against created_by instead of gated on the owner role. */
+ *  checked against created_by instead of gated on the owner role. Falls back
+ *  to V2 when the id isn't a V1 row — see getMyV2PropertyForEdit. */
 export const getMyPropertyForEdit = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
   .inputValidator((data: { id: string }) => {
@@ -157,7 +231,11 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
       .eq("created_by", context.adminProfile.id)
       .maybeSingle();
     if (error) throwSafeError("getDeveloperProperty", error, "Could not load property");
-    if (!row) throw new Error("Property not found");
+    if (!row) {
+      const v2 = await getMyV2PropertyForEdit(data.id, context.adminProfile.id);
+      if (!v2) throw new Error("Property not found");
+      return v2;
+    }
 
     const gallery = (row.gallery ?? {}) as Record<string, string>;
     const isPlot =
@@ -287,9 +365,71 @@ export const updateMyPendingSubmission = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Developer-only: submits a V2 property's edit straight into the V2 review
+ *  queue (saveDeveloperRevision -> submitDeveloperWorkflow), mirroring what
+ *  publishV2Catalogue does after a V1 approval, minus the final publish —
+ *  publishing a developer's own submission without review is exactly the gap
+ *  Phase C4 closes. Ownership is re-checked here rather than trusted from the
+ *  caller, since this runs independently of the V1 lookup that decided to
+ *  fall back here. */
+async function submitV2PropertyUpdate(
+  propertyId: string,
+  developerId: string,
+  values: PropertyFormValues,
+): Promise<{ ok: true }> {
+  const { eq, and, ilike } = await import("drizzle-orm");
+  const { getDatabase } = await import("@/db/client.server");
+  const { properties, configurationOptions, markets } = await import("@/db/schema");
+  const { buildPublicationRevision } = await import("@/domain/publication-mapping.server");
+  const { saveDeveloperRevision, submitDeveloperWorkflow } =
+    await import("@/repositories/submission-workflow.repository.server");
+
+  const db = getDatabase();
+  const [owned] = await db
+    .select({ id: properties.id })
+    .from(properties)
+    .where(and(eq(properties.id, propertyId), eq(properties.createdBy, developerId)))
+    .limit(1);
+  if (!owned) throw new Error("You can only submit updates for your own properties");
+
+  const [market] = await db
+    .select({ id: markets.id, stateCode: markets.stateCode, cityCode: markets.cityCode })
+    .from(markets)
+    .where(
+      and(
+        eq(markets.isEnabled, true),
+        ilike(markets.stateName, values.state.trim()),
+        ilike(markets.cityName, values.city.trim()),
+      ),
+    )
+    .limit(1);
+  if (!market) {
+    throw new Error(`No enabled market matches "${values.city}, ${values.state}"`);
+  }
+
+  const optionRows = await db
+    .select({ id: configurationOptions.id, kind: configurationOptions.kind })
+    .from(configurationOptions);
+  const configurationOptionsByKind = new Map(optionRows.map((row) => [row.kind, row.id]));
+
+  const revision = buildPublicationRevision(values, {
+    configurationOptionsByKind,
+    marketId: market.id,
+    stateCode: market.stateCode,
+    cityCode: market.cityCode,
+  });
+
+  const { workflowId } = await saveDeveloperRevision(developerId, revision, undefined, propertyId);
+  await submitDeveloperWorkflow(workflowId, developerId);
+  return { ok: true };
+}
+
 /** Developer-only: creates a pending review request. Never writes to
  *  `properties` directly — an owner approval is what actually publishes a new
- *  property or applies an edit to a live one (see admin-submissions.functions.ts). */
+ *  property or applies an edit to a live one (see admin-submissions.functions.ts).
+ *  An "update" whose id isn't a V1 property falls back to the V2 workflow
+ *  queue instead (see submitV2PropertyUpdate) — "create" always stays V1, since
+ *  a brand new property has no id yet to disambiguate by. */
 export const submitPropertyForReview = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
   .inputValidator(
@@ -318,7 +458,10 @@ export const submitPropertyForReview = createServerFn({ method: "POST" })
         .eq("id", propertyId)
         .eq("created_by", context.adminProfile.id)
         .maybeSingle();
-      if (error || !owned) throw new Error("You can only submit updates for your own properties");
+      if (error) throw new Error("You can only submit updates for your own properties");
+      if (!owned) {
+        return submitV2PropertyUpdate(propertyId, context.adminProfile.id, data.values);
+      }
     }
 
     const { error: insertError } = await supabaseAdmin.from("property_submissions").insert({
