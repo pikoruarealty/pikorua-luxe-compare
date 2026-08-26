@@ -1,32 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
-import type { Property } from "@/types/property";
-import {
-  getAllPropertiesForAdmin,
-  getProperties,
-  getWorkspaceCatalogue,
-} from "@/api/functions/properties.functions";
+import { getAllPropertiesForAdmin } from "@/api/functions/properties.functions";
 
 export const PROPERTIES_KEY = ["properties"] as const;
-export const WORKSPACE_CATALOGUE_KEY = ["properties", "workspace"] as const;
-
-// Property data changes rarely (only via the admin portal), so a short staleTime
-// avoids a refetch on every route transition despite router defaultPreloadStaleTime: 0.
-export const propertiesQueryOptions = () =>
-  queryOptions({
-    queryKey: PROPERTIES_KEY,
-    queryFn: () => getProperties(),
-    staleTime: 60_000,
-  });
-
-// Keyed separately from the shell so the two tiers never share a cache entry:
-// a visitor who signs in must not keep reading the public-tier payload, and a
-// visitor who signs out must not keep reading the gated one.
-export const workspaceCatalogueQueryOptions = () =>
-  queryOptions({
-    queryKey: WORKSPACE_CATALOGUE_KEY,
-    queryFn: () => getWorkspaceCatalogue(),
-    staleTime: 60_000,
-  });
 
 export const adminPropertiesQueryOptions = () =>
   queryOptions({
@@ -35,9 +10,3 @@ export const adminPropertiesQueryOptions = () =>
     staleTime: 10_000,
     retry: false,
   });
-
-/** Resolve a property by its slug id from an already-loaded list. */
-export const findPropertyById = (
-  properties: Property[] | undefined,
-  id: string | undefined,
-): Property | undefined => (id ? properties?.find((p) => p.id === id) : undefined);

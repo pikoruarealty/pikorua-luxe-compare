@@ -1530,6 +1530,67 @@ version).
 `the-park`, `the-west-park`, via `--only=...`) — all 24 live V2 properties are now republished with
 OCR-priority content and have `property_amenities` rows. **C7 is fully live.**
 
+#### C5a — retire V1 code, narrowed scope (local, 2026-08-26)
+
+The plan's step 5 says to retire V1 code "last, after C1-C4+C6 have been live for a few days." C1-C4, C6,
+and C7 all shipped **today**, so that soak window hasn't elapsed. More importantly, re-reading C3b's and
+C4's own write-ups above turned up a hard blocker: **property creation has no V2-native path at all** —
+C3b explicitly notes creates "always go through V1, same as before," and C4 says `publishV2Catalogue`
+"only becomes dead code once creates themselves move onto V2 or V1 is retired... not before." That means
+`property-crud.functions.ts` (createProperty/updateProperty/deleteProperty/setPropertyPublished) and the
+`admin.properties.index.tsx` / `admin.properties.$propertyId.tsx` / `admin.properties.new.tsx` route trio
+are still the only way to create or directly edit a property — deleting them now would remove that
+capability with nothing to replace it. `property-crud.functions.ts`'s `toDbRow`/`uniqueSlug` helpers are
+also reused by `admin-submissions.functions.ts`'s `approveSubmission` for V1-create approval, so deleting
+the file would break submission approval too. None of that is retired this session.
+
+**What *is* verifiably dead in production today** (confirmed by reading the actual conditionals, not
+assumed): the `mode: "v2" | "legacy"` branches in `residence.$id.tsx` and `compare.tsx`, and the
+`v2.enabled` branch in `__root.tsx`/`index.tsx`, all gate on `V2_CATALOGUE`, which has been `1` in
+production since C3a/C6 shipped — so the legacy branches have already been unreachable. Collapsing them to
+always-V2 changes zero observable behavior. One side-effect was checked directly rather than assumed:
+`PropertiesContext`/`favorites.tsx` reads a `properties` array that `__root.tsx`'s old loader already fed
+`[]` whenever V2 was on — i.e. `favorites.tsx` was already showing "No saved residences yet" for everyone
+in production, independent of this change. That's a pre-existing gap, not a regression this session
+introduces (tracked, not fixed — out of scope here).
+
+**Shipped:**
+- `catalogue-bootstrap.functions.ts` — `getCatalogueBootstrap()` no longer returns a `{enabled: false} |
+  {enabled: true, ...}` union; always returns `{comparisonEnabled, markets}`. `V2_COMPARISON` stays as an
+  independent flag (unrelated to the V1/V2 split), still gating `compare.tsx`'s `mode: "disabled"` state.
+- `residence.$id.tsx` (694 → ~50 lines) and `compare.tsx` (316 → ~155 lines) — deleted the legacy branch
+  and every component/import exclusive to it.
+- `__root.tsx` — deleted the loader that chose between `[]` and a real V1 fetch; now always passes `[]` to
+  `PropertiesProvider` (matches what V2-on production already did).
+- `index.tsx` (480 → 26 lines) — deleted the ~380-line legacy `IndexContent` and its exclusive imports/hooks.
+- `properties.functions.ts` — deleted `getProperties`, `getDetailedProperties`, `getWorkspaceCatalogue` (+
+  `WorkspaceCatalogue`/`CatalogueTier` types), `getPropertyBySlug`, `getComparisonBootstrap` (+
+  `ComparisonBootstrap` type), and their now-orphaned helpers (`toConsumerProperty`, `toShellProperty`,
+  `toShellVariant`, `visitorProfileId`, `selectPublished`, `parseSlugs`, `PROPERTY_LIST_COLUMNS`). Kept
+  `getAllPropertiesForAdmin` (still the only property source for the admin list) and its dependencies
+  untouched. Deleted `properties.functions.test.ts` (tested only the removed functions).
+- `properties.queries.ts` — deleted `propertiesQueryOptions`, `workspaceCatalogueQueryOptions`,
+  `WORKSPACE_CATALOGUE_KEY`, and `findPropertyById` (grepped: zero remaining callers of any of them). Kept
+  `PROPERTIES_KEY` (still used for cache invalidation by the admin CRUD routes and `admin.submissions.tsx`)
+  and `adminPropertiesQueryOptions`.
+
+**Deliberately NOT touched this session** (still load-bearing V1): `property-crud.functions.ts`,
+`admin.properties.index.tsx`/`$propertyId.tsx`/`new.tsx`, `distance.functions.ts`,
+`admin-submissions.functions.ts`, `developer-properties.functions.ts`, `customers.functions.ts`. Grepped
+for stray references to every deleted export (`getProperties`, `getComparisonBootstrap`,
+`getPropertyBySlug`, `getWorkspaceCatalogue`, `propertiesQueryOptions`, `workspaceCatalogueQueryOptions`,
+`WORKSPACE_CATALOGUE_KEY`, `findPropertyById`, `.enabled` on a bootstrap result) — none found outside what
+was already edited.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean (one prettier import-wrap issue,
+auto-fixed), `bun run test` 148/148, `bun run db:drift` clean at 41 tables.
+
+**C5b (drop legacy Supabase columns) is blocked, not started** — those columns are still actively written
+by `property-crud.functions.ts` and by V1-create approval in `admin-submissions.functions.ts`. It can't be
+safely attempted until either a V2-native property-creation path exists, or V1 create/admin-CRUD is
+knowingly retired outright — that's a real product-scope decision, not a mechanical cleanup step, and
+hasn't been made yet.
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)

@@ -11,7 +11,6 @@ import { type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
-import { propertiesQueryOptions } from "@/api/queries/properties.queries";
 import { PropertiesProvider } from "../context/PropertiesContext";
 import { OnboardingProvider } from "../context/OnboardingContext";
 import { OnboardingOverlay } from "../components/onboarding/OnboardingOverlay";
@@ -19,7 +18,6 @@ import { ScrollProgress } from "@/components/layout/ScrollProgress";
 import { AdvisorPill } from "@/components/layout/AdvisorPill";
 import { PageFade } from "@/components/layout/PageFade";
 import { ThemeProvider } from "../context/ThemeContext";
-import { getCatalogueBootstrap } from "@/api/functions/catalogue-bootstrap.functions";
 import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 function NotFoundComponent() {
@@ -123,17 +121,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
-  // The property catalog now lives in the database. Loading it here (once per
-  // document request) keeps every consumer synchronous via PropertiesProvider
-  // and puts the data in the SSR payload, so there's no first-paint flash.
-  loader: async ({ context }) => {
-    const v2 = await getCatalogueBootstrap();
-    return {
-      properties: v2.enabled
-        ? []
-        : await context.queryClient.ensureQueryData(propertiesQueryOptions()),
-    };
-  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -161,10 +148,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const { properties } = Route.useLoaderData();
   return (
     <QueryClientProvider client={queryClient}>
-      <PropertiesProvider properties={properties}>
+      <PropertiesProvider properties={[]}>
         <ThemeProvider>
           <OnboardingProvider>
             <ScrollProgress />
