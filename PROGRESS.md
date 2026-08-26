@@ -966,7 +966,10 @@ shared-VM pipeline instead of designing a new one:
   `ops/deploy-shared-vm.sh`). `web`'s build args (`VITE_SUPABASE_URL`,
   `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_STAFF_MFA_ENFORCE`) move from VM-local secret files to
   GitHub Actions repo variables — they're `VITE_`-prefixed (shipped to the browser bundle already,
-  not sensitive) but did not previously exist as GH vars; **owner needs to add them** (see below).
+  not sensitive) but did not previously exist as GH vars; **owner needs to add the first two** (see
+  below). `VITE_STAFF_MFA_ENFORCE` was never a distinct VM secret (only the non-`VITE_` server-side
+  `STAFF_MFA_ENFORCE` exists) and both the old script and the workflow default it to an empty
+  string when unset, so it's intentionally left as a GH var the owner does not need to create.
 - `ops/deploy-shared-vm.sh`: now takes `<web-image> <ocr-worker-image> <ocr-api-image>` as
   positional args, writes them into `.env.deploy` (`sed`, same pattern `ops/deploy-slot.sh` already
   uses), runs `gcloud auth configure-docker asia-south1-docker.pkg.dev` then `docker compose pull`
@@ -977,9 +980,9 @@ shared-VM pipeline instead of designing a new one:
 touched, only workflow YAML and a VM-side shell script).
 
 **Manual steps, not done yet — block this from working on the next push:**
-1. Add three GitHub Actions repo **variables** (Settings → Secrets and variables → Actions →
-   Variables): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_STAFF_MFA_ENFORCE` —
-   same values already in the VM's `/run/propcompare/web.env`.
+1. Add two GitHub Actions repo **variables** (Settings → Secrets and variables → Actions →
+   Variables): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` — same values already in the
+   VM's `/run/propcompare/web.env`. (`VITE_STAFF_MFA_ENFORCE` is intentionally skipped — see above.)
 2. Confirm the Artifact Registry repo `propcompare` (region `asia-south1`) exists and the CI
    deploy service account (`GCP_DEPLOY_SERVICE_ACCOUNT`) can push to it — it already does for
    `deploy-production.yml`, so likely already fine, just needs a quick check.
