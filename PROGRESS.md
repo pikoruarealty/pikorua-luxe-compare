@@ -956,9 +956,15 @@ a file is hosted isn't a content edit, so it doesn't need a new version or a rev
 the *current* publication version per property is touched; older versions keep their original URLs
 (harmless until Supabase Storage is torn down in Phase D).
 
-Not yet run anywhere. Next: dry-run locally against dev data, then hand the user exact commands to
-run `--apply` on the VM against production (no direct VM access — commands only, real output
-required back).
+**Run and verified live 2026-08-26**: dry-run locally against dev data matched production dry-run
+exactly (26 V1 rows, 0 V2). Ran on the VM against production via a throwaway `oven/bun:1.3.14-alpine`
+container on the `propcompare-production` network, sourcing `/run/propcompare/web.env` as a shell
+script rather than passing it as `docker run --env-file` — Compose's `env_file` parser strips the
+quotes around values like `SUPABASE_URL="https://..."`, but `docker run --env-file` doesn't, so the
+first attempt failed with `Invalid supabaseUrl` until the invocation was switched to `. web.env`
+inside the container. `--apply` run: all 26 V1 properties re-hosted (130 images, 5 each) with zero
+failures; V2 stayed 0 as expected (already GCS-hosted from B1's OCR-publish path). Supabase Storage
+still holds the old copies — not deleted, since Phase D is the planned Supabase teardown.
 
 ### Deploy pipeline fix — build in CI, push to Artifact Registry (shipped and verified live) — 2026-08-26
 
