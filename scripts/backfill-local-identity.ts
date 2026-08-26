@@ -12,8 +12,16 @@
  *
  * Idempotent — safe to re-run; upserts by id. Dry run by default.
  *
+ * WARNING: writes go to whatever `DATABASE_URL` resolves to. Locally that's a
+ * native Postgres service on 127.0.0.1:5433, seeded independently during
+ * Phase 3 brochure work — NOT a tunnel into the VM. The VM's `db` container
+ * publishes no host port at all. Running `--apply` locally only ever touches
+ * local dev data; reaching real production requires running the equivalent
+ * SQL on the VM itself (docker compose exec db psql). Learned the hard way
+ * during 1B — see PROGRESS.md's "Post-deploy incident" note.
+ *
  *   bun scripts/backfill-local-identity.ts           # dry run, prints the plan
- *   bun scripts/backfill-local-identity.ts --apply   # writes
+ *   bun scripts/backfill-local-identity.ts --apply   # writes to $DATABASE_URL
  */
 import { createClient } from "@supabase/supabase-js";
 import { sql } from "drizzle-orm";

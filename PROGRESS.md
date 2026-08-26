@@ -813,9 +813,12 @@ hosted-Supabase staff account, so there was no actual id conflict to resolve —
   (owner + 5 developers + 1 legacy test-role row = 7 rows, confirmed via a direct query), upserts
   each into local Postgres **keyed on the same id** (also seeding the local `auth.users` shim
   those rows FK onto, same pattern as `ensureAccounts()`). Idempotent, dry-run by default
-  (`--apply` to write). Ran dry-run then `--apply` against local Postgres (tunneled to the VM on
-  127.0.0.1:5433) after owner sign-off — 7 clean inserts, zero email/role conflicts. Re-ran to
-  confirm idempotency: second run showed the same 7 rows as no-op updates, nothing new written.
+  (`--apply` to write). Ran dry-run then `--apply` after owner sign-off — 7 clean inserts, zero
+  email/role conflicts. Re-ran to confirm idempotency: second run showed the same 7 rows as no-op
+  updates, nothing new written. **This ran against `.env`'s `DATABASE_URL`, which is a native
+  Windows Postgres service on 127.0.0.1:5433 — local dev data only, not a tunnel to the VM (the
+  VM's `db` service publishes no host port at all, see below).** That mistaken assumption caused
+  a real post-deploy bug — see "Post-deploy incident" below.
   Owner noted they may only hold working credentials for 1-2 of these 7 accounts — expected, some
   are dormant/test rows; the backfill mirrors what Supabase actually has regardless, both for
   correctness and because a future cleanup pass can safely delete/deactivate unused ones later.
@@ -841,9 +844,53 @@ hosted-Supabase staff account, so there was no actual id conflict to resolve —
 **Verification (local):** `tsc --noEmit` clean, `bun run lint` clean (one prettier fix on the new
 script, applied), `bun run test` 138/138 (28 files), `bun run db:drift` clean (40 mirrored tables).
 
-**Still open:** commit, push, deploy, then verify live (owner login still works, developer
-dashboard's intelligence-access column now shows correctly for the 3 real Supabase-only
-developers, `createDeveloper`/`setDeveloperActive` work end-to-end) — that finishes Phase A.
+**Deployed and verified live (2026-08-26).** Owner login works (Supabase Auth password reset via
+`seed-owner.ts` still applies — that's a separate system, see below). Confirmed VM checkout at
+`83c7872` and the running `web-blue` image built from it (`grep`'d the bundled
+`admin-auth-middleware-*.mjs` inside the container — confirmed it calls the new
+`getAdminProfileById`, not the old `supabaseAdmin` read).
+
+### Post-deploy incident: backfill silently wrote to the wrong database (2026-08-26)
+
+The Developers page failed live with `Unauthorized: not an active admin` for the owner, right
+after a screenshot showed a *successful* login. Root cause took a full trace to find because
+every individual layer checked out fine in isolation:
+- `getAdminProfileById(ownerId)` called directly via `.env`'s `DATABASE_URL` → correct row,
+  `isActive: true`.
+- VM `git log` → correctly at `83c7872`.
+- Bundled code inside the running container → confirmed calling the new local-Postgres path.
+- `DATABASE_URL` inside the `web-blue` container → `postgresql://propcompare:***@db:5432/propcompare`,
+  and that role is table owner + superuser + `bypassrls`, so RLS wasn't it either.
+- The one test that actually mattered: running `getAdminProfileById(ownerId)` **from inside the
+  container itself, against its own `DATABASE_URL`** → returned `null`. Querying the real `db`
+  container directly (`docker compose exec db psql`) confirmed `admin_profiles` only had 3 rows
+  in production — the owner and the other 5 real accounts were never there.
+
+**Cause:** `.env`'s local `DATABASE_URL` (`postgresql://postgres:admin@127.0.0.1:5433/propcompare`)
+is a **native Windows Postgres service running on this machine**, seeded independently during
+Phase 3 brochure-loading work (see `project_ocr_extractions_pending` memory) — it is *not* an SSH
+tunnel into the VM. The VM's `db` container publishes no host port at all (confirmed in
+`docker-compose.production.yml`); the only ways to reach the real production database are
+`docker compose exec db psql` on the VM, or a script run *on* the VM. The two databases share a
+schema and some coincidentally-similar seed data (both had synthetic `brochure-import@propcompare.local`
+/ `owner@propcompare.local` rows from `ensureAccounts()`, but with **different ids** — that's
+what made them look like the same database at a glance). Local dev's DB has never been the VM's
+DB. `scripts/backfill-local-identity.ts --apply` ran against the local machine, not the VM —
+every write it made this session landed in the wrong place.
+
+**Fix:** re-fetched the same 7 rows fresh from hosted Supabase, generated `INSERT ... ON CONFLICT`
+SQL by hand (skipping the one row — `brochure-reviewer@pikorua.dev` — that was already correctly
+seeded in production from earlier 1A-era work), and ran it directly against the VM via
+`docker compose exec db psql`. Verified: Developers page now lists all 6 real accounts
+(owner + `samarth1`/`xyz`/`abc`/`brochure-reviewer`/`dev@test.local`) with correct submission
+counts and active status.
+
+**Standing rule going forward:** local dev's `DATABASE_URL` is local-only. Any script that must
+write to production data goes through a command handed to the user to run on the VM — never
+assume a local script reaches production, even if it "worked last time." See
+`feedback_local_db_not_vm_tunnel` memory.
+
+Phase A is now fully done and verified live.
 
 ---
 
