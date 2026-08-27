@@ -48,13 +48,29 @@ jobs:
 
   migrations:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: propcompare
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d propcompare"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - run: supabase start -x studio,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
-      - run: supabase db reset --local
+      - name: Replay migrations on plain PostgreSQL
+        run: >-
+          docker run --rm --network host
+          -v "$GITHUB_WORKSPACE":/repo -w /repo
+          -e PGURL="postgresql://postgres:postgres@127.0.0.1:5432/propcompare"
+          postgres:16-alpine
+          sh -c "apk add --no-cache bash >/dev/null && bash ops/db/migrate.sh"
 
   containers:
     runs-on: ubuntu-latest

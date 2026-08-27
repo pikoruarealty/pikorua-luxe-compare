@@ -12,7 +12,7 @@ owner-controlled `production` environment approval.
   environment secrets, private GCS object access, and Ops Agent permissions.
 - Private Mumbai/India GCS source/evidence bucket with uniform access, public access prevention,
   versioning and access logs. Approved public media uses a separate delivery bucket/CDN path.
-- Separate production Supabase project and pooler URL. Do not reuse development credentials.
+- Self-hosted production Postgres credentials supplied through Secret Manager.
 - Upstash Redis, Google Maps Platform server key restricted by API/quota, 2Factor.in, Sentry, and
   Pub/Sub/BigQuery resources with budget and failure alerts.
 
@@ -21,7 +21,7 @@ owner-controlled `production` environment approval.
 Secret Manager entries `propcompare-web-env` and `propcompare-ocr-env` contain newline-delimited
 environment files. `fetch-secrets.sh` writes them to the tmpfs-style `/run/propcompare` path with
 mode 0600. Neither Docker images nor this repository contain secrets. Required web values include
-the production Supabase keys/pooler, session secret, Upstash, SMS, Google Maps, GCS, Sentry and
+the production Postgres credentials, session secret, Upstash, SMS, Google Maps, GCS, Sentry and
 server feature flags. OCR holds only its database, GCS and model-provider credentials.
 
 ## First installation
@@ -34,7 +34,7 @@ server feature flags. OCR holds only its database, GCS and model-provider creden
 4. Configure the Ops Agent with `google-cloud-ops-agent.yaml`; create uptime checks for `/healthz`
    and `/readyz` plus alerts for restarts, 5xx, OTP delivery, OCR failures, enquiry delivery,
    publication failures, Upstash errors and Google quota/cost.
-5. Verify Supabase backups with a restore rehearsal before enabling a public feature flag.
+5. Verify Postgres backups with a restore rehearsal before enabling a public feature flag.
 
 `infra/terraform` declares the GCP-owned portion of this foundation. Review and apply it from a
 protected infrastructure workflow; Terraform never supplies secret values or performs application

@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client.server";
 import { adminProfiles } from "@/db/schema";
@@ -51,23 +51,15 @@ export async function listDeveloperProfiles(): Promise<DeveloperProfileRow[]> {
     .orderBy(desc(adminProfiles.createdAt));
 }
 
-/** Creates the developer's admin_profiles row. `id` must already exist as a
- * Supabase Auth user (login/JWT verification stays there until the auth
- * rebuild) — this also seeds the local auth.users shim admin_profiles has an
- * FK onto (see ops/db/bootstrap.sql), same as load-brochures.ts's
- * ensureAccounts(). */
+/** Creates the developer's local authorization profile after its matching
+ * better-auth user/account pair has been created with the same id. */
 export async function insertDeveloperProfile(input: {
   id: string;
   email: string;
   fullName: string | null;
   createdBy: string;
 }): Promise<void> {
-  const db = getDatabase();
-  await db.execute(
-    sql`insert into auth.users (id, email) values (${input.id}, ${input.email})
-        on conflict (id) do update set email = excluded.email`,
-  );
-  await db.insert(adminProfiles).values({
+  await getDatabase().insert(adminProfiles).values({
     id: input.id,
     role: "developer",
     email: input.email,

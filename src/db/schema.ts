@@ -90,8 +90,7 @@ export const ocrJobState = pgEnum("ocr_job_state", [
   "failed",
   "cancelled",
 ]);
-// Legacy identity tables are declared only for typed foreign keys. Their SQL
-// remains in the earlier Supabase migrations.
+// Catalogue identity table retained for typed foreign keys.
 export const properties = pgTable("properties", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
@@ -1037,8 +1036,7 @@ export const propertyConnectivitySnapshots = pgTable(
 // Mirrors supabase/migrations/20260827130000_better_auth_core.sql. Field
 // names/shapes are dictated by better-auth's own internal adapter, not this
 // codebase — see that migration's header comment for the verification trail.
-// admin_profiles.id keeps its existing FK onto the auth.users shim until
-// 20260827140000_admin_profiles_fk_to_better_auth.sql runs (see that file).
+// admin_profiles.id references this table after the Phase D FK cutover.
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),

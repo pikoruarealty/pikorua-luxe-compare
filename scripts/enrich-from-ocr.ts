@@ -49,7 +49,8 @@
  *
  * WARNING: `DATABASE_URL` locally is a native Postgres on 127.0.0.1:5433, not
  * a tunnel into the VM. Reaching real production data requires running this
- * on the VM itself. `SUPABASE_*` env vars are not used here at all — nothing
+ * on the VM itself. No hosted-auth or storage environment variables are used
+ * here — nothing
  * touches V1.
  *
  *   bun scripts/enrich-from-ocr.ts           # dry run, writes review dumps

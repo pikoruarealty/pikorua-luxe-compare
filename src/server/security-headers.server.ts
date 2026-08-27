@@ -1,7 +1,7 @@
 // Response headers the app shipped without entirely — no CSP, no HSTS, no
 // frame or sniffing protection.
 //
-// The one that earns its place is the CSP. Admin and developer Supabase access
+// The one that earns its place is the CSP. The admin portal renders developer
 // tokens live in localStorage, readable by any script on the origin, and the
 // admin portal renders content developers submitted. No XSS was found — no
 // dangerouslySetInnerHTML, no eval, and the one developer-controlled href goes
@@ -19,9 +19,8 @@ const SELF = "'self'";
  *  `unsafe-inline` for styles is not optional: Tailwind, the Google Fonts
  *  stylesheet and React's own style attributes all rely on it. Scripts do not
  *  get the same latitude — that is the part protecting the admin token. */
-function contentSecurityPolicy(supabaseOrigin: string | null): string {
+function contentSecurityPolicy(): string {
   const connect = [SELF, "https://accounts.google.com"];
-  if (supabaseOrigin) connect.push(supabaseOrigin, supabaseOrigin.replace("https://", "wss://"));
 
   return [
     `default-src ${SELF}`,
@@ -29,7 +28,7 @@ function contentSecurityPolicy(supabaseOrigin: string | null): string {
     `script-src ${SELF} 'unsafe-inline' https://accounts.google.com https://apis.google.com`,
     `style-src ${SELF} 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src ${SELF} https://fonts.gstatic.com data:`,
-    // Supabase storage serves property images; brochure previews come from the
+    // GCS serves property images; brochure previews come from the
     // OCR service, whose origin is configured per environment.
     `img-src ${SELF} data: blob: https:`,
     `connect-src ${connect.join(" ")}`,
@@ -41,16 +40,6 @@ function contentSecurityPolicy(supabaseOrigin: string | null): string {
   ].join("; ");
 }
 
-function supabaseOrigin(): string | null {
-  const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  if (!url) return null;
-  try {
-    return new URL(url).origin;
-  } catch {
-    return null;
-  }
-}
-
 /** Report-only until CSP_ENFORCE=1.
  *
  *  A CSP that breaks the page gets removed rather than fixed, so it goes out
@@ -59,7 +48,7 @@ function supabaseOrigin(): string | null {
  *  starts refusing anything. */
 export function securityHeaders(): Record<string, string> {
   const enforce = process.env.CSP_ENFORCE === "1" || process.env.NODE_ENV === "production";
-  const policy = contentSecurityPolicy(supabaseOrigin());
+  const policy = contentSecurityPolicy();
 
   return {
     [enforce ? "content-security-policy" : "content-security-policy-report-only"]: policy,

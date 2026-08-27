@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireOwnerAuth } from "@/lib/auth/admin-auth-middleware";
 import { propertyFormSchema, type PropertyFormValues } from "@/lib/property-schema";
 import type { AdminProperty } from "./properties.functions";
 

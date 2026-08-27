@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireReviewerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireReviewerAuth } from "@/lib/auth/admin-auth-middleware";
 
 const uuid = z.string().uuid();
 const placeId = z.string().trim().min(5).max(300);

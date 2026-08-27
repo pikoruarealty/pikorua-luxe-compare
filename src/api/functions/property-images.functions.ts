@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { throwSafeError } from "@/lib/safe-error";
-import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-auth-middleware";
 
 export const DEFAULT_MAX_IMAGE_UPLOAD_BYTES = 4_000_000;
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/avif"];

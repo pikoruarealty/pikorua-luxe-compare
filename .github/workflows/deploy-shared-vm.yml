@@ -26,16 +26,12 @@ jobs:
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           RELEASE_SHA: ${{ github.sha }}
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_STAFF_MFA_ENFORCE: ${{ vars.VITE_STAFF_MFA_ENFORCE }}
         run: |
           WEB="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/web:$RELEASE_SHA"
           OCR_WORKER="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-worker:$RELEASE_SHA"
           OCR_API="asia-south1-docker.pkg.dev/$PROJECT_ID/propcompare/ocr-api:$RELEASE_SHA"
           docker build \
-            --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
-            --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY" \
             --build-arg VITE_STAFF_MFA_ENFORCE="$VITE_STAFF_MFA_ENFORCE" \
             -t "$WEB" .
           docker build -f property-ocr-suite/backend/Dockerfile.worker -t "$OCR_WORKER" property-ocr-suite/backend

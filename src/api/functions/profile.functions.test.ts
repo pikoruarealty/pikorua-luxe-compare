@@ -8,7 +8,7 @@
 // would be enough to register against it, which is the same takeover through a
 // different door.
 //
-// These cases all fail before any database call, so no Supabase stub is needed.
+// These cases all fail before any database call, so no database stub is needed.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

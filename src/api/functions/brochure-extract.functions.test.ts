@@ -22,22 +22,9 @@ vi.mock("@tanstack/react-start", () => ({
   },
 }));
 
-vi.mock("@/integrations/supabase/admin-auth-middleware", () => ({ requireAdminAuth: {} }));
-vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({
-              data: ownedJob ? { job_id: "job-1234" } : null,
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    }),
-  },
+vi.mock("@/lib/auth/admin-auth-middleware", () => ({ requireAdminAuth: {} }));
+vi.mock("@/repositories/brochure-job.repository.server", () => ({
+  isBrochureJobOwnedBy: async () => ownedJob,
 }));
 
 async function call(fn: unknown, data: unknown) {

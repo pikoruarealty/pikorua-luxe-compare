@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { throwSafeError } from "@/lib/safe-error";
-import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireOwnerAuth } from "@/lib/auth/admin-auth-middleware";
 import {
   insertDeveloperProfile,
   listDeveloperProfiles,
@@ -34,24 +34,18 @@ export const listDevelopers = createServerFn({ method: "GET" })
     const devs = await listDeveloperProfiles();
 
     // property_submissions (V1) has no local equivalent yet — Phase C scope.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    type CountRow = {
-      developer_id: string;
-      pending_submissions: number;
-      total_submissions: number;
-    };
-    type CountClient = {
-      from: (table: string) => {
-        select: (columns: string) => Promise<{ data: CountRow[] | null; error: unknown }>;
-      };
-    };
-    const { data: counts, error: countsError } = await (supabaseAdmin as unknown as CountClient)
-      .from("developer_submission_counts")
-      .select("developer_id, pending_submissions, total_submissions");
-    if (countsError) {
-      throwSafeError("listDevelopers.counts", countsError, "Could not load developer activity");
-    }
-    const countsByDeveloper = new Map((counts ?? []).map((row) => [row.developer_id, row]));
+    const { getDatabase } = await import("@/db/client.server");
+    const { propertySubmissionWorkflows } = await import("@/db/schema");
+    const { sql } = await import("drizzle-orm");
+    const counts = await getDatabase()
+      .select({
+        developerId: propertySubmissionWorkflows.developerId,
+        pendingSubmissions: sql<number>`count(*) filter (where ${propertySubmissionWorkflows.state} = 'in_review')::int`,
+        totalSubmissions: sql<number>`count(*)::int`,
+      })
+      .from(propertySubmissionWorkflows)
+      .groupBy(propertySubmissionWorkflows.developerId);
+    const countsByDeveloper = new Map(counts.map((row) => [row.developerId, row]));
 
     const entitlementRows = await listAllEntitlements();
     const entitlements = new Map(entitlementRows.map((row) => [row.developerId, row]));
@@ -72,8 +66,8 @@ export const listDevelopers = createServerFn({ method: "GET" })
         fullName: d.fullName,
         isActive: d.isActive,
         createdAt: d.createdAt.toISOString(),
-        pendingSubmissions: Number(counts?.pending_submissions ?? 0),
-        totalSubmissions: Number(counts?.total_submissions ?? 0),
+        pendingSubmissions: Number(counts?.pendingSubmissions ?? 0),
+        totalSubmissions: Number(counts?.totalSubmissions ?? 0),
         intelligence: {
           accessLevel: (entitlement?.accessLevel as "trial" | "paid" | undefined) ?? null,
           status: (entitlement?.status as "active" | "suspended" | undefined) ?? "missing",

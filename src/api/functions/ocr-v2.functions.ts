@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireDeveloperAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireDeveloperAuth } from "@/lib/auth/admin-auth-middleware";
 
 const idSchema = z.string().uuid();
 const uploadSchema = z

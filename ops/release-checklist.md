@@ -1,57 +1,50 @@
-# PropCompare v2 release checklist
+# PropCompare V2 release checklist
 
-Every item needs an owner, evidence link and date. A feature flag stays off if any applicable item
-is incomplete. Never use this checklist to infer that an external service has been configured.
+Every item needs an owner, evidence link, and date. A feature flag stays off
+until its applicable items are complete.
 
 ## Internal acceptance
 
-- [ ] Production Supabase is separate from development; backup restore is evidenced.
-- [ ] All v2 flags are off in the public deployment before data approval.
-- [ ] Staff MFA, CSP, Upstash fail-closed behavior and log/Sentry redaction are verified.
-- [ ] Reviewer deliberately approves each production publication; no development record or fake
-      review is copied automatically.
-- [ ] Developer isolation, reviewer correction, transaction rollback, OCR restart/retry and asset
-      promotion evidence is attached.
-- [ ] Sentinel leakage suite covers SSR HTML, hydration, public details, recommendations,
-      authenticated/shared comparison, logs/errors and analytics with zero occurrences.
-- [ ] Legal approval covers DPDP, reviews, enquiries, verification language and indefinite evidence
-      retention.
+- [ ] Production self-hosted Postgres is separate from development; a backup
+      restore has been evidenced.
+- [ ] All V2 flags are off in the public deployment before data approval.
+- [ ] Staff MFA, CSP, Upstash fail-closed behavior, and log/Sentry redaction
+      are verified.
+- [ ] A reviewer deliberately approves each production publication; no test or
+      fake review is copied automatically.
+- [ ] Developer isolation, reviewer correction, transaction rollback, OCR
+      restart/retry, and asset-promotion evidence is attached.
+- [ ] Sentinel leakage tests cover SSR, hydration, public details,
+      recommendations, authenticated/shared comparisons, logs, errors, and
+      analytics with zero occurrences.
+- [ ] Legal approval covers DPDP, reviews, enquiries, verification language,
+      and evidence retention.
 
 ## Closed beta
 
 - [ ] Enable only reviewed flags for an explicitly controlled audience.
-- [ ] Dashboard tracks preference completion, OTP send/verify success, comparison opening, review
-      holds/reports, enquiries, OCR failures, cache/Redis failures and commercial leakage alerts.
+- [ ] Dashboard tracks OTP success, review activity, OCR failures, enquiry
+      delivery, cache failures, and commercial-data leakage alerts.
 - [ ] Support and moderation workload has named coverage and escalation times.
-- [ ] Users understand stale pricing notices and “Verified by PropCompare” in moderated research.
-- [ ] Developer-intelligence queries return aggregates only, enforce the five-session privacy
-      floor, and an entitlement change leaves PropScore and catalogue ordering unchanged.
-- [ ] No critical trust, authentication, privacy or moderation defect remains open.
+- [ ] No critical trust, authentication, privacy, or moderation defect remains.
 
 ## Public release
 
-- [ ] GCP/VM, GCS, Artifact Registry, production Supabase, Upstash, Maps, SMS, Sentry, Pub/Sub and
-      BigQuery are configured and monitored in India/Mumbai-compatible regions where applicable.
-- [ ] DNS/TLS, health/readiness, cost/quota alerts, VM patching and secret rotation are evidenced.
-- [ ] WCAG 2.2 AA automation plus keyboard and screen-reader checks are signed off.
-- [ ] Mobile/tablet/desktop/wide visual QA and p75 performance targets pass on production-like load.
-- [ ] Database migration, backup restore, application rollback and account-deletion propagation are
-      rehearsed.
+- [ ] GCP/VM, self-hosted Postgres, GCS, Artifact Registry, Upstash, Maps,
+      SMS, Sentry, Pub/Sub, and BigQuery are configured and monitored in
+      suitable regions.
+- [ ] DNS/TLS, health/readiness, cost/quota alerts, VM patching, and secret
+      rotation are evidenced.
+- [ ] WCAG 2.2 AA automation plus keyboard and screen-reader checks are signed
+      off.
+- [ ] Database migration, backup restore, application rollback, and
+      account-deletion propagation have been rehearsed.
 - [ ] All enabled flags have passed their individual phase gates.
 
-## Flag order and rollback
+## Explicitly deferred
 
-Enable in dependency order: `V2_CATALOGUE`, `V2_COMPARISON`, `V2_OCR`, `V2_REVIEWS`, then
-`V2_ENQUIRIES`, then `V2_PROPSCORE` after Phase 3 data, RERA evidence and methodology approval.
-Disable the affected server flag first on a serious defect; this blocks server data
-access, not only UI. For an application regression, switch Nginx to the retained healthy slot. Do
-not roll back a database migration unless a reviewed reverse migration is known safe; use
-expand/migrate/contract compatibility instead.
-
-## Explicitly still deferred
-
-SEO comparison previews, developer organizations, enquiry notifications, Cloud SQL, additional
-cities and Pub/Sub OCR queue migration stay outside the core release. Fair value, an AI advisor,
-gamification, monetized ranking, fabricated verdicts, automatic RERA scraping and direct OCR
-publication remain prohibited. PropScore is scheduled under Phase 5, remains gated until its
-evidence and legal-review gates pass, and can never be purchased or developer-controlled.
+SEO comparison previews, developer organizations, enquiry notifications, Cloud
+SQL, additional cities, and Pub/Sub OCR queue migration remain outside the
+core release. Fair value, an AI advisor, gamification, monetized ranking,
+fabricated verdicts, automatic RERA scraping, and direct OCR publication remain
+prohibited.

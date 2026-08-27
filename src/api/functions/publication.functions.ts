@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { publicationRevisionSchema } from "@/domain/publication";
-import { requireReviewerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireReviewerAuth } from "@/lib/auth/admin-auth-middleware";
 
 const workflowIdSchema = z.string().uuid();
 

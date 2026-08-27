@@ -19,7 +19,7 @@ vi.mock("@tanstack/react-start", () => ({
   },
 }));
 
-vi.mock("@/integrations/supabase/admin-auth-middleware", () => ({ requireAdminAuth: {} }));
+vi.mock("@/lib/auth/admin-auth-middleware", () => ({ requireAdminAuth: {} }));
 vi.mock("@/server/gcs.server", () => ({
   uploadPublicObject: async () => "https://images.example/upload.jpg",
 }));

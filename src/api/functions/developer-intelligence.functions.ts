@@ -2,10 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import {
-  requireDeveloperAuth,
-  requireOwnerAuth,
-} from "@/integrations/supabase/admin-auth-middleware";
+import { requireDeveloperAuth, requireOwnerAuth } from "@/lib/auth/admin-auth-middleware";
 import {
   assertIntelligencePayloadSafe,
   type BehaviourMetrics,

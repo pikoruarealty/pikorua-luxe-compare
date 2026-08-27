@@ -27,17 +27,6 @@ vi.mock("@/server/rate-limit.server", () => ({
   POLICIES: { ACTIVITY: {} },
 }));
 vi.mock("@/server/session.server", () => ({ sessionConfig: () => ({}) }));
-vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: {
-    from: (table: string) => ({
-      insert: async (value: { metadata?: unknown }) => {
-        if (table === "customer_activity") insertedMetadata = value.metadata;
-        return { error: null };
-      },
-      update: () => ({ eq: async () => ({ error: null }) }),
-    }),
-  },
-}));
 
 async function call<T>(fn: unknown, data: unknown): Promise<T> {
   return (fn as (args: { data: unknown }) => Promise<T>)({ data });

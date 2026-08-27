@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireOwnerAuth } from "@/lib/auth/admin-auth-middleware";
 
 function v2Status(state: string): "pending" | "approved" | "rejected" {
   if (state === "in_review") return "pending";
@@ -107,22 +107,28 @@ export const listSubmissions = createServerFn({ method: "GET" })
     const items = await listV2Submissions();
     if (!items.length) return [];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getDatabase } = await import("@/db/client.server");
+    const { adminProfiles } = await import("@/db/schema");
+    const { inArray } = await import("drizzle-orm");
     const developerIds = Array.from(new Set(items.map((v) => v.developerId)));
-    const { data: developers } = developerIds.length
-      ? await supabaseAdmin
-          .from("admin_profiles")
-          .select("id, email, full_name")
-          .in("id", developerIds)
-      : { data: [] };
-    const byId = new Map((developers ?? []).map((d) => [d.id, d]));
+    const developers = developerIds.length
+      ? await getDatabase()
+          .select({
+            id: adminProfiles.id,
+            email: adminProfiles.email,
+            fullName: adminProfiles.fullName,
+          })
+          .from(adminProfiles)
+          .where(inArray(adminProfiles.id, developerIds))
+      : [];
+    const byId = new Map(developers.map((d) => [d.id, d]));
 
     return items
       .map((item) => {
         const dev = byId.get(item.developerId);
         return {
           ...item,
-          developerName: dev?.full_name ?? dev?.email ?? "Unknown developer",
+          developerName: dev?.fullName ?? dev?.email ?? "Unknown developer",
           developerEmail: dev?.email ?? "",
         };
       })

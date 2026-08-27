@@ -67,7 +67,7 @@ export interface Property {
   advantages: string[];
   gallery: PropertyGallery;
   expertNote: string;
-  // Project structure — optional until backed by their own Supabase columns
+  // Project structure — optional until backed by their own database columns
   // and admin form fields (tracked separately; UI already renders them).
   plotSize?: string | null;
   totalTowers?: number | null;

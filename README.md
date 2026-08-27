@@ -1,149 +1,100 @@
 # PropCompare — Compare. Decide. Confidently.
 
-A private-client platform for comparing ultra-luxury residences side by side. Buyers
-pick two or three projects and see every material detail — configurations, room
-dimensions, pricing, RERA status, construction spec, and developer track record —
-lined up in a single, honest view instead of a dozen browser tabs.
+PropCompare is a private-client platform for comparing ultra-luxury residences
+side by side. Buyers can compare configurations, room dimensions, pricing,
+RERA status, construction details, amenities, and developer information in one
+place.
 
-Built with TanStack Start (React 19) and Supabase.
-
----
+The application uses TanStack Start (React 19), self-hosted PostgreSQL, Better
+Auth, and Google Cloud Storage.
 
 ## Highlights
 
-- **Side-by-side comparison** — a quick on-page board plus a full-page report for 2–3 residences.
-- **Deep field set** — configurations, per-room dimensions, project structure, RERA registration, construction & amenities, and developer track record.
-- **Area unit toggle** — read every area figure in sq ft, sq yd (Var), or gaj; room dimensions stay in ft/in.
-- **Live possession countdown** — "1 Year" quietly becomes "10 Months" as time passes, once an anchor date is set.
-- **Distance estimate** — a visitor types their address and gets an approximate straight-line distance to each residence, geocoded server-side (no map or coordinates are ever exposed to the client).
-- **Preference quiz & filtering** — city, property type, BHK, and budget narrow the catalogue.
-- **Phone OTP sign-in** — lightweight identity via a one-time SMS code, with saved profiles.
-- **Personal tools** — favorites, saved comparisons, recently viewed, and shareable comparison links.
-- **Owner admin portal** — property CRUD, developer submissions, customer records, and activity.
+- Side-by-side comparison for two or three residences.
+- Catalogue, developer submissions, owner review, and audited publication.
+- Phone OTP customer sign-in plus staff/developer email-password sign-in with
+  optional enforced MFA.
+- Property brochure OCR, publication assets, enquiries, reviews, and developer
+  intelligence behind server-controlled flags.
 
----
+## Technology
 
-## Tech stack
+| Area | Choice |
+| --- | --- |
+| Application | TanStack Start, React 19, Vite, Nitro |
+| Database | Self-hosted PostgreSQL with Drizzle ORM |
+| Staff auth | Better Auth |
+| Media | Google Cloud Storage |
+| Styling | Tailwind CSS, Radix UI, shadcn-style components |
+| State/forms | Zustand, React Hook Form, Zod |
 
-| Area           | Choice                                                                   |
-| -------------- | ------------------------------------------------------------------------ |
-| Framework      | [TanStack Start](https://tanstack.com/start) (React 19, SSR)             |
-| Routing / data | TanStack Router · TanStack Query · TanStack Table                        |
-| Backend        | [Supabase](https://supabase.com) (Postgres, Auth, Storage)               |
-| Styling        | Tailwind CSS v4 · Radix UI primitives · shadcn-style components          |
-| State          | Zustand (compare, favorites, saved comparisons, area unit, variant view) |
-| Forms          | React Hook Form · Zod                                                    |
-| Animation      | Framer Motion                                                            |
-| Build / deploy | Vite 8 · Nitro (Cloudflare Workers / Vercel)                             |
-| OTP delivery   | [2Factor.in](https://2factor.in)                                         |
-| Geocoding      | OpenStreetMap Nominatim                                                  |
+## Local setup
 
----
-
-## Getting started
-
-### Prerequisites
-
-- [Bun](https://bun.sh) (the repo ships a `bun.lock`; npm works too)
-- A Supabase project
-- A 2Factor.in API key (only needed for live phone OTP)
-
-### 1. Install
+Prerequisites: Bun, PostgreSQL (or the local Docker setup), and any third-party
+keys needed for the features you choose to enable.
 
 ```bash
 bun install
-```
-
-### 2. Configure environment
-
-Copy the example file and fill in real values:
-
-```bash
-cp .env.example .env
-```
-
-| Variable                        | Scope  | Purpose                                           |
-| ------------------------------- | ------ | ------------------------------------------------- |
-| `SUPABASE_URL`                  | server | Supabase project URL                              |
-| `SUPABASE_PUBLISHABLE_KEY`      | server | Publishable / anon key                            |
-| `SUPABASE_SERVICE_ROLE_KEY`     | server | Service-role key (admin writes)                   |
-| `VITE_SUPABASE_URL`             | client | Same URL, exposed to the browser                  |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client | Same publishable key, exposed to the browser      |
-| `SESSION_SECRET`                | server | Signs session cookies and OTP verification tokens |
-| `TWO_FACTOR_API_KEY`            | server | 2Factor.in key for sending OTP SMS                |
-
-`.env` is gitignored. Only `VITE_`-prefixed variables reach the browser.
-
-### 3. Run
-
-```bash
+Copy-Item .env.example .env
 bun run dev
 ```
 
-The app serves on **http://localhost:5173**.
+The development server listens on `http://localhost:5173`.
 
----
+Important server environment values include:
 
-## Scripts
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Signs Better Auth session and MFA data |
+| `SESSION_SECRET` | Signs customer phone-OTP verification tokens |
+| `TWO_FACTOR_API_KEY` | Sends phone OTP messages |
+| `GCS_PUBLIC_IMAGES_BUCKET` | Public property-image bucket |
+| `GCS_PRIVATE_SOURCE_BUCKET` | Private brochure/source bucket |
 
-| Command           | Description                                   |
-| ----------------- | --------------------------------------------- |
-| `bun run dev`     | Start the dev server (http://localhost:5173)  |
-| `bun run build`   | Production build (Nitro output in `.output/`) |
-| `bun run preview` | Preview the production build locally          |
-| `bun run lint`    | ESLint + Prettier check                       |
-| `bun run format`  | Format the codebase with Prettier             |
+`.env` is gitignored. Never expose server secrets through `VITE_` variables.
 
----
+## Common commands
+
+```bash
+bun run dev
+bun run lint
+bun run test
+bun run check
+bun run schema:check
+bun run db:drift
+bun run build
+```
 
 ## Database
 
-Schema lives in [`supabase/migrations/`](supabase/migrations) — apply it with the
-Supabase CLI or the SQL editor. Two one-time setup scripts (run outside Vite):
+The migration files live in [`supabase/migrations/`](supabase/migrations); the
+directory name is historical. `ops/db/bootstrap.sql` and `ops/db/migrate.sh`
+replay them against ordinary self-hosted PostgreSQL, recording applied versions
+in `supabase_migrations.schema_migrations`.
 
-```bash
-# Create the owner admin account (Supabase Auth user + admin profile)
-bun scripts/seed-owner.ts <email> <password>
-
-# Seed public.properties from the bundled catalogue and upload images to Storage
-bun scripts/migrate-properties.ts
-```
-
-Both are idempotent. At runtime the app reads properties from Supabase (loaded once
-in the root route and served to the whole app via `PropertiesProvider`).
-
----
+For production, the shared-VM deployment applies unapplied migrations before
+restarting the updated application containers. Do not use an external database
+CLI or manually change production schema without a reviewed migration.
 
 ## Project structure
 
-```
+```text
 src/
-  routes/          File-based routes (/, /compare, /residence/$id, /favorites,
-                   /account, /admin/*). See src/routes/README.md for conventions.
-  components/      UI — compare/, onboarding/, admin/, residence/, property/, ui/
-  lib/            Server functions & pure helpers (server fns are *.functions.ts /
-                  *.server.ts; derivations, area units, possession, distance, …)
-  stores/         Zustand stores
-  context/        Providers (properties, onboarding, theme)
-  integrations/   Supabase clients, auth middleware
-  types/          Shared domain types (Property, ConfigDetail, …)
-supabase/         Database migrations
-scripts/          One-time seed / migration scripts
+  api/             Server functions
+  components/      UI components
+  db/              Drizzle schema and connection
+  lib/auth/        Better Auth setup and middleware
+  repositories/    Database access
+  routes/          File-based routes
+supabase/          Historical-name migration directory
+scripts/           Maintained administrative scripts
+ops/               Production deployment and database operations
 ```
-
----
 
 ## Deployment
 
-The build targets Nitro. Deploy target is a GCP VM running the Docker image built from
-[`Dockerfile`](Dockerfile), which sets `NITRO_PRESET=node-server`:
-
-```bash
-docker build -t propcompare .
-docker run -p 3000:3000 propcompare
-```
-
-See [`ops/deploy-slot.sh`](ops/deploy-slot.sh) and `.github/workflows/deploy-production.yml`
-for the actual production rollout.
-
-Set the same environment variables from `.env.example` in your host's dashboard.
+Pushing to `main` runs the shared-VM deployment workflow. It builds images in
+GitHub Actions, pushes them to Artifact Registry, applies migrations on the VM,
+and starts `web-blue` plus the OCR services. See [ops/RUNBOOK.md](ops/RUNBOOK.md)
+for the current operating procedure.

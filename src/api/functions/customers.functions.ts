@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireOwnerAuth } from "@/lib/auth/admin-auth-middleware";
 import {
   countProfiles,
   countProfilesWithQuiz,
@@ -126,7 +126,7 @@ export const getCustomerDetail = createServerFn({ method: "GET" })
 
 /** Owner-only: headline numbers for the dashboard. Property/submission counts
  *  read the V2 local-Postgres catalogue — the only place either lands now
- *  that Phase C retired the V1 Supabase create/review path. */
+ *  that Phase C retired the V1 create/review path. */
 export const getAdminStats = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
   .handler(async (): Promise<AdminStats> => {

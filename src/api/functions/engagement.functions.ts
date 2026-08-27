@@ -2,10 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import {
-  requireDeveloperAuth,
-  requireModerationAuth,
-} from "@/integrations/supabase/admin-auth-middleware";
+import { requireDeveloperAuth, requireModerationAuth } from "@/lib/auth/admin-auth-middleware";
 import { requireVisitorAuth } from "@/middleware/visitor-auth";
 import { REVIEW_DIMENSIONS } from "@/domain/structured-reviews";
 

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { throwSafeError } from "@/lib/safe-error";
-import { requireAdminAuth } from "@/integrations/supabase/admin-auth-middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-auth-middleware";
 import type { ExtractionResponse, PropertyExtraction } from "@/lib/brochure-field-mapping";
 
 /** How long a browser has to start its upload after asking for a ticket. Long

@@ -3,7 +3,6 @@ import { getRequest } from "@tanstack/react-start/server";
 
 import { auth } from "./auth.server";
 
-// Replaces src/integrations/supabase/auth-middleware.ts's requireSupabaseAuth.
 // better-auth issues an httpOnly session cookie (set by auth.handler in
 // src/server.ts), so verification here is just asking better-auth to read
 // and validate that cookie against the "session" table — no bearer token.

@@ -17,6 +17,8 @@ const migrationFiles = [
   "20260823120000_rera_registered_completion_progress.sql",
   "20260814120000_brochure_job_ownership.sql",
   "20260827130000_better_auth_core.sql",
+  "20260827140000_admin_profiles_fk_to_better_auth.sql",
+  "20260827150000_drop_auth_users_shim.sql",
 ];
 const migration = (
   await Promise.all(
@@ -82,7 +84,7 @@ const missing = mirroredTables.filter(
 );
 
 if (missing.length) {
-  throw new Error(`Drizzle/Supabase schema mirror is incomplete: ${missing.join(", ")}`);
+  throw new Error(`Drizzle/migration schema mirror is incomplete: ${missing.join(", ")}`);
 }
 
 console.log(`Checked ${mirroredTables.length} mirrored canonical tables.`);
