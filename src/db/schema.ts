@@ -481,6 +481,13 @@ export const propertySubmissionWorkflows = pgTable("property_submission_workflow
     .references(() => adminProfiles.id, { onDelete: "restrict" }),
   state: submissionState("state").notNull().default("draft"),
   currentRevision: integer("current_revision").notNull().default(0),
+  // Set only when this workflow's first revision came from a brochure
+  // extraction (a create, not an edit). publishWorkflow uses it to stamp
+  // brochure_jobs.property_id once the property it produced is real, which is
+  // what makes the job drop out of the developer's resume dropdown.
+  brochureJobId: text("brochure_job_id").references(() => brochureJobs.jobId, {
+    onDelete: "set null",
+  }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

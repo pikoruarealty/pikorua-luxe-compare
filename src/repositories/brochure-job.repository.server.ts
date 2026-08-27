@@ -44,18 +44,21 @@ export async function insertBrochureJob(jobId: string, adminProfileId: string): 
 
 /** Marks a job as consumed once its extraction has become a real property.
  *
+ *  Takes the caller's transaction (see publishWorkflow) rather than opening
+ *  its own, so the stamp lands atomically with the publish it's recording —
+ *  a job should never end up marked consumed by a publish that rolled back,
+ *  or vice versa.
+ *
  *  Scoped to `adminProfileId` so a caller can't stamp someone else's job, and
  *  to rows that aren't already claimed so a re-submitted brochure can't
- *  silently repoint an earlier property's job at a new one. Best-effort by
- *  design: the caller has already created the property by the time this runs,
- *  and a job lingering in the resume dropdown is a far smaller problem than a
- *  submission failing after the fact. */
+ *  silently repoint an earlier property's job at a new one. */
 export async function markBrochureJobConsumed(
+  tx: Parameters<Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]>[0],
   jobId: string,
   adminProfileId: string,
   propertyId: string,
 ): Promise<void> {
-  await getDatabase()
+  await tx
     .update(brochureJobs)
     .set({ propertyId })
     .where(

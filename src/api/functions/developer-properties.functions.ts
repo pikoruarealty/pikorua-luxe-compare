@@ -327,6 +327,7 @@ async function submitV2PropertyUpdate(
 async function submitV2PropertyCreate(
   developerId: string,
   values: PropertyFormValues,
+  brochureJobId?: string,
 ): Promise<{ ok: true }> {
   const { eq, and, ilike } = await import("drizzle-orm");
   const { getDatabase } = await import("@/db/client.server");
@@ -363,7 +364,13 @@ async function submitV2PropertyCreate(
     cityCode: market.cityCode,
   });
 
-  const { workflowId } = await saveDeveloperRevision(developerId, revision, undefined, undefined);
+  const { workflowId } = await saveDeveloperRevision(
+    developerId,
+    revision,
+    undefined,
+    undefined,
+    brochureJobId,
+  );
   await submitDeveloperWorkflow(workflowId, developerId);
   return { ok: true };
 }
@@ -374,26 +381,39 @@ async function submitV2PropertyCreate(
  *  Both "create" and "update" go into the V2 workflow queue (see
  *  submitV2PropertyCreate/submitV2PropertyUpdate) — ownership for an update is
  *  re-checked inside submitV2PropertyUpdate itself. */
+// Matches insertBrochureJob's generator (crypto.randomUUID, hyphens
+// stripped, sliced to 24) — see createBrochureUploadTicket.
+const JOB_ID_RE = /^[a-f0-9]{12,32}$/;
+
 export const submitPropertyForReview = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
   .inputValidator(
-    (data: { action: "create" | "update"; propertyId?: string; values: PropertyFormValues }) => {
+    (data: {
+      action: "create" | "update";
+      propertyId?: string;
+      jobId?: string;
+      values: PropertyFormValues;
+    }) => {
       if (data?.action !== "create" && data?.action !== "update") {
         throw new Error("Invalid action");
       }
       if (data.action === "update" && !data.propertyId) {
         throw new Error("Missing property id for an update submission");
       }
+      if (data.jobId && !JOB_ID_RE.test(data.jobId)) {
+        throw new Error("Invalid job id");
+      }
       return {
         action: data.action,
         propertyId: data.propertyId,
+        jobId: data.jobId,
         values: parsePropertySubmission(data.values),
       };
     },
   )
   .handler(async ({ data, context }) => {
     if (data.action === "create") {
-      return submitV2PropertyCreate(context.adminProfile.id, data.values);
+      return submitV2PropertyCreate(context.adminProfile.id, data.values, data.jobId);
     }
     return submitV2PropertyUpdate(
       data.propertyId as string, // guaranteed by the validator above

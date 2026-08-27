@@ -21,6 +21,7 @@ import {
   reviewActions,
 } from "@/db/schema";
 import { matchAmenities, mergeAmenitiesOther } from "@/domain/amenity-mapping";
+import { markBrochureJobConsumed } from "@/repositories/brochure-job.repository.server";
 import { calculatePrivatePriceBounds } from "@/domain/private-pricing.server";
 import {
   assertSubmissionTransition,
@@ -348,6 +349,9 @@ export async function publishWorkflow(workflowId: string, reviewerId: string) {
       .update(propertySubmissionWorkflows)
       .set({ propertyId, state: "published" })
       .where(eq(propertySubmissionWorkflows.id, workflowId));
+    if (workflow.brochureJobId) {
+      await markBrochureJobConsumed(tx, workflow.brochureJobId, workflow.developerId, propertyId);
+    }
     await tx.insert(reviewActions).values({
       workflowId,
       submissionRevisionId: revisionRow.id,

@@ -84,7 +84,9 @@ export function AddPropertyFlow() {
           );
         }
       }
-      return submitPropertyForReview({ data: { action: "create", values } });
+      return submitPropertyForReview({
+        data: { action: "create", jobId: extraction?.job_id, values },
+      });
     },
     onSuccess: () => {
       if (extraction) clearReviewProgress(extraction.job_id);
