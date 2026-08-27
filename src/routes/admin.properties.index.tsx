@@ -11,7 +11,10 @@ import { TableWrap, Th, Td } from "@/components/portal/Table";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { FilterSelect } from "@/components/admin/FilterSelect";
 import { adminPropertiesQueryOptions, PROPERTIES_KEY } from "@/api/queries/properties.queries";
-import { deleteProperty, setPropertyPublished } from "@/api/functions/property-crud.functions";
+import {
+  deleteV2Property,
+  setV2PropertyPublished,
+} from "@/api/functions/property-v2-admin.functions";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
 import type { AdminProperty } from "@/api/functions/properties.functions";
 import {
@@ -61,7 +64,7 @@ function AdminProperties() {
 
   const publishMutation = useMutation({
     mutationFn: (vars: { id: string; isPublished: boolean }) =>
-      setPropertyPublished({ data: vars }),
+      setV2PropertyPublished({ data: vars }),
     onSuccess: async (_r, vars) => {
       await refresh();
       toast.success(vars.isPublished ? "Property published" : "Property hidden from site");
@@ -69,11 +72,21 @@ function AdminProperties() {
     onError: (e: Error) => toast.error(e.message || "Could not update"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteProperty({ data: { id } }),
+  const unpublishMutation = useMutation({
+    mutationFn: (id: string) => setV2PropertyPublished({ data: { id, isPublished: false } }),
     onSuccess: async () => {
       await refresh();
-      toast.success("Property deleted");
+      toast.success("Property unpublished — hidden from the site, history kept");
+      setPendingDelete(null);
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not unpublish"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteV2Property({ data: { id } }),
+    onSuccess: async () => {
+      await refresh();
+      toast.success("Property permanently deleted");
       setPendingDelete(null);
     },
     onError: (e: Error) => toast.error(e.message || "Could not delete"),
@@ -259,7 +272,7 @@ function AdminProperties() {
                     <Pencil className="h-4 w-4" />
                   </Link>
                   <IconButton
-                    title="Delete"
+                    title="Remove"
                     tone="danger"
                     onClick={() => setPendingDelete({ id: p.rowId, name: p.name })}
                   >
@@ -362,20 +375,31 @@ function AdminProperties() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete “{pendingDelete?.name}”?</AlertDialogTitle>
+            <AlertDialogTitle>Remove “{pendingDelete?.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the property from the website and the database. This cannot
-              be undone.
+              Unpublishing hides the property from the site while keeping its full history — this is
+              reversible from the list at any time. Deleting permanently erases the property and
+              cannot be undone; it only works when nothing real (reviews, enquiries, field visits)
+              is attached to it.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="sm:justify-between">
             <AlertDialogAction
               onClick={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
-              disabled={deleteMutation.isPending}
+              disabled={deleteMutation.isPending || unpublishMutation.isPending}
+              className="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              {deleteMutation.isPending ? "Deleting…" : "Delete permanently"}
             </AlertDialogAction>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => pendingDelete && unpublishMutation.mutate(pendingDelete.id)}
+                disabled={deleteMutation.isPending || unpublishMutation.isPending}
+              >
+                {unpublishMutation.isPending ? "Unpublishing…" : "Unpublish"}
+              </AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

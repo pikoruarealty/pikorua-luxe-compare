@@ -77,7 +77,13 @@ export const createV2Property = createServerFn({ method: "POST" })
     const { eq } = await import("drizzle-orm");
     const { getDatabase } = await import("@/db/client.server");
     const { properties } = await import("@/db/schema");
-    const [row] = await getDatabase()
+    const db = getDatabase();
+    // publishWorkflow always brings a property live (isPublished: true) — the
+    // form's own checkbox is the one place that can ask for it to start hidden.
+    if (!data.isPublished) {
+      await db.update(properties).set({ isPublished: false }).where(eq(properties.id, propertyId));
+    }
+    const [row] = await db
       .select({ slug: properties.slug })
       .from(properties)
       .where(eq(properties.id, propertyId))
@@ -108,6 +114,11 @@ export const updateV2Property = createServerFn({ method: "POST" })
     if (!exists) throw new Error("Property not found");
 
     const { propertyId } = await publishV2Revision(data.values, context.adminProfile.id, data.id);
+    // publishWorkflow always brings a property live (isPublished: true) — the
+    // form's own checkbox is the one place that can ask for it to go back down.
+    if (!data.values.isPublished) {
+      await db.update(properties).set({ isPublished: false }).where(eq(properties.id, propertyId));
+    }
     const [row] = await db
       .select({ slug: properties.slug })
       .from(properties)
@@ -432,6 +443,7 @@ export const getV2PropertyForEdit = createServerFn({ method: "GET" })
         sourceRevisionId: propertyPublicationVersions.sourceRevisionId,
         stateName: markets.stateName,
         cityName: markets.cityName,
+        isPublished: properties.isPublished,
       })
       .from(properties)
       .innerJoin(
@@ -455,5 +467,9 @@ export const getV2PropertyForEdit = createServerFn({ method: "GET" })
       stateName: row.stateName,
       cityName: row.cityName,
     });
-    return { ...values, id: data.id };
+    // buildFormValuesFromRevision has no isPublished concept of its own (that's a
+    // property-level flag, not part of the revision) and defaults it to true —
+    // override with the property's real current state so editing a hidden
+    // property doesn't silently re-publish it on save.
+    return { ...values, isPublished: row.isPublished, id: data.id };
   });

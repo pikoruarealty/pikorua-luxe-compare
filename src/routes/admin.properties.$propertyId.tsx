@@ -6,7 +6,10 @@ import { BrochureEnrichPanel } from "@/components/developer/BrochureEnrichPanel"
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PropertyForm } from "@/components/admin/PropertyForm";
-import { getPropertyForEdit, updateProperty } from "@/api/functions/property-crud.functions";
+import {
+  getV2PropertyForEdit,
+  updateV2Property,
+} from "@/api/functions/property-v2-admin.functions";
 import { PROPERTIES_KEY } from "@/api/queries/properties.queries";
 import type { PropertyFormValues } from "@/lib/property-schema";
 
@@ -28,13 +31,13 @@ function EditProperty() {
     error,
   } = useQuery({
     queryKey: ["admin", "property", propertyId],
-    queryFn: () => getPropertyForEdit({ data: { id: propertyId } }),
+    queryFn: () => getV2PropertyForEdit({ data: { id: propertyId } }),
     retry: false,
   });
 
   const mutation = useMutation({
     mutationFn: (values: PropertyFormValues) =>
-      updateProperty({ data: { id: propertyId, values } }),
+      updateV2Property({ data: { id: propertyId, values } }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "properties"] });
       await queryClient.invalidateQueries({ queryKey: ["admin", "property", propertyId] });

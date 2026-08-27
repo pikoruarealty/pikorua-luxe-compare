@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PropertyForm } from "@/components/admin/PropertyForm";
-import { createProperty } from "@/api/functions/property-crud.functions";
+import { createV2Property } from "@/api/functions/property-v2-admin.functions";
 import { PROPERTIES_KEY } from "@/api/queries/properties.queries";
 import type { PropertyFormValues } from "@/lib/property-schema";
 
@@ -18,7 +18,7 @@ function NewProperty() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (values: PropertyFormValues) => createProperty({ data: values }),
+    mutationFn: (values: PropertyFormValues) => createV2Property({ data: values }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "properties"] });
       await queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });
