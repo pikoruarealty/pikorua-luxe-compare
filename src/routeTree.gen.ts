@@ -35,6 +35,7 @@ import { Route as AdminPropertiesIndexRouteImport } from './routes/admin.propert
 import { Route as DeveloperPropertiesNewRouteImport } from './routes/developer.properties.new'
 import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.properties.$id'
 import { Route as DeveloperIntelligencePropertyIdRouteImport } from './routes/developer.intelligence.$propertyId'
+import { Route as DeveloperDraftsWorkflowIdRouteImport } from './routes/developer.drafts.$workflowId'
 import { Route as AdminPropertiesNewRouteImport } from './routes/admin.properties.new'
 import { Route as AdminPropertiesPropertyIdRouteImport } from './routes/admin.properties.$propertyId'
 
@@ -171,6 +172,12 @@ const DeveloperIntelligencePropertyIdRoute =
     path: '/developer/intelligence/$propertyId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DeveloperDraftsWorkflowIdRoute =
+  DeveloperDraftsWorkflowIdRouteImport.update({
+    id: '/developer/drafts/$workflowId',
+    path: '/developer/drafts/$workflowId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminPropertiesNewRoute = AdminPropertiesNewRouteImport.update({
   id: '/admin/properties/new',
   path: '/admin/properties/new',
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/developer/': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/drafts/$workflowId': typeof DeveloperDraftsWorkflowIdRoute
   '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
@@ -237,6 +245,7 @@ export interface FileRoutesByTo {
   '/developer': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/drafts/$workflowId': typeof DeveloperDraftsWorkflowIdRoute
   '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
@@ -268,6 +277,7 @@ export interface FileRoutesById {
   '/developer/': typeof DeveloperIndexRoute
   '/admin/properties/$propertyId': typeof AdminPropertiesPropertyIdRoute
   '/admin/properties/new': typeof AdminPropertiesNewRoute
+  '/developer/drafts/$workflowId': typeof DeveloperDraftsWorkflowIdRoute
   '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/developer/'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/drafts/$workflowId'
     | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/developer'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/drafts/$workflowId'
     | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
@@ -360,6 +372,7 @@ export interface FileRouteTypes {
     | '/developer/'
     | '/admin/properties/$propertyId'
     | '/admin/properties/new'
+    | '/developer/drafts/$workflowId'
     | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
@@ -391,6 +404,7 @@ export interface RootRouteChildren {
   DeveloperIndexRoute: typeof DeveloperIndexRoute
   AdminPropertiesPropertyIdRoute: typeof AdminPropertiesPropertyIdRoute
   AdminPropertiesNewRoute: typeof AdminPropertiesNewRoute
+  DeveloperDraftsWorkflowIdRoute: typeof DeveloperDraftsWorkflowIdRoute
   DeveloperIntelligencePropertyIdRoute: typeof DeveloperIntelligencePropertyIdRoute
   DeveloperPropertiesIdRoute: typeof DeveloperPropertiesIdRoute
   DeveloperPropertiesNewRoute: typeof DeveloperPropertiesNewRoute
@@ -582,6 +596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeveloperIntelligencePropertyIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/developer/drafts/$workflowId': {
+      id: '/developer/drafts/$workflowId'
+      path: '/developer/drafts/$workflowId'
+      fullPath: '/developer/drafts/$workflowId'
+      preLoaderRoute: typeof DeveloperDraftsWorkflowIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/properties/new': {
       id: '/admin/properties/new'
       path: '/admin/properties/new'
@@ -623,6 +644,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeveloperIndexRoute: DeveloperIndexRoute,
   AdminPropertiesPropertyIdRoute: AdminPropertiesPropertyIdRoute,
   AdminPropertiesNewRoute: AdminPropertiesNewRoute,
+  DeveloperDraftsWorkflowIdRoute: DeveloperDraftsWorkflowIdRoute,
   DeveloperIntelligencePropertyIdRoute: DeveloperIntelligencePropertyIdRoute,
   DeveloperPropertiesIdRoute: DeveloperPropertiesIdRoute,
   DeveloperPropertiesNewRoute: DeveloperPropertiesNewRoute,

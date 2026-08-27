@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, History, Pencil, Plus } from "lucide-react";
+import { Building2, ClipboardCheck, History, Pencil, Plus } from "lucide-react";
 import { DeveloperLayout } from "@/components/developer/DeveloperLayout";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { EmptyState } from "@/components/portal/EmptyState";
@@ -56,6 +56,33 @@ function DeveloperDashboard() {
 
       {data && (
         <div className="space-y-10">
+          {data.drafts.length > 0 && (
+            <section>
+              <h2 className="mb-3 font-label text-[11px] font-semibold tracking-luxury text-muted-foreground uppercase">
+                Needs your review
+              </h2>
+              <div className="divide-y divide-(--rule) overflow-hidden rounded-2xl border border-(--rule) bg-card shadow-(--shadow-lift)">
+                {data.drafts.map((d) => (
+                  <Link
+                    key={d.workflowId}
+                    to="/developer/drafts/$workflowId"
+                    params={{ workflowId: d.workflowId }}
+                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-foreground/2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">{d.propertyName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {d.action === "create" ? "New property" : "Edit"} · queued{" "}
+                        {dateFmt.format(new Date(d.createdAt))}
+                      </p>
+                    </div>
+                    <ClipboardCheck className="h-4 w-4 shrink-0 text-champagne" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section>
             <h2 className="mb-3 font-label text-[11px] font-semibold tracking-luxury text-muted-foreground uppercase">
               Live on the site

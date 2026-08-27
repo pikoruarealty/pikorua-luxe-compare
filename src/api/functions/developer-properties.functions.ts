@@ -27,6 +27,14 @@ export interface DeveloperSubmission {
   reviewedAt: string | null;
 }
 
+export interface DeveloperDraft {
+  workflowId: string;
+  action: "create" | "update";
+  propertyId: string | null;
+  propertyName: string;
+  createdAt: string;
+}
+
 /** V1 properties own their own name/developer/location columns. V2 (the local
  *  Postgres catalogue populated by scripts/load-brochures.ts) has no such
  *  columns — everything lives inside the current publication version's
@@ -174,6 +182,59 @@ async function getMyV2Submissions(developerId: string): Promise<DeveloperSubmiss
   });
 }
 
+/** Draft (and changes-requested) workflows this developer hasn't submitted
+ *  yet — including ones a script queued on their behalf, e.g. the retrospective
+ *  approval backfill. `draft`/`changes_requested` are excluded from
+ *  getMyV2Submissions on purpose (that list is "things I've submitted"); this
+ *  is "things waiting on me to submit". */
+async function getMyV2Drafts(developerId: string): Promise<DeveloperDraft[]> {
+  const { eq, and, inArray, desc } = await import("drizzle-orm");
+  const { getDatabase } = await import("@/db/client.server");
+  const { propertySubmissionWorkflows, propertySubmissionRevisions } = await import("@/db/schema");
+
+  const db = getDatabase();
+  const workflows = await db
+    .select({
+      id: propertySubmissionWorkflows.id,
+      propertyId: propertySubmissionWorkflows.propertyId,
+      currentRevision: propertySubmissionWorkflows.currentRevision,
+      createdAt: propertySubmissionWorkflows.createdAt,
+    })
+    .from(propertySubmissionWorkflows)
+    .where(
+      and(
+        eq(propertySubmissionWorkflows.developerId, developerId),
+        inArray(propertySubmissionWorkflows.state, ["draft", "changes_requested"]),
+      ),
+    )
+    .orderBy(desc(propertySubmissionWorkflows.createdAt));
+  if (!workflows.length) return [];
+
+  const workflowIds = workflows.map((w) => w.id);
+  const revisions = await db
+    .select({
+      workflowId: propertySubmissionRevisions.workflowId,
+      revision: propertySubmissionRevisions.revision,
+      payload: propertySubmissionRevisions.submittedPayload,
+    })
+    .from(propertySubmissionRevisions)
+    .where(inArray(propertySubmissionRevisions.workflowId, workflowIds));
+  const currentRevisionByWorkflow = new Map(workflows.map((w) => [w.id, w.currentRevision]));
+  const nameByWorkflow = new Map(
+    revisions
+      .filter((r) => currentRevisionByWorkflow.get(r.workflowId) === r.revision)
+      .map((r) => [r.workflowId, (r.payload as { property?: { name?: string } })?.property?.name]),
+  );
+
+  return workflows.map((w) => ({
+    workflowId: w.id,
+    action: (w.propertyId ? "update" : "create") as "create" | "update",
+    propertyId: w.propertyId,
+    propertyName: nameByWorkflow.get(w.id) ?? "Untitled property",
+    createdAt: w.createdAt.toISOString(),
+  }));
+}
+
 /** Developer-only: their live properties plus their full submission history —
  *  the dashboard renders both (live ones are editable, submissions show what's
  *  pending/rejected/approved). Both come from the V2 local-Postgres catalogue
@@ -183,13 +244,18 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
   .handler(
     async ({
       context,
-    }): Promise<{ properties: DeveloperProperty[]; submissions: DeveloperSubmission[] }> => {
+    }): Promise<{
+      properties: DeveloperProperty[];
+      submissions: DeveloperSubmission[];
+      drafts: DeveloperDraft[];
+    }> => {
       const developerId = context.adminProfile.id;
-      const [properties, submissions] = await Promise.all([
+      const [properties, submissions, drafts] = await Promise.all([
         getMyV2Properties(developerId),
         getMyV2Submissions(developerId),
+        getMyV2Drafts(developerId),
       ]);
-      return { properties, submissions };
+      return { properties, submissions, drafts };
     },
   );
 
@@ -381,6 +447,161 @@ async function submitV2PropertyCreate(
   await submitDeveloperWorkflow(workflowId, developerId);
   return { ok: true };
 }
+
+/** Developer-only: loads a draft (or changes-requested) workflow of THEIR OWN
+ *  into the edit form shape, so they can review it before submitting — the
+ *  counterpart to getMyDraftForReview's sibling submitMyDraftSubmission below.
+ *  Unlike getMyV2PropertyForEdit (which always reads the live, published
+ *  revision), this reads the workflow's own current revision, which is the
+ *  only place an as-yet-unpublished create draft's content exists at all. */
+export const getMyDraftForReview = createServerFn({ method: "GET" })
+  .middleware([requireAdminAuth])
+  .inputValidator((data: { workflowId: string }) => {
+    if (!data?.workflowId) throw new Error("Missing workflow id");
+    return { workflowId: data.workflowId };
+  })
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<PropertyFormValues & { workflowId: string; action: "create" | "update" }> => {
+      const { eq, and } = await import("drizzle-orm");
+      const { getDatabase } = await import("@/db/client.server");
+      const { propertySubmissionWorkflows, propertySubmissionRevisions, markets } =
+        await import("@/db/schema");
+      const { publicationRevisionSchema } = await import("@/domain/publication");
+      const { buildFormValuesFromRevision } = await import("@/domain/publication-to-form.server");
+
+      const db = getDatabase();
+      const [workflow] = await db
+        .select({
+          id: propertySubmissionWorkflows.id,
+          propertyId: propertySubmissionWorkflows.propertyId,
+          state: propertySubmissionWorkflows.state,
+          currentRevision: propertySubmissionWorkflows.currentRevision,
+        })
+        .from(propertySubmissionWorkflows)
+        .where(
+          and(
+            eq(propertySubmissionWorkflows.id, data.workflowId),
+            eq(propertySubmissionWorkflows.developerId, context.adminProfile.id),
+          ),
+        )
+        .limit(1);
+      if (!workflow) throw new Error("Draft not found");
+      if (workflow.state !== "draft" && workflow.state !== "changes_requested") {
+        throw new Error("This submission is no longer a draft");
+      }
+
+      const [revisionRow] = await db
+        .select({ payload: propertySubmissionRevisions.submittedPayload })
+        .from(propertySubmissionRevisions)
+        .where(
+          and(
+            eq(propertySubmissionRevisions.workflowId, workflow.id),
+            eq(propertySubmissionRevisions.revision, workflow.currentRevision),
+          ),
+        )
+        .limit(1);
+      if (!revisionRow) throw new Error("Draft has no revision to review");
+
+      const revision = publicationRevisionSchema.parse(revisionRow.payload);
+      const [market] = await db
+        .select({ stateName: markets.stateName, cityName: markets.cityName })
+        .from(markets)
+        .where(eq(markets.id, revision.marketId))
+        .limit(1);
+
+      const values = buildFormValuesFromRevision(revision, {
+        stateName: market?.stateName,
+        cityName: market?.cityName,
+      });
+      return {
+        ...values,
+        workflowId: workflow.id,
+        action: workflow.propertyId ? "update" : "create",
+      };
+    },
+  );
+
+/** Developer-only: submits a draft (or changes-requested) workflow of THEIR
+ *  OWN that's already sitting there — e.g. one a backfill script queued on
+ *  their behalf — landing it in the same review queue a fresh
+ *  submitPropertyForReview call would. Reuses the workflow's own id via
+ *  saveDeveloperRevision rather than opening a new one, so this is a
+ *  continuation of that draft, not a duplicate. */
+export const submitMyDraftSubmission = createServerFn({ method: "POST" })
+  .middleware([requireAdminAuth])
+  .inputValidator((data: { workflowId: string; values: PropertyFormValues }) => {
+    if (!data?.workflowId) throw new Error("Missing workflow id");
+    return { workflowId: data.workflowId, values: parsePropertySubmission(data.values) };
+  })
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { eq, and, ilike } = await import("drizzle-orm");
+    const { getDatabase } = await import("@/db/client.server");
+    const { propertySubmissionWorkflows, configurationOptions, markets } =
+      await import("@/db/schema");
+    const { buildPublicationRevision } = await import("@/domain/publication-mapping.server");
+    const { saveDeveloperRevision, submitDeveloperWorkflow } =
+      await import("@/repositories/submission-workflow.repository.server");
+
+    const db = getDatabase();
+    const developerId = context.adminProfile.id;
+    const [workflow] = await db
+      .select({
+        id: propertySubmissionWorkflows.id,
+        propertyId: propertySubmissionWorkflows.propertyId,
+        state: propertySubmissionWorkflows.state,
+      })
+      .from(propertySubmissionWorkflows)
+      .where(
+        and(
+          eq(propertySubmissionWorkflows.id, data.workflowId),
+          eq(propertySubmissionWorkflows.developerId, developerId),
+        ),
+      )
+      .limit(1);
+    if (!workflow) throw new Error("Draft not found");
+    if (workflow.state !== "draft" && workflow.state !== "changes_requested") {
+      throw new Error("This submission is no longer a draft");
+    }
+
+    const [market] = await db
+      .select({ id: markets.id, stateCode: markets.stateCode, cityCode: markets.cityCode })
+      .from(markets)
+      .where(
+        and(
+          eq(markets.isEnabled, true),
+          ilike(markets.stateName, data.values.state.trim()),
+          ilike(markets.cityName, data.values.city.trim()),
+        ),
+      )
+      .limit(1);
+    if (!market) {
+      throw new Error(`No enabled market matches "${data.values.city}, ${data.values.state}"`);
+    }
+
+    const optionRows = await db
+      .select({ id: configurationOptions.id, kind: configurationOptions.kind })
+      .from(configurationOptions);
+    const configurationOptionsByKind = new Map(optionRows.map((row) => [row.kind, row.id]));
+
+    const revision = buildPublicationRevision(data.values, {
+      configurationOptionsByKind,
+      marketId: market.id,
+      stateCode: market.stateCode,
+      cityCode: market.cityCode,
+    });
+
+    await saveDeveloperRevision(
+      developerId,
+      revision,
+      workflow.id,
+      workflow.propertyId ?? undefined,
+    );
+    await submitDeveloperWorkflow(workflow.id, developerId);
+    return { ok: true };
+  });
 
 /** Developer-only: creates a pending review request. Never writes to
  *  `properties` directly — an owner approval is what actually publishes a new
