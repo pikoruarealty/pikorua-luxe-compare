@@ -1785,6 +1785,67 @@ post-deploy check (admin submissions queue, developer dashboard, `/admin` headli
 
 ---
 
+#### C5b — drop the legacy Supabase `properties` columns (Phase C's final step) (2026-08-27)
+
+Step 7's deploy (`ba6d935`) was confirmed live via the GitHub Actions run page for
+`deploy-shared-vm.yml` (run #47, succeeded in 6m6s) rather than assumed. A fresh check straight
+against hosted Supabase's REST API confirmed the `properties` table still holds exactly 26 rows —
+unchanged since C1's cleanup, no new orphans — satisfying the plan's pre-drop sanity check. The
+manual UI click-through (admin queue / developer dashboard / `/admin` stats) was waived by the
+owner given the CI result and unchanged row count; the code deleted in C5 was V1 dead-code removal,
+not a schema change, so the regression surface was judged low.
+
+**Architecture clarified before touching anything:** hosted Supabase's Postgres and the VM's
+production Postgres are two separate physical databases. `.env` has a commented-out
+`DATABASE_URL` pointing at Supabase's own pooler (`aws-1-ap-southeast-2.pooler.supabase.com`),
+dated "swapped to local Postgres for Phase 3 brochure review, 2026-08-23" — that's the cutover
+moment. `ops/db/migrate.sh` replays `supabase/migrations/*.sql` against "a plain PostgreSQL
+server" via a `PGURL` env var, i.e. the same migration history was replayed onto the VM's
+self-hosted Postgres to bootstrap it; the two databases now diverge from that shared starting
+point. A grep across `src/**` for `.from("properties")`/`.from("property_submissions")` found zero
+remaining hits in the live app — only five one-off historical scripts
+(`republish-with-presentation.ts`, `migrate-property-images-to-gcs.ts`, `migrate-properties.ts`,
+`diagnose-slug-mismatch.ts`, `diagnose-shantigram.ts`), none invoked at runtime. Confirmed the
+whole hosted-Supabase `properties` table is dead weight in the live app now, not just some columns
+— but scope was kept to the plan's original ask (column drop, not table drop): `id`, `slug`,
+`name`, `category`, `configurations`, `price_summary`, `is_published`, `created_by`,
+`current_publication_version_id`, `created_at`, `updated_at` were left untouched even though
+they're also unused, since removing those wasn't asked for and carries more schema-identity risk
+than the descriptive V1-only fields.
+
+**Migration:** `supabase/migrations/20260827120000_drop_legacy_properties_columns.sql` —
+`ALTER TABLE public.properties DROP COLUMN IF EXISTS ...` for 43 legacy-only columns (`developer`,
+`tagline`, `image_url`, `size`, `size_numeric`, `super_built_up_area`, `carpet_area`, `location`,
+`state`, `city`, `status`, `configuration_summary`, `possession`, `amenities`, `advantages`,
+`gallery`, `expert_note`, `plot_size`, `total_towers`, `total_floors`, `units_per_floor`,
+`total_units`, `available_bhk_types`, `rera_id`, `rera_url`, `proposed_start_date_rera`,
+`parking_levels`, `podium_structure`, `lifts_per_tower`, `open_space`,
+`geyser_heat_pump_provided`, `vrv_ac_provided`, `window_glazing`, `bath_sanitary_fittings`,
+`flooring_type`, `units_per_acre`, `construction_quality`, `internal_ceiling_height`,
+`clubhouse_size`, `developer_background`, `developer_experience_years`,
+`total_delivered_projects`, `ongoing_projects`, `notable_delivered_projects`, `possession_as_of`,
+`latitude`, `longitude`). Idempotent (`IF EXISTS` on every column).
+
+**Backup, then apply:** no `pg_dump`/`psql` binary available locally, so instead of C1's
+`pg_dump -Fc` precedent, all 26 rows (every column, pre-drop) were snapshotted to a local JSON file
+via the Supabase REST API before running anything. The migration itself was run directly against
+hosted Supabase's pooler connection (`postgres` npm package, single transaction) — this needed no
+VM access at all, since hosted Supabase is reachable directly and its credentials already sit in
+`.env`. `supabase_migrations.schema_migrations` (the bookkeeping table `ops/db/migrate.sh` expects)
+doesn't exist on hosted Supabase — migrations there were applied by hand historically, never via
+the Supabase CLI's own tracking — so this run skipped that bookkeeping insert rather than create
+new infrastructure hosted Supabase never had.
+
+**Result, verified post-migration:** `public.properties` now has exactly the 11 kept columns
+(confirmed via `information_schema.columns`), still 26 rows. `bun run db:drift` clean at 41 tables
+(unaffected — that check runs against the VM-schema mirror, not hosted Supabase),
+`tsc --noEmit` clean, `bun run lint` clean, `bun run test` 147/147.
+
+**This is the finish line for Phase C** — all 8 concrete-task-list steps (C1–C7 plus this) are done.
+What's left of the overall Supabase retirement is Phase D (auth rebuild), not started.
+
+---
+
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
 
 - No exact price on any consumer surface, ever. No published claim without a traceable
