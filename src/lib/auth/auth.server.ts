@@ -10,12 +10,76 @@ import { account, session, twoFactor as twoFactorTable, user, verification } fro
 // better-auth itself — generateId: false leaves session/verification rows'
 // ids to each table's DEFAULT gen_random_uuid() in
 // supabase/migrations/20260827130000_better_auth_core.sql instead.
+function resetPasswordEmailBody(url: string) {
+  return {
+    text: `Reset your PropCompare admin password: ${url}\n\nThis link expires in 1 hour. If you didn't request this, you can ignore this email.`,
+    html: `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f4f5f7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;padding:40px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e6e7ea;">
+          <tr><td style="padding:32px 32px 8px;">
+            <p style="margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#ab853c;font-weight:700;">PropCompare</p>
+            <h1 style="margin:14px 0 0;font-size:22px;line-height:1.3;color:#0f1114;font-weight:600;">Reset your password</h1>
+            <p style="margin:10px 0 0;font-size:14px;line-height:1.6;color:#5c6270;">Click below to set a new password for your admin account.</p>
+          </td></tr>
+          <tr><td style="padding:24px 32px;">
+            <a href="${url}" style="display:inline-block;background:#ab853c;color:#ffffff;text-decoration:none;font-size:13px;font-weight:600;padding:12px 24px;border-radius:999px;">Reset password</a>
+            <p style="margin:16px 0 0;font-size:12.5px;line-height:1.6;color:#8b909c;">This link expires in 1 hour. If you didn't request it, you can safely ignore this email.</p>
+          </td></tr>
+          <tr><td style="padding:0 32px 30px;border-top:1px solid #eeeff1;">
+            <p style="margin:18px 0 0;font-size:11.5px;color:#a1a5ae;">PropCompare &middot; Compare. Decide. Confidently.</p>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`,
+  };
+}
+
+async function sendResetPasswordEmail({ user, url }: { user: { email: string }; url: string }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
+  if (!apiKey || !senderEmail) {
+    console.error(
+      "[auth] Cannot send reset-password email: BREVO_API_KEY/BREVO_SENDER_EMAIL missing",
+    );
+    return;
+  }
+
+  const { text, html } = resetPasswordEmailBody(url);
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": apiKey, "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({
+      sender: { name: process.env.BREVO_SENDER_NAME || "PropCompare", email: senderEmail },
+      to: [{ email: user.email }],
+      subject: "Reset your PropCompare admin password",
+      htmlContent: html,
+      textContent: text,
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error("[auth] Brevo reset-password send failed", res.status, detail.slice(0, 500));
+  }
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(getDatabase(), {
     provider: "pg",
     schema: { user, session, account, verification, twoFactor: twoFactorTable },
   }),
-  emailAndPassword: { enabled: true },
+  emailAndPassword: {
+    enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendResetPasswordEmail({ user, url });
+    },
+  },
   plugins: [twoFactor()],
   secret: process.env.BETTER_AUTH_SECRET,
   advanced: { database: { generateId: false } },

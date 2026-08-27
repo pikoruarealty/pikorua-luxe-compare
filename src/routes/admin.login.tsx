@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -123,6 +123,12 @@ function AdminLogin() {
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>
+          <Link
+            to="/admin/forgot-password"
+            className="block text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
+          >
+            Forgot password?
+          </Link>
         </form>
       </div>
     </div>

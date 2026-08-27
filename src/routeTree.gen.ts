@@ -25,9 +25,11 @@ import { Route as DeveloperReviewsRouteImport } from './routes/developer.reviews
 import { Route as DeveloperEnquiriesRouteImport } from './routes/developer.enquiries'
 import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
+import { Route as AdminResetPasswordRouteImport } from './routes/admin.reset-password'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminMfaRouteImport } from './routes/admin.mfa'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminForgotPasswordRouteImport } from './routes/admin.forgot-password'
 import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as DeveloperIntelligenceIndexRouteImport } from './routes/developer.intelligence.index'
@@ -120,6 +122,11 @@ const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
   path: '/admin/submissions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminResetPasswordRoute = AdminResetPasswordRouteImport.update({
+  id: '/admin/reset-password',
+  path: '/admin/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminModerationRoute = AdminModerationRouteImport.update({
   id: '/admin/moderation',
   path: '/admin/moderation',
@@ -133,6 +140,11 @@ const AdminMfaRoute = AdminMfaRouteImport.update({
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminForgotPasswordRoute = AdminForgotPasswordRouteImport.update({
+  id: '/admin/forgot-password',
+  path: '/admin/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDevelopersRoute = AdminDevelopersRouteImport.update({
@@ -200,9 +212,11 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
+  '/admin/forgot-password': typeof AdminForgotPasswordRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
@@ -231,9 +245,11 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
+  '/admin/forgot-password': typeof AdminForgotPasswordRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
@@ -263,9 +279,11 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/developers': typeof AdminDevelopersRoute
+  '/admin/forgot-password': typeof AdminForgotPasswordRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/mfa': typeof AdminMfaRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/reset-password': typeof AdminResetPasswordRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/admin/verification': typeof AdminVerificationRoute
   '/developer/enquiries': typeof DeveloperEnquiriesRoute
@@ -296,9 +314,11 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/customers'
     | '/admin/developers'
+    | '/admin/forgot-password'
     | '/admin/login'
     | '/admin/mfa'
     | '/admin/moderation'
+    | '/admin/reset-password'
     | '/admin/submissions'
     | '/admin/verification'
     | '/developer/enquiries'
@@ -327,9 +347,11 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/customers'
     | '/admin/developers'
+    | '/admin/forgot-password'
     | '/admin/login'
     | '/admin/mfa'
     | '/admin/moderation'
+    | '/admin/reset-password'
     | '/admin/submissions'
     | '/admin/verification'
     | '/developer/enquiries'
@@ -358,9 +380,11 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/customers'
     | '/admin/developers'
+    | '/admin/forgot-password'
     | '/admin/login'
     | '/admin/mfa'
     | '/admin/moderation'
+    | '/admin/reset-password'
     | '/admin/submissions'
     | '/admin/verification'
     | '/developer/enquiries'
@@ -390,9 +414,11 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDevelopersRoute: typeof AdminDevelopersRoute
+  AdminForgotPasswordRoute: typeof AdminForgotPasswordRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminMfaRoute: typeof AdminMfaRoute
   AdminModerationRoute: typeof AdminModerationRoute
+  AdminResetPasswordRoute: typeof AdminResetPasswordRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
   AdminVerificationRoute: typeof AdminVerificationRoute
   DeveloperEnquiriesRoute: typeof DeveloperEnquiriesRoute
@@ -526,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSubmissionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reset-password': {
+      id: '/admin/reset-password'
+      path: '/admin/reset-password'
+      fullPath: '/admin/reset-password'
+      preLoaderRoute: typeof AdminResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/moderation': {
       id: '/admin/moderation'
       path: '/admin/moderation'
@@ -545,6 +578,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/login'
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/forgot-password': {
+      id: '/admin/forgot-password'
+      path: '/admin/forgot-password'
+      fullPath: '/admin/forgot-password'
+      preLoaderRoute: typeof AdminForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/developers': {
@@ -630,9 +670,11 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDevelopersRoute: AdminDevelopersRoute,
+  AdminForgotPasswordRoute: AdminForgotPasswordRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminMfaRoute: AdminMfaRoute,
   AdminModerationRoute: AdminModerationRoute,
+  AdminResetPasswordRoute: AdminResetPasswordRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
   AdminVerificationRoute: AdminVerificationRoute,
   DeveloperEnquiriesRoute: DeveloperEnquiriesRoute,
