@@ -1591,6 +1591,134 @@ safely attempted until either a V2-native property-creation path exists, or V1 c
 knowingly retired outright — that's a real product-scope decision, not a mechanical cleanup step, and
 hasn't been made yet.
 
+#### C5a follow-up — V2-native developer create path, and dashboard visibility fix (local, 2026-08-27)
+
+Closes half of the C5a blocker above: the *developer-facing* submission flow (`submitPropertyForReview`)
+had no V2-native create branch — every "add property" submission, regardless of developer, still went to
+V1's `property_submissions`. `admin.properties.new.tsx` (staff-side CRUD) is untouched and still V1; that
+half of the blocker stands.
+
+**Shipped:**
+- `submitV2PropertyCreate(developerId, values)` (`developer-properties.functions.ts`) — resolves the
+  submitted city/state against `markets`, builds a `PublicationRevision` via `buildPublicationRevision`, and
+  calls `saveDeveloperRevision(developerId, revision, undefined, undefined)` (both args undefined = new
+  workflow *and* new property identity) → `submitDeveloperWorkflow`. `publishWorkflow`'s
+  `createPropertyIdentity` already sets `createdBy: developerId` correctly on the new `properties` row
+  (verified by reading `publication.repository.server.ts:43-67` — no code change needed there), so
+  `getMyV2Properties`'s ownership query picks up a V2-created property with no further change.
+  `submitPropertyForReview`'s handler now branches on `data.action === "create"` straight to this function,
+  ahead of the existing V1-property-ownership check.
+- `admin-submissions.functions.ts`: `listV2Submissions`/`getV2Submission` were hardcoding
+  `action: "update"` for every V2 workflow — true before this change (V2 only ever saw edits), false now
+  that creates land there too. Both now derive `action` from `workflow.propertyId ? "update" : "create"`.
+- **Dashboard visibility gap found and fixed.** `getMyDeveloperDashboard`'s `submissions` list only ever
+  queried V1 `property_submissions` — so a V2 submission (the new create path above, and the pre-existing
+  V2 update path via `submitV2PropertyUpdate`, which predates this session) was invisible to the developer
+  who submitted it. New `getMyV2Submissions(developerId)` reads `property_submission_workflows` +
+  `property_submission_revisions` + `review_actions`, mapped into the same `DeveloperSubmission` shape, and
+  merged with the V1 list in `getMyDeveloperDashboard`, sorted by `createdAt`.
+- **`DeveloperSubmission.editable` (new field).** V2 has no "reopen and edit in place" concept — each
+  submission attempt is its own immutable workflow, unlike V1's `property_submissions.status` flip-back
+  pattern — so there is no V2 equivalent of `developer.submissions.$id.tsx`'s resubmit flow. `editable: true`
+  for V1-sourced rows (existing reopen UX preserved), `false` for V2-sourced rows. `developer.index.tsx`'s
+  "Fix and resubmit" link now also checks `s.editable` before rendering.
+- Confirmed all 26 V1 `properties` rows have `created_by: null` (checked directly against hosted Supabase —
+  no V1 property has ever been developer-owned in practice), so `getMyDeveloperDashboard`'s old V1
+  `properties` read and `getMyPropertyForEdit`'s entire V1 branch could never have matched a real developer
+  regardless of any other change. Both deleted as confirmed-dead code (not merely unused-by-new-writes).
+  `getMyPropertyForEdit` now always resolves through `getMyV2PropertyForEdit`.
+
+**Deliberately NOT done — reversed mid-session.** Also confirmed directly against hosted Supabase: 0
+pending V1 `property_submissions` rows (3 total, all `status: rejected`, all `action: create`). That looked
+like the green light to delete `admin-submissions.functions.ts`'s V1 branches
+(`listSubmissions`/`approveSubmission`/`rejectSubmission`/`publishV2Catalogue`) outright. Before doing that,
+found `developer.submissions.$id.tsx` is a live route (`getMyPendingSubmission`/`updateMyPendingSubmission`)
+that can flip any of those 3 rejected rows back to `pending` at any time — deleting the V1 admin-review
+branches while that reopen path stays live would strand a resubmitted row: invisible to the review queue
+forever, no path to ever be approved or rejected. **Not deleted.** Any future attempt to retire V1
+submission handling for good must first retire or replace that reopen flow (or get an explicit owner call
+that abandoning those 3 historical rows as permanently un-reopenable is acceptable).
+
+`property-crud.functions.ts` still can't be deleted — `admin-submissions.functions.ts`'s V1
+`approveSubmission` branch still imports `toDbRow`/`uniqueSlug` from it, and that branch wasn't touched this
+session for the reason above.
+
+**Verification (local, both commits):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 147/147,
+`bun run db:drift` clean at 41 tables. Not yet deployed to the VM.
+
+Commits: `55b4e37` (V2 create path + admin action-label fix), `21214ed` (dashboard V2 visibility + dead V1
+branch removal).
+
+#### C5a follow-up, part 2 — V2-native admin property management, with a real hard delete (local, 2026-08-27)
+
+Closes the other half of the C5a blocker: `admin.properties.new.tsx`/`$propertyId.tsx`/`index.tsx` (staff
+CRUD) were still reading and writing through `property-crud.functions.ts` → V1 Supabase `properties`, with
+no review step. Owner explicitly asked to keep a real hard-delete capability on the admin side rather than
+the plan's own recommendation of publish/unpublish-only — built accordingly.
+
+**New file, `property-v2-admin.functions.ts`** (owner-gated, mirrors `developer-properties.functions.ts`'s
+V2 patterns minus the ownership filter):
+- `createV2Property` / `updateV2Property` — build a `PublicationRevision` via `buildPublicationRevision`,
+  then `saveDeveloperRevision` → `submitDeveloperWorkflow` → `publishWorkflow` in one call (an owner action
+  *is* the approval, same shape as `approveSubmission`'s `v2:` branch). `propertyId` omitted creates a new
+  identity; passed, publishes a new version onto the existing one.
+- `setV2PropertyPublished` — plain `properties.isPublished` flip, no new publication version. Replaces
+  `setPropertyPublished`.
+- `getV2PropertyForEdit` / `getAllV2PropertiesForAdmin` — reverse-map the current publication version back
+  to form values / list-row shape, reusing `buildFormValuesFromRevision` and the same `AdminProperty` shape
+  V1's admin list already rendered, so no UI shape changes were needed downstream.
+- `deleteV2Property` — a real, working hard delete, not just unpublish. Guarded: refuses (with a message
+  pointing at unpublish instead) if the property has any attached `property_reviews`, `property_enquiries`,
+  or `property_field_visits` — those are real visitor content and the plan's original worry about
+  destroying them by accident still applies. Below that guard, it's unconditional: disables the three
+  immutability triggers (`immutable_publication_versions`, `immutable_submission_revisions`,
+  `immutable_commercial_terms`, same technique as `cleanup-orphan-properties.ts`) inside a transaction, then
+  deletes explicitly in dependency order through the full publication graph — RERA area checks →
+  verifications, PropScore versions, verified locations, publication assets, configuration variant
+  areas/rooms/commercial terms → variants, publication details/amenities/specs, review actions →
+  submission revisions, publication versions, submission workflows, rating aggregates, field verification
+  shortlist — nulls out `property_assets.property_id` (uploaded assets outlive the property; not deleted),
+  deletes the `properties` row, re-enables the triggers, and writes a `property.hard_deleted` `audit_events`
+  row, all before commit.
+  Known gap, not addressed: the guard checks reviews/enquiries/field-visits only, not RERA
+  verifications/PropScore/verified-locations — a property carrying those would be hard-deleted along with
+  them with no separate warning. Not fixed because none of that data exists yet in production for any live
+  property (`property_verified_locations` is confirmed empty per the plan doc; RERA verification and
+  PropScore are not yet wired to any live admin/developer flow) — revisit the guard if/when either starts
+  getting populated for real properties.
+- Two bugs found and fixed while wiring the routes to these functions, before landing: `publishWorkflow`
+  always sets `isPublished: true`, silently ignoring the admin form's own "published" checkbox — create/
+  update now force it back down after publish when the checkbox was unchecked. `buildFormValuesFromRevision`
+  has no `isPublished` concept (it's a property-level flag, not part of a revision) and defaulted the edit
+  form to checked regardless — `getV2PropertyForEdit` now overrides it with the property's real current
+  state so editing a hidden property can't silently re-publish it on save.
+
+**Routes rewired:** `admin.properties.new.tsx`, `admin.properties.$propertyId.tsx`,
+`admin.properties.index.tsx`, and `properties.queries.ts`'s `adminPropertiesQueryOptions` all now call the
+V2 functions above instead of `property-crud.functions.ts` / `getAllPropertiesForAdmin`. The list page's
+remove flow changed shape to match the new split: unpublish (reversible, keeps history) is the primary
+action in the confirm dialog; hard delete is a separate, explicitly secondary "Delete permanently" button.
+
+**Now dead but not yet deleted:** `properties.functions.ts`'s `getAllPropertiesForAdmin` has no remaining
+callers anywhere in the app (grepped). `property-crud.functions.ts`'s `getPropertyForEdit`/`createProperty`/
+`updateProperty`/`deleteProperty`/`setPropertyPublished` are likewise unreferenced now — only `toDbRow`/
+`uniqueSlug` from that file are still imported (by `admin-submissions.functions.ts`'s V1 `approveSubmission`
+branch, the still-standing blocker from the note above). Left in place rather than deleted this session —
+same reasoning as everywhere else in C5a: no reason yet to touch V1 files piecemeal ahead of the full
+`property-crud.functions.ts` deletion in plan step 7.
+
+Also landed alongside this (unrelated, found while working the area): `chore: remove dead
+distance-comparison code path` — `calculatePropertyDistances`/`suggestAddresses` and their only consumers
+(`ComparisonBoard`, `ComparisonMatrixTable`) had zero importers left, superseded by the already-live V2
+`calculateV2Distances`/`LocationDistances` flow from an earlier session. Confirms plan step 6 (give
+`distance.functions.ts` a V2 coordinate read) was already done before this session, not actually pending.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 147/147, `bun run
+db:drift` clean at 41 tables. Not yet deployed to the VM.
+
+Commits: `da0c06f` (new V2 admin functions), `e1f783a` (rewire the three admin routes + queries),
+`7879666` (dead distance-comparison cleanup, unrelated).
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
