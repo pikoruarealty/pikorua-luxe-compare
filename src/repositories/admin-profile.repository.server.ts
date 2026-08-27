@@ -7,6 +7,7 @@ export interface AdminProfileRow {
   id: string;
   role: string;
   email: string;
+  fullName: string | null;
   isActive: boolean;
 }
 
@@ -18,15 +19,16 @@ export interface DeveloperProfileRow {
   createdAt: Date;
 }
 
-/** Role lookup for the admin-auth middleware. Token verification (who this
- * request is) stays on Supabase Auth until the auth rebuild; this only
- * answers what that verified id is allowed to do. */
+/** Role lookup for the admin-auth middleware. Session verification (who this
+ * request is) is better-auth's job; this only answers what that verified id
+ * is allowed to do. */
 export async function getAdminProfileById(id: string): Promise<AdminProfileRow | null> {
   const [row] = await getDatabase()
     .select({
       id: adminProfiles.id,
       role: adminProfiles.role,
       email: adminProfiles.email,
+      fullName: adminProfiles.fullName,
       isActive: adminProfiles.isActive,
     })
     .from(adminProfiles)

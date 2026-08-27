@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/api/queries/admin.queries";
-import { supabase } from "@/integrations/supabase/client";
+import { authClient } from "@/lib/auth/auth-client";
 import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
 
 interface NavItem extends PortalNavItem {
@@ -61,12 +61,11 @@ export function AdminLayout({
     } else if (profile.role === "developer") {
       navigate({ to: "/developer" });
     } else if (
+      !profile.twoFactorEnabled &&
       import.meta.env.VITE_STAFF_MFA_ENFORCE !== "false" &&
       (import.meta.env.PROD || import.meta.env.VITE_STAFF_MFA_ENFORCE === "true")
     ) {
-      void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
-        if (data?.currentLevel !== "aal2") navigate({ to: "/admin/mfa" });
-      });
+      navigate({ to: "/admin/mfa", search: { mode: "enroll" } });
     }
   }, [isPending, profile, navigate]);
 
@@ -122,7 +121,7 @@ export function AdminLayout({
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await authClient.signOut();
     queryClient.setQueryData(ADMIN_ME_KEY, null);
     navigate({ to: "/admin/login" });
   };

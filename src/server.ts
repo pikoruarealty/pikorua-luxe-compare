@@ -48,6 +48,10 @@ export default {
     if (url.pathname === "/healthz") {
       return Response.json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });
     }
+    if (url.pathname.startsWith("/api/auth")) {
+      const { auth } = await import("@/lib/auth/auth.server");
+      return auth.handler(request);
+    }
     if (url.pathname === "/readyz") {
       try {
         const { getDatabase } = await import("@/db/client.server");

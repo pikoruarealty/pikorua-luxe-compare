@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
+import { authClient } from "@/lib/auth/auth-client";
 import { ADMIN_ME_KEY } from "@/api/queries/admin.queries";
 import { getCurrentAdminProfile } from "@/api/functions/admin-auth.functions";
 import { Field, Input } from "@/components/portal/FormControls";
@@ -40,19 +40,28 @@ function AdminLogin() {
     setError(null);
     setSubmitting(true);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: signInError } = await authClient.signIn.email({ email, password });
       if (signInError) {
         setError("Incorrect email or password.");
         return;
       }
-      // Re-check admin status server-side (a valid Supabase user isn't
+      // better-auth never sets a session cookie for a 2FA-enabled account
+      // until the challenge succeeds — this response carries no session yet.
+      // The twoFactor plugin injects this field via a runtime response hook,
+      // which isn't reflected in signIn.email's static return type.
+      const twoFactorRedirect = (data as { twoFactorRedirect?: boolean } | null)?.twoFactorRedirect;
+      if (twoFactorRedirect) {
+        navigate({ to: "/admin/mfa", search: { mode: "verify" } });
+        return;
+      }
+      // Re-check admin status server-side (a valid better-auth user isn't
       // necessarily an admin). Calls the server function directly rather than
       // going through the query cache — every sign-in attempt is a fresh
       // identity, so a stale "not an admin" result from a previous attempt
       // (this account's own or a different one entirely) must never apply here.
       const profile = await getProfileFn();
       if (!profile) {
-        await supabase.auth.signOut();
+        await authClient.signOut();
         queryClient.setQueryData(ADMIN_ME_KEY, null);
         setError("This account doesn't have admin access.");
         return;

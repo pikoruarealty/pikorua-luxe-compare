@@ -13,12 +13,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { BarChart3, Download, Plus, Power, Search, Users } from "lucide-react";
+import { BarChart3, Download, KeyRound, Plus, Power, Search, Users } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { FilterSelect } from "@/components/admin/FilterSelect";
 import { developersQueryOptions, DEVELOPERS_KEY } from "@/api/queries/developers.queries";
 import {
   createDeveloper,
+  resetDeveloperMfa,
   setDeveloperIntelligenceEntitlement,
   setDeveloperActive,
   type DeveloperAccount,
@@ -99,6 +100,15 @@ function AdminDevelopers() {
     onError: (e: Error) => toast.error(e.message || "Could not update"),
   });
 
+  const resetMfaMutation = useMutation({
+    mutationFn: (vars: { id: string }) => resetDeveloperMfa({ data: vars }),
+    onSuccess: async () => {
+      await refresh();
+      toast.success("MFA reset — they'll re-enroll on next sign-in");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not reset MFA"),
+  });
+
   const intelligenceMutation = useMutation({
     mutationFn: (vars: {
       developerId: string;
@@ -122,6 +132,8 @@ function AdminDevelopers() {
 
   const list = developers ?? [];
   const busy = (id: string) => toggleMutation.isPending && toggleMutation.variables?.id === id;
+  const mfaResetBusy = (id: string) =>
+    resetMfaMutation.isPending && resetMfaMutation.variables?.id === id;
   const intelligenceBusy = (id: string) =>
     intelligenceMutation.isPending && intelligenceMutation.variables?.developerId === id;
   const updateIntelligence = (developer: DeveloperAccount) => {
@@ -268,6 +280,19 @@ function AdminDevelopers() {
                   </button>
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-(--rule) pt-3">
+                  <p className="text-xs text-muted-foreground">Lost authenticator?</p>
+                  <button
+                    type="button"
+                    title="Reset MFA enrollment"
+                    onClick={() => resetMfaMutation.mutate({ id: d.id })}
+                    disabled={mfaResetBusy(d.id)}
+                    className={toggleBtnClass}
+                  >
+                    <KeyRound className="h-3.5 w-3.5" />
+                    {mfaResetBusy(d.id) ? "…" : "Reset MFA"}
+                  </button>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-(--rule) pt-3">
                   <p className="text-xs text-muted-foreground">
                     Intelligence · {developerIntelligenceLabel(d)}
                   </p>
@@ -339,6 +364,16 @@ function AdminDevelopers() {
                       >
                         <BarChart3 className="h-3.5 w-3.5" />
                         {intelligenceBusy(d.id) ? "…" : developerIntelligenceAction(d)}
+                      </button>
+                      <button
+                        type="button"
+                        title="Reset MFA enrollment"
+                        onClick={() => resetMfaMutation.mutate({ id: d.id })}
+                        disabled={mfaResetBusy(d.id)}
+                        className={toggleBtnClass}
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
+                        {mfaResetBusy(d.id) ? "…" : "Reset MFA"}
                       </button>
                       <button
                         type="button"

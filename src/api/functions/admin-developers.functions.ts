@@ -85,7 +85,7 @@ export const listDevelopers = createServerFn({ method: "GET" })
     });
   });
 
-/** Owner-only: creates a Supabase Auth user for the developer plus their
+/** Owner-only: creates a better-auth login for the developer plus their
  *  admin_profiles row. The owner sets the password directly and hands it to
  *  the developer out of band (WhatsApp, email, in person). */
 export const createDeveloper = createServerFn({ method: "POST" })
@@ -102,31 +102,62 @@ export const createDeveloper = createServerFn({ method: "POST" })
     return { email, password, fullName: data.fullName?.trim() || null };
   })
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { createStaffCredential } =
+      await import("@/repositories/auth-credential.repository.server");
+    const id = crypto.randomUUID();
 
-    const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-    });
-    if (authError || !created?.user) {
+    try {
+      await createStaffCredential({
+        id,
+        email: data.email,
+        fullName: data.fullName,
+        password: data.password,
+      });
+    } catch (authError) {
       throwSafeError("createDeveloper.auth", authError, "Could not create the developer's login");
     }
 
     try {
       await insertDeveloperProfile({
-        id: created.user.id,
+        id,
         email: data.email,
         fullName: data.fullName,
         createdBy: context.adminProfile.id,
       });
     } catch (profileError) {
-      // Don't leave an orphaned auth user behind if the profile insert failed.
-      await supabaseAdmin.auth.admin.deleteUser(created.user.id).catch(() => {});
+      // Don't leave an orphaned login behind if the profile insert failed.
+      const { getDatabase } = await import("@/db/client.server");
+      const { user } = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await getDatabase()
+        .delete(user)
+        .where(eq(user.id, id))
+        .catch(() => {});
       throwSafeError("createDeveloper.profile", profileError, "Could not create developer profile");
     }
 
-    return { id: created.user.id, email: data.email };
+    return { id, email: data.email };
+  });
+
+/** Owner-only: clears an existing 2FA enrollment so a locked-out developer
+ *  (lost authenticator, no backup codes saved) can re-enroll from scratch on
+ *  their next sign-in, instead of being permanently locked out. */
+export const resetDeveloperMfa = createServerFn({ method: "POST" })
+  .middleware([requireOwnerAuth])
+  .inputValidator((data: { id: string }) => {
+    if (!data?.id) throw new Error("Missing developer id");
+    return { id: data.id };
+  })
+  .handler(async ({ data }) => {
+    const { getDatabase } = await import("@/db/client.server");
+    const { user, twoFactor } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const db = getDatabase();
+    await db.transaction(async (tx) => {
+      await tx.delete(twoFactor).where(eq(twoFactor.userId, data.id));
+      await tx.update(user).set({ twoFactorEnabled: false }).where(eq(user.id, data.id));
+    });
+    return { ok: true };
   });
 
 /** Owner-only: deactivating blocks sign-in immediately (requireAdminAuth checks

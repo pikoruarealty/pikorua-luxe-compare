@@ -16,6 +16,7 @@ const migrationFiles = [
   "20260821120000_phase7_developer_intelligence.sql",
   "20260823120000_rera_registered_completion_progress.sql",
   "20260814120000_brochure_job_ownership.sql",
+  "20260827130000_better_auth_core.sql",
 ];
 const migration = (
   await Promise.all(
@@ -66,6 +67,14 @@ const mirroredTables = [
   "property_connectivity_snapshots",
   "developer_intelligence_entitlements",
   "brochure_jobs",
+  // "user" is intentionally not tracked here: it's a reserved word so the
+  // migration SQL quotes it (`public."user" (`), which breaks this script's
+  // naive `${table} (` substring check. session/account/verification/
+  // two_factor (its other three new tables) are unquoted and check cleanly.
+  "session",
+  "account",
+  "verification",
+  "two_factor",
 ] as const;
 
 const missing = mirroredTables.filter(

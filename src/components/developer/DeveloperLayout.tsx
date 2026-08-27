@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { BarChart3, Inbox, LayoutDashboard, MessageSquareText, Plus } from "lucide-react";
 import { adminMeQueryOptions, ADMIN_ME_KEY } from "@/api/queries/admin.queries";
-import { supabase } from "@/integrations/supabase/client";
+import { authClient } from "@/lib/auth/auth-client";
 import { PortalShell, type PortalNavItem } from "@/components/portal/PortalShell";
 
 const NAV: PortalNavItem[] = [
@@ -39,12 +39,11 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
       // where their role actually belongs instead of letting them straight in.
       navigate({ to: "/admin" });
     } else if (
+      !profile.twoFactorEnabled &&
       import.meta.env.VITE_STAFF_MFA_ENFORCE !== "false" &&
       (import.meta.env.PROD || import.meta.env.VITE_STAFF_MFA_ENFORCE === "true")
     ) {
-      void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
-        if (data?.currentLevel !== "aal2") navigate({ to: "/admin/mfa" });
-      });
+      navigate({ to: "/admin/mfa", search: { mode: "enroll" } });
     }
   }, [isPending, profile, navigate]);
 
@@ -64,7 +63,7 @@ export function DeveloperLayout({ children, title }: { children: ReactNode; titl
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await authClient.signOut();
     queryClient.setQueryData(ADMIN_ME_KEY, null);
     navigate({ to: "/admin/login" });
   };
