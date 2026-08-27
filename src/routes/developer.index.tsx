@@ -138,8 +138,10 @@ function DeveloperDashboard() {
                       <StatusBadge tone={submissionTone(s.status)}>{s.status}</StatusBadge>
                       {/* Pending: still correctable before review. Rejected:
                           correctable again to resubmit. Approved is the only
-                          one that's a closed record — it's already live. */}
-                      {(s.status === "pending" || s.status === "rejected") && (
+                          one that's a closed record — it's already live.
+                          editable is false for V2 submissions, which have no
+                          in-place resubmit — just resubmit the property. */}
+                      {(s.status === "pending" || s.status === "rejected") && s.editable && (
                         <Link
                           to="/developer/submissions/$id"
                           params={{ id: s.id }}

@@ -25,6 +25,11 @@ export interface DeveloperSubmission {
   reviewerNote: string | null;
   createdAt: string;
   reviewedAt: string | null;
+  // V1 submissions can be fixed and resubmitted in place (see
+  // getMyPendingSubmission/updateMyPendingSubmission). V2 has no such concept —
+  // each attempt is its own immutable workflow — so a rejected V2 submission
+  // is resolved by just resubmitting the property itself, not by editing this row.
+  editable: boolean;
 }
 
 /** V1 properties own their own name/developer/location columns. V2 (the local
@@ -92,12 +97,99 @@ async function getMyV2Properties(developerId: string): Promise<DeveloperProperty
   });
 }
 
+function v2SubmissionStatus(state: string): "pending" | "approved" | "rejected" {
+  if (state === "in_review") return "pending";
+  if (state === "published") return "approved";
+  return "rejected";
+}
+
+/** V2 counterpart of the `property_submissions` read below — every create or
+ *  update this developer has ever submitted through the V2 workflow queue
+ *  (submitV2PropertyCreate / submitV2PropertyUpdate). Unlike V1, a rejected V2
+ *  submission has no "reopen in place" path: each attempt is its own immutable
+ *  workflow, so fixing one just means resubmitting the property (see the
+ *  `editable: false` note on DeveloperSubmission). */
+async function getMyV2Submissions(developerId: string): Promise<DeveloperSubmission[]> {
+  const { eq, and, inArray, desc } = await import("drizzle-orm");
+  const { getDatabase } = await import("@/db/client.server");
+  const { propertySubmissionWorkflows, propertySubmissionRevisions, reviewActions } =
+    await import("@/db/schema");
+
+  const db = getDatabase();
+  const workflows = await db
+    .select({
+      id: propertySubmissionWorkflows.id,
+      propertyId: propertySubmissionWorkflows.propertyId,
+      state: propertySubmissionWorkflows.state,
+      currentRevision: propertySubmissionWorkflows.currentRevision,
+      createdAt: propertySubmissionWorkflows.createdAt,
+    })
+    .from(propertySubmissionWorkflows)
+    .where(
+      and(
+        eq(propertySubmissionWorkflows.developerId, developerId),
+        inArray(propertySubmissionWorkflows.state, ["in_review", "rejected", "published"]),
+      ),
+    )
+    .orderBy(desc(propertySubmissionWorkflows.createdAt));
+  if (!workflows.length) return [];
+
+  const workflowIds = workflows.map((w) => w.id);
+  const revisions = await db
+    .select({
+      workflowId: propertySubmissionRevisions.workflowId,
+      revision: propertySubmissionRevisions.revision,
+      payload: propertySubmissionRevisions.submittedPayload,
+    })
+    .from(propertySubmissionRevisions)
+    .where(inArray(propertySubmissionRevisions.workflowId, workflowIds));
+  const currentRevisionByWorkflow = new Map(workflows.map((w) => [w.id, w.currentRevision]));
+  const nameByWorkflow = new Map(
+    revisions
+      .filter((r) => currentRevisionByWorkflow.get(r.workflowId) === r.revision)
+      .map((r) => [r.workflowId, (r.payload as { property?: { name?: string } })?.property?.name]),
+  );
+
+  const actions = await db
+    .select({
+      workflowId: reviewActions.workflowId,
+      reason: reviewActions.reason,
+      createdAt: reviewActions.createdAt,
+    })
+    .from(reviewActions)
+    .where(inArray(reviewActions.workflowId, workflowIds))
+    .orderBy(desc(reviewActions.createdAt));
+  const latestActionByWorkflow = new Map<string, { reason: string | null; createdAt: Date }>();
+  for (const a of actions) {
+    if (!latestActionByWorkflow.has(a.workflowId)) {
+      latestActionByWorkflow.set(a.workflowId, { reason: a.reason, createdAt: a.createdAt });
+    }
+  }
+
+  return workflows.map((w) => {
+    const action = w.state === "in_review" ? undefined : latestActionByWorkflow.get(w.id);
+    return {
+      id: w.id,
+      action: (w.propertyId ? "update" : "create") as "create" | "update",
+      status: v2SubmissionStatus(w.state),
+      propertyId: w.propertyId,
+      propertyName: nameByWorkflow.get(w.id) ?? "Untitled property",
+      reviewerNote: action?.reason ?? null,
+      createdAt: w.createdAt.toISOString(),
+      reviewedAt: action?.createdAt.toISOString() ?? null,
+      editable: false,
+    };
+  });
+}
+
 /** Developer-only: their live properties plus their full submission history —
  *  the dashboard renders both (live ones are editable, submissions show what's
  *  pending/rejected/approved). Properties come from two systems (V1: hosted
  *  Supabase, V2: local Postgres catalogue) that don't otherwise talk to each
- *  other — see getMyV2Properties. Submissions stay V1-only; V2 has no review
- *  workflow reachable from this dashboard. */
+ *  other — see getMyV2Properties. The V1 `properties` read was dropped here:
+ *  every row in that table has a null created_by (no V1 property has ever been
+ *  developer-owned), so it always returned empty. Submissions merge V1's
+ *  `property_submissions` with V2's workflow queue — see getMyV2Submissions. */
 export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
   .handler(
@@ -107,55 +199,37 @@ export const getMyDeveloperDashboard = createServerFn({ method: "GET" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const developerId = context.adminProfile.id;
 
-      const [{ data: props, error: propsError }, { data: subs, error: subsError }, v2Props] =
-        await Promise.all([
-          supabaseAdmin
-            .from("properties")
-            .select("id, name, developer, location, is_published")
-            .eq("created_by", developerId)
-            .order("created_at", { ascending: false }),
-          supabaseAdmin
-            .from("property_submissions")
-            .select(
-              "id, action, status, property_id, payload, reviewer_note, created_at, reviewed_at",
-            )
-            .eq("developer_id", developerId)
-            .order("created_at", { ascending: false }),
-          getMyV2Properties(developerId),
-        ]);
-      if (propsError)
-        throwSafeError("getDeveloperProperties", propsError, "Could not load properties");
+      const [{ data: subs, error: subsError }, v2Props, v2Subs] = await Promise.all([
+        supabaseAdmin
+          .from("property_submissions")
+          .select(
+            "id, action, status, property_id, payload, reviewer_note, created_at, reviewed_at",
+          )
+          .eq("developer_id", developerId)
+          .order("created_at", { ascending: false }),
+        getMyV2Properties(developerId),
+        getMyV2Submissions(developerId),
+      ]);
       if (subsError)
         throwSafeError("getDeveloperSubmissions", subsError, "Could not load submissions");
 
-      const pendingUpdateIds = new Set(
-        (subs ?? [])
-          .filter((s) => s.status === "pending" && s.action === "update" && s.property_id)
-          .map((s) => s.property_id as string),
-      );
+      const v1Submissions: DeveloperSubmission[] = (subs ?? []).map((s) => ({
+        id: s.id,
+        action: s.action,
+        status: s.status,
+        propertyId: s.property_id,
+        propertyName: (s.payload as { name?: string })?.name ?? "Untitled property",
+        reviewerNote: s.reviewer_note,
+        createdAt: s.created_at,
+        reviewedAt: s.reviewed_at,
+        editable: true,
+      }));
 
       return {
-        properties: [
-          ...(props ?? []).map((p) => ({
-            id: p.id,
-            name: p.name,
-            developer: p.developer ?? "-",
-            location: p.location ?? "-",
-            isPublished: p.is_published,
-            hasPendingUpdate: pendingUpdateIds.has(p.id),
-          })),
-          ...v2Props,
-        ],
-        submissions: (subs ?? []).map((s) => ({
-          id: s.id,
-          action: s.action,
-          status: s.status,
-          propertyId: s.property_id,
-          propertyName: (s.payload as { name?: string })?.name ?? "Untitled property",
-          reviewerNote: s.reviewer_note,
-          createdAt: s.created_at,
-          reviewedAt: s.reviewed_at,
-        })),
+        properties: v2Props,
+        submissions: [...v1Submissions, ...v2Subs].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
       };
     },
   );
@@ -211,9 +285,10 @@ async function getMyV2PropertyForEdit(
 }
 
 /** Developer-only: load one of THEIR OWN live properties into the edit form
- *  shape — same mapping as the owner's getPropertyForEdit, but ownership-
- *  checked against created_by instead of gated on the owner role. Falls back
- *  to V2 when the id isn't a V1 row — see getMyV2PropertyForEdit. */
+ *  shape. V1 had its own branch here (a flat row read, ownership-checked
+ *  against created_by) but every V1 property has a null created_by — no V1
+ *  property has ever been developer-owned — so that branch never matched
+ *  anything and was removed. Always V2 now — see getMyV2PropertyForEdit. */
 export const getMyPropertyForEdit = createServerFn({ method: "GET" })
   .middleware([requireAdminAuth])
   .inputValidator((data: { id: string }) => {
@@ -221,87 +296,9 @@ export const getMyPropertyForEdit = createServerFn({ method: "GET" })
     return { id: data.id };
   })
   .handler(async ({ data, context }): Promise<PropertyFormValues & { id: string }> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { toFormConfigs } = await import("@/server/property-write.server");
-
-    const { data: row, error } = await supabaseAdmin
-      .from("properties")
-      .select("*")
-      .eq("id", data.id)
-      .eq("created_by", context.adminProfile.id)
-      .maybeSingle();
-    if (error) throwSafeError("getDeveloperProperty", error, "Could not load property");
-    if (!row) {
-      const v2 = await getMyV2PropertyForEdit(data.id, context.adminProfile.id);
-      if (!v2) throw new Error("Property not found");
-      return v2;
-    }
-
-    const gallery = (row.gallery ?? {}) as Record<string, string>;
-    const isPlot =
-      row.category === "Plots" || row.category === "Bungalow" || row.category === "Villa";
-    const stripSuffix = (v: string | null, suffix: string) =>
-      (v ?? "").replace(new RegExp(`\\s*${suffix}$`), "").replace(/^-$/, "");
-
-    return {
-      id: row.id,
-      name: row.name ?? "",
-      developer: row.developer === "-" ? "" : (row.developer ?? ""),
-      category: (row.category as "Apartment" | "Villa" | "Bungalow" | "Plots") ?? "Apartment",
-      tagline: row.tagline ?? "",
-      location: row.location === "-" ? "" : (row.location ?? ""),
-      state: row.state ?? "",
-      city: row.city ?? "",
-      status: row.status === "-" ? "" : (row.status ?? ""),
-      possession: row.possession === "-" ? "" : (row.possession ?? ""),
-      possessionAsOf: row.possession_as_of ?? "",
-      expertNote: row.expert_note ?? "",
-      imageUrl: row.image_url ?? "",
-      gallery: {
-        livingRoom: gallery.livingRoom ?? "",
-        pool: gallery.pool ?? "",
-        clubhouse: gallery.clubhouse ?? "",
-        masterBedroom: gallery.masterBedroom ?? "",
-      },
-      plotSuperArea: isPlot ? stripSuffix(row.super_built_up_area, "Plot") : "",
-      plotCarpetArea: isPlot ? stripSuffix(row.carpet_area, "Built-up") : "",
-      amenities: row.amenities ?? [],
-      advantages: row.advantages ?? [],
-      plotSize: row.plot_size ?? "",
-      totalTowers: row.total_towers?.toString() ?? "",
-      totalFloors: row.total_floors?.toString() ?? "",
-      unitsPerFloor: row.units_per_floor?.toString() ?? "",
-      totalUnits: row.total_units?.toString() ?? "",
-      availableBhkTypes: row.available_bhk_types ?? "",
-      reraId: row.rera_id ?? "",
-      reraUrl: row.rera_url ?? "",
-      proposedStartDateRera: row.proposed_start_date_rera ?? "",
-      registeredCompletionDateRera: "",
-      constructionProgressRera: "",
-      parkingLevels: row.parking_levels?.toString() ?? "",
-      podiumStructure: row.podium_structure ?? "",
-      liftsPerTower: row.lifts_per_tower?.toString() ?? "",
-      openSpace: row.open_space ?? "",
-      geyserHeatPumpProvided: row.geyser_heat_pump_provided ?? "",
-      vrvAcProvided: row.vrv_ac_provided ?? "",
-      windowGlazing: row.window_glazing ?? "",
-      bathSanitaryFittings: row.bath_sanitary_fittings ?? "",
-      flooringType: row.flooring_type ?? "",
-      unitsPerAcre: row.units_per_acre ?? "",
-      constructionQuality: row.construction_quality ?? "",
-      internalCeilingHeight: row.internal_ceiling_height ?? "",
-      ceilingHeightBasis: "not_stated",
-      clubhouseSize: row.clubhouse_size ?? "",
-      possessionConfirmedAsOf: "",
-      amenitiesOther: "",
-      developerBackground: row.developer_background ?? "",
-      developerExperienceYears: row.developer_experience_years?.toString() ?? "",
-      totalDeliveredProjects: row.total_delivered_projects?.toString() ?? "",
-      ongoingProjects: row.ongoing_projects?.toString() ?? "",
-      notableDeliveredProjects: row.notable_delivered_projects ?? [],
-      configs: toFormConfigs((row.configurations ?? {}) as never),
-      isPublished: row.is_published ?? true,
-    };
+    const v2 = await getMyV2PropertyForEdit(data.id, context.adminProfile.id);
+    if (!v2) throw new Error("Property not found");
+    return v2;
   });
 
 /** Developer-only: reopen one of their own pending OR rejected submissions so
