@@ -424,12 +424,62 @@ async function submitV2PropertyUpdate(
   return { ok: true };
 }
 
+/** Developer-only: submits a brand-new property straight into the V2 review
+ *  queue (saveDeveloperRevision -> submitDeveloperWorkflow), with no existing
+ *  property to attach the revision to — publishWorkflow creates the identity
+ *  itself once an owner approves. Mirrors submitV2PropertyUpdate minus the
+ *  ownership check, since there's nothing to own yet. */
+async function submitV2PropertyCreate(
+  developerId: string,
+  values: PropertyFormValues,
+): Promise<{ ok: true }> {
+  const { eq, and, ilike } = await import("drizzle-orm");
+  const { getDatabase } = await import("@/db/client.server");
+  const { configurationOptions, markets } = await import("@/db/schema");
+  const { buildPublicationRevision } = await import("@/domain/publication-mapping.server");
+  const { saveDeveloperRevision, submitDeveloperWorkflow } =
+    await import("@/repositories/submission-workflow.repository.server");
+
+  const db = getDatabase();
+  const [market] = await db
+    .select({ id: markets.id, stateCode: markets.stateCode, cityCode: markets.cityCode })
+    .from(markets)
+    .where(
+      and(
+        eq(markets.isEnabled, true),
+        ilike(markets.stateName, values.state.trim()),
+        ilike(markets.cityName, values.city.trim()),
+      ),
+    )
+    .limit(1);
+  if (!market) {
+    throw new Error(`No enabled market matches "${values.city}, ${values.state}"`);
+  }
+
+  const optionRows = await db
+    .select({ id: configurationOptions.id, kind: configurationOptions.kind })
+    .from(configurationOptions);
+  const configurationOptionsByKind = new Map(optionRows.map((row) => [row.kind, row.id]));
+
+  const revision = buildPublicationRevision(values, {
+    configurationOptionsByKind,
+    marketId: market.id,
+    stateCode: market.stateCode,
+    cityCode: market.cityCode,
+  });
+
+  const { workflowId } = await saveDeveloperRevision(developerId, revision, undefined, undefined);
+  await submitDeveloperWorkflow(workflowId, developerId);
+  return { ok: true };
+}
+
 /** Developer-only: creates a pending review request. Never writes to
  *  `properties` directly — an owner approval is what actually publishes a new
  *  property or applies an edit to a live one (see admin-submissions.functions.ts).
- *  An "update" whose id isn't a V1 property falls back to the V2 workflow
- *  queue instead (see submitV2PropertyUpdate) — "create" always stays V1, since
- *  a brand new property has no id yet to disambiguate by. */
+ *  A "create" always goes into the V2 workflow queue (see
+ *  submitV2PropertyCreate) — there's no V1 create path anymore. An "update"
+ *  whose id isn't a V1 property falls back to the V2 queue too (see
+ *  submitV2PropertyUpdate); an update to a still-V1 property stays V1. */
 export const submitPropertyForReview = createServerFn({ method: "POST" })
   .middleware([requireAdminAuth])
   .inputValidator(
@@ -448,26 +498,27 @@ export const submitPropertyForReview = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.action === "create") {
+      return submitV2PropertyCreate(context.adminProfile.id, data.values);
+    }
 
-    if (data.action === "update") {
-      const propertyId = data.propertyId as string; // guaranteed by the validator above
-      const { data: owned, error } = await supabaseAdmin
-        .from("properties")
-        .select("id")
-        .eq("id", propertyId)
-        .eq("created_by", context.adminProfile.id)
-        .maybeSingle();
-      if (error) throw new Error("You can only submit updates for your own properties");
-      if (!owned) {
-        return submitV2PropertyUpdate(propertyId, context.adminProfile.id, data.values);
-      }
+    const propertyId = data.propertyId as string; // guaranteed by the validator above
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: owned, error } = await supabaseAdmin
+      .from("properties")
+      .select("id")
+      .eq("id", propertyId)
+      .eq("created_by", context.adminProfile.id)
+      .maybeSingle();
+    if (error) throw new Error("You can only submit updates for your own properties");
+    if (!owned) {
+      return submitV2PropertyUpdate(propertyId, context.adminProfile.id, data.values);
     }
 
     const { error: insertError } = await supabaseAdmin.from("property_submissions").insert({
       developer_id: context.adminProfile.id,
-      property_id: data.action === "update" ? data.propertyId : null,
-      action: data.action,
+      property_id: propertyId,
+      action: "update",
       payload: data.values as never,
       status: "pending",
     });

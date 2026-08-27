@@ -94,8 +94,10 @@ async function publishV2Catalogue(
 }
 
 /** V2 counterpart of the `property_submissions` read in `listSubmissions` —
- *  developer edits to V2-native properties land here via C3b's
- *  `submitV2PropertyUpdate`, never in V1. Only `in_review` (awaiting review),
+ *  developer creates and edits to V2-native properties land here (creates via
+ *  `submitV2PropertyCreate`, edits via `submitV2PropertyUpdate`), never in V1.
+ *  A workflow with no `propertyId` is a create; one with a `propertyId` is an
+ *  edit to that existing property. Only `in_review` (awaiting review),
  *  `rejected` and `published` are surfaced: `draft` never got submitted, and
  *  `submitted`/`validating`/`changes_requested` aren't reachable persisted
  *  states in this synchronous-only release (see `submitDeveloperWorkflow`).
@@ -158,7 +160,7 @@ async function listV2Submissions(): Promise<SubmissionListItem[]> {
     const action = w.state === "in_review" ? undefined : latestActionByWorkflow.get(w.id);
     return {
       id: `${V2_ID_PREFIX}${w.id}`,
-      action: "update",
+      action: w.propertyId ? "update" : "create",
       status: v2Status(w.state),
       propertyId: w.propertyId,
       propertyName: nameByWorkflow.get(w.id) ?? "Untitled property",
@@ -227,7 +229,7 @@ async function getV2Submission(workflowId: string) {
 
   return {
     id: `${V2_ID_PREFIX}${workflow.id}`,
-    action: "update" as const,
+    action: (workflow.propertyId ? "update" : "create") as "create" | "update",
     status: v2Status(workflow.state),
     propertyId: workflow.propertyId,
     developerId: workflow.developerId,
@@ -238,11 +240,12 @@ async function getV2Submission(workflowId: string) {
 }
 
 /** Owner-only: every submission, newest first, pending ones easy to isolate
- *  client-side by `status`. Merges V1's `property_submissions` (creates, and
- *  updates for properties not yet on V2) with V2's
- *  `property_submission_workflows` (updates for V2-native properties, C3b) —
- *  see `listV2Submissions`. The `id` stays an opaque string to the frontend;
- *  a `v2:` prefix is how get/approve/reject tell the two systems apart. */
+ *  client-side by `status`. Merges V1's `property_submissions` (now only
+ *  updates to properties still on V1 — creates and V2-native updates never
+ *  land here anymore) with V2's `property_submission_workflows` (all creates,
+ *  plus updates for V2-native properties) — see `listV2Submissions`. The `id`
+ *  stays an opaque string to the frontend; a `v2:` prefix is how
+ *  get/approve/reject tell the two systems apart. */
 export const listSubmissions = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
   .handler(async (): Promise<SubmissionListItem[]> => {
