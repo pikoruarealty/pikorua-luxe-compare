@@ -127,7 +127,7 @@ export const propertyFormSchema = z.object({
       masterBedroom: publicUrl(),
     })
     .optional()
-    .default({}),
+    .default({ livingRoom: "", pool: "", clubhouse: "", masterBedroom: "" }),
   // Only meaningful for Bungalow / Plots categories.
   plotSuperArea: optionalShortText(),
   plotCarpetArea: optionalShortText(),
