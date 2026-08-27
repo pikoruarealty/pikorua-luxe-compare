@@ -32,7 +32,6 @@ import { Route as AdminDevelopersRouteImport } from './routes/admin.developers'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as DeveloperIntelligenceIndexRouteImport } from './routes/developer.intelligence.index'
 import { Route as AdminPropertiesIndexRouteImport } from './routes/admin.properties.index'
-import { Route as DeveloperSubmissionsIdRouteImport } from './routes/developer.submissions.$id'
 import { Route as DeveloperPropertiesNewRouteImport } from './routes/developer.properties.new'
 import { Route as DeveloperPropertiesIdRouteImport } from './routes/developer.properties.$id'
 import { Route as DeveloperIntelligencePropertyIdRouteImport } from './routes/developer.intelligence.$propertyId'
@@ -156,11 +155,6 @@ const AdminPropertiesIndexRoute = AdminPropertiesIndexRouteImport.update({
   path: '/admin/properties/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeveloperSubmissionsIdRoute = DeveloperSubmissionsIdRouteImport.update({
-  id: '/developer/submissions/$id',
-  path: '/developer/submissions/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DeveloperPropertiesNewRoute = DeveloperPropertiesNewRouteImport.update({
   id: '/developer/properties/new',
   path: '/developer/properties/new',
@@ -216,7 +210,6 @@ export interface FileRoutesByFullPath {
   '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
-  '/developer/submissions/$id': typeof DeveloperSubmissionsIdRoute
   '/admin/properties/': typeof AdminPropertiesIndexRoute
   '/developer/intelligence/': typeof DeveloperIntelligenceIndexRoute
 }
@@ -247,7 +240,6 @@ export interface FileRoutesByTo {
   '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
-  '/developer/submissions/$id': typeof DeveloperSubmissionsIdRoute
   '/admin/properties': typeof AdminPropertiesIndexRoute
   '/developer/intelligence': typeof DeveloperIntelligenceIndexRoute
 }
@@ -279,7 +271,6 @@ export interface FileRoutesById {
   '/developer/intelligence/$propertyId': typeof DeveloperIntelligencePropertyIdRoute
   '/developer/properties/$id': typeof DeveloperPropertiesIdRoute
   '/developer/properties/new': typeof DeveloperPropertiesNewRoute
-  '/developer/submissions/$id': typeof DeveloperSubmissionsIdRoute
   '/admin/properties/': typeof AdminPropertiesIndexRoute
   '/developer/intelligence/': typeof DeveloperIntelligenceIndexRoute
 }
@@ -312,7 +303,6 @@ export interface FileRouteTypes {
     | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
-    | '/developer/submissions/$id'
     | '/admin/properties/'
     | '/developer/intelligence/'
   fileRoutesByTo: FileRoutesByTo
@@ -343,7 +333,6 @@ export interface FileRouteTypes {
     | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
-    | '/developer/submissions/$id'
     | '/admin/properties'
     | '/developer/intelligence'
   id:
@@ -374,7 +363,6 @@ export interface FileRouteTypes {
     | '/developer/intelligence/$propertyId'
     | '/developer/properties/$id'
     | '/developer/properties/new'
-    | '/developer/submissions/$id'
     | '/admin/properties/'
     | '/developer/intelligence/'
   fileRoutesById: FileRoutesById
@@ -406,7 +394,6 @@ export interface RootRouteChildren {
   DeveloperIntelligencePropertyIdRoute: typeof DeveloperIntelligencePropertyIdRoute
   DeveloperPropertiesIdRoute: typeof DeveloperPropertiesIdRoute
   DeveloperPropertiesNewRoute: typeof DeveloperPropertiesNewRoute
-  DeveloperSubmissionsIdRoute: typeof DeveloperSubmissionsIdRoute
   AdminPropertiesIndexRoute: typeof AdminPropertiesIndexRoute
   DeveloperIntelligenceIndexRoute: typeof DeveloperIntelligenceIndexRoute
 }
@@ -574,13 +561,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPropertiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/developer/submissions/$id': {
-      id: '/developer/submissions/$id'
-      path: '/developer/submissions/$id'
-      fullPath: '/developer/submissions/$id'
-      preLoaderRoute: typeof DeveloperSubmissionsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/developer/properties/new': {
       id: '/developer/properties/new'
       path: '/developer/properties/new'
@@ -646,7 +626,6 @@ const rootRouteChildren: RootRouteChildren = {
   DeveloperIntelligencePropertyIdRoute: DeveloperIntelligencePropertyIdRoute,
   DeveloperPropertiesIdRoute: DeveloperPropertiesIdRoute,
   DeveloperPropertiesNewRoute: DeveloperPropertiesNewRoute,
-  DeveloperSubmissionsIdRoute: DeveloperSubmissionsIdRoute,
   AdminPropertiesIndexRoute: AdminPropertiesIndexRoute,
   DeveloperIntelligenceIndexRoute: DeveloperIntelligenceIndexRoute,
 }

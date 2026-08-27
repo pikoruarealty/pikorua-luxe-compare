@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { throwSafeError } from "@/lib/safe-error";
 import { requireOwnerAuth } from "@/integrations/supabase/admin-auth-middleware";
 import {
   countProfiles,
@@ -92,15 +91,14 @@ export const getCustomerDetail = createServerFn({ method: "GET" })
     const slugs = [...new Set(activityRows.map((r) => r.propertySlug).filter(Boolean))] as string[];
     const nameBySlug = new Map<string, string>();
     if (slugs.length) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: props, error: propsError } = await supabaseAdmin
-        .from("properties")
-        .select("slug, name")
-        .in("slug", slugs);
-      if (propsError) {
-        throwSafeError("getCustomerDetail.properties", propsError, "Could not load property names");
-      }
-      for (const row of (props ?? []) as { slug: string; name: string }[]) {
+      const { getDatabase } = await import("@/db/client.server");
+      const { properties } = await import("@/db/schema");
+      const { inArray } = await import("drizzle-orm");
+      const props = await getDatabase()
+        .select({ slug: properties.slug, name: properties.name })
+        .from(properties)
+        .where(inArray(properties.slug, slugs));
+      for (const row of props) {
         nameBySlug.set(row.slug, row.name);
       }
     }
@@ -126,37 +124,45 @@ export const getCustomerDetail = createServerFn({ method: "GET" })
     };
   });
 
-/** Owner-only: headline numbers for the dashboard. */
+/** Owner-only: headline numbers for the dashboard. Property/submission counts
+ *  read the V2 local-Postgres catalogue — the only place either lands now
+ *  that Phase C retired the V1 Supabase create/review path. */
 export const getAdminStats = createServerFn({ method: "GET" })
   .middleware([requireOwnerAuth])
   .handler(async (): Promise<AdminStats> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const head = { count: "exact" as const, head: true };
+    const { getDatabase } = await import("@/db/client.server");
+    const { properties, propertySubmissionWorkflows } = await import("@/db/schema");
+    const { eq, sql } = await import("drizzle-orm");
+    const db = getDatabase();
+    const countOf = sql<number>`count(*)::int`;
 
     const [
       customers,
       quizCompleted,
       totalInteractions,
       anonymousInteractions,
-      properties,
-      publishedProperties,
-      pendingSubmissions,
+      [propertiesRow],
+      [publishedRow],
+      [pendingRow],
     ] = await Promise.all([
       countProfiles(),
       countProfilesWithQuiz(),
       countActivity(),
       countAnonymousActivity(),
-      supabaseAdmin.from("properties").select("*", head),
-      supabaseAdmin.from("properties").select("*", head).eq("is_published", true),
-      supabaseAdmin.from("property_submissions").select("*", head).eq("status", "pending"),
+      db.select({ count: countOf }).from(properties),
+      db.select({ count: countOf }).from(properties).where(eq(properties.isPublished, true)),
+      db
+        .select({ count: countOf })
+        .from(propertySubmissionWorkflows)
+        .where(eq(propertySubmissionWorkflows.state, "in_review")),
     ]);
 
     return {
       customers,
       quizCompleted,
-      properties: properties.count ?? 0,
-      publishedProperties: publishedProperties.count ?? 0,
-      pendingSubmissions: pendingSubmissions.count ?? 0,
+      properties: propertiesRow?.count ?? 0,
+      publishedProperties: publishedRow?.count ?? 0,
+      pendingSubmissions: pendingRow?.count ?? 0,
       totalInteractions,
       anonymousInteractions,
     };

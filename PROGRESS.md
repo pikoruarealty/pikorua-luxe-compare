@@ -1719,6 +1719,70 @@ db:drift` clean at 41 tables. Not yet deployed to the VM.
 Commits: `da0c06f` (new V2 admin functions), `e1f783a` (rewire the three admin routes + queries),
 `7879666` (dead distance-comparison cleanup, unrelated).
 
+#### C5 — retire the remaining V1 code (plan steps 5 & 7) (local, 2026-08-27)
+
+Closes the last standing blocker from the two follow-up sessions above: 3 historical V1
+`property_submissions` rows (all `status: rejected`, all `action: create`) and the developer-facing
+reopen route (`developer.submissions.$id.tsx`) that could still flip one back to `pending` — the
+thing stopping `admin-submissions.functions.ts`'s V1 review branches from being deleted outright.
+
+**Owner decision (asked explicitly via `AskUserQuestion`, as the earlier session flagged this
+needed a real call, not an assumption):** retire the reopen route entirely. The 3 rows stay in
+Supabase as permanently un-reopenable dead history — each already carries a rejection note; a
+developer wanting another try now just submits fresh through the live V2 create path.
+
+**Shipped:**
+- Deleted `developer.submissions.$id.tsx`, and `developer-properties.functions.ts`'s
+  `getMyPendingSubmission`/`updateMyPendingSubmission` (their only caller). `developer.index.tsx`'s
+  "Fix and resubmit" link — gated on `editable`, which no submission can set `true` anymore — is
+  deleted too, not just dead-guarded.
+- `DeveloperSubmission.editable` removed from the type entirely (it no longer varies — every
+  submission is V2-sourced now, so the field was dead weight, not a real toggle).
+- `getMyDeveloperDashboard` no longer reads V1 `property_submissions` at all — submissions come
+  from `getMyV2Submissions` only. The 3 rejected rows above simply stop appearing anywhere in the
+  product, matching the owner's "permanently archived" call.
+- `submitPropertyForReview`'s "update" branch no longer checks V1 `properties` ownership before
+  falling back to V2 — that check could never succeed (every V1 property has `created_by: null`,
+  confirmed in the first follow-up session) and its "yes" branch inserted into V1
+  `property_submissions`, which nothing reviews anymore. Both actions now go straight to their V2
+  submit function.
+- `admin-submissions.functions.ts` rewritten to be V2-only: deleted `publishV2Catalogue` (the
+  confirmed-broken V1→V2 FK bridge flagged two sessions ago) and the whole `v2:`-id-prefix scheme —
+  with only one system left there's nothing left to disambiguate, so `listSubmissions`/
+  `getSubmission`/`approveSubmission`/`rejectSubmission` now operate directly on
+  `propertySubmissionWorkflows` by its own id. The frontend (`submissions.queries.ts`,
+  `admin.submissions.tsx`) already treated `id` as opaque, so no UI change needed.
+- `property-crud.functions.ts` deleted entirely — `toDbRow`/`uniqueSlug`'s last caller
+  (`approveSubmission`'s V1 branch) is gone. `properties.functions.ts`'s `getAllPropertiesForAdmin`
+  and all its now-orphaned helpers (`toProperty`/`toAdminProperty`/`PROPERTY_COLUMNS`/`PropertyRow`/
+  `EMPTY_GALLERY`/the maruti-360 image imports) deleted too — the file now holds only the shared
+  `AdminProperty` type, still imported by `property-v2-admin.functions.ts` and
+  `admin.properties.index.tsx`.
+- **Real bug found via the plan's own instructed check** ("grep for `supabaseAdmin` across
+  `src/api/functions/*.ts` afterward — anything left touching `properties`/`property_submissions` is
+  a straggler"): `customers.functions.ts` had two V1 reads nothing had touched yet.
+  `getAdminStats` (the owner dashboard's headline numbers) counted V1 `properties`/
+  `property_submissions` — meaning `pendingSubmissions` has read as 0 ever since V1 submissions
+  stopped being created, silently hiding every real pending V2 workflow. `getCustomerDetail`'s
+  activity-timeline property-name lookup joined visitor activity's `propertySlug` against V1
+  `properties` — meaning it's shown blank names for any activity against a V2 property since
+  `V2_CATALOGUE=1` went live. Neither was called out in the plan; both fixed to read local Postgres
+  (`properties`/`propertySubmissionWorkflows` directly, matching this file's existing
+  `profile.repository.server.ts`/`customer-activity.repository.server.ts` pattern for counts).
+- `routeTree.gen.ts` regenerated (via a brief `vite dev`, not hand-edited) to drop the deleted route.
+
+**Verification (local):** `tsc --noEmit` clean, `bun run lint` clean, `bun run test` 147/147,
+`bun run db:drift` clean at 41 tables. `bun run check` fails on an unrelated pre-existing baseline
+drift in brochure-mapping (`unparsed sizes: 3, up from 2`) — confirmed via `git stash` that the same
+failure exists on `main` before this session's changes; nothing touched here is brochure/OCR code.
+Not yet deployed to the VM.
+
+**C5b (step 8, drop the legacy Supabase columns) deliberately NOT attempted this session** — the
+plan's own sequencing note says not to attempt it in the same session as step 7: it needs step 7
+live on the VM and verified for real first, plus a fresh `select count(*) from properties` against
+hosted Supabase as a pre-drop sanity check. Next session, after this deploys and gets a quick
+post-deploy check (admin submissions queue, developer dashboard, `/admin` headline stats).
+
 ---
 
 ## Standing rules that apply to every phase (repeat, so nobody has to go find Part 9)
