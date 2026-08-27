@@ -18,7 +18,7 @@ export function BrochureEnrichPanel({
   onApply,
 }: {
   current: PropertyFormValues;
-  onApply: (merged: PropertyFormValues) => void;
+  onApply: (merged: PropertyFormValues, jobId: string) => void;
 }) {
   const [step, setStep] = useState<"idle" | "upload" | "merge">("idle");
   const [extraction, setExtraction] = useState<ExtractionResponse | null>(null);
@@ -67,12 +67,13 @@ export function BrochureEnrichPanel({
   const isOn = (row: MergeRow) => chosen[row.key] ?? !row.conflict;
 
   const applySelected = () => {
+    if (!extraction) return;
     const merged = structuredClone(current);
     // Taken from the form's own empty value so a new bucket added to
     // CONFIG_BUCKETS can never be missed here.
     merged.configs = merged.configs ?? emptyPropertyForm().configs;
     for (const row of rows) if (isOn(row)) row.apply(merged);
-    onApply(merged);
+    onApply(merged, extraction.job_id);
     reset();
   };
 

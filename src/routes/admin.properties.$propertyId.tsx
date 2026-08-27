@@ -23,6 +23,7 @@ function EditProperty() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [enriched, setEnriched] = useState<PropertyFormValues | null>(null);
+  const [enrichedJobId, setEnrichedJobId] = useState<string | undefined>(undefined);
   const [formKey, setFormKey] = useState(0);
 
   const {
@@ -37,7 +38,7 @@ function EditProperty() {
 
   const mutation = useMutation({
     mutationFn: (values: PropertyFormValues) =>
-      updateV2Property({ data: { id: propertyId, values } }),
+      updateV2Property({ data: { id: propertyId, jobId: enrichedJobId, values } }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "properties"] });
       await queryClient.invalidateQueries({ queryKey: ["admin", "property", propertyId] });
@@ -66,8 +67,9 @@ function EditProperty() {
           <div className="mb-6">
             <BrochureEnrichPanel
               current={enriched ?? property}
-              onApply={(merged) => {
+              onApply={(merged, jobId) => {
                 setEnriched(merged);
+                setEnrichedJobId(jobId);
                 // PropertyForm owns its react-hook-form state, so remount it to
                 // pick up the merged values as fresh defaults.
                 setFormKey((k) => k + 1);

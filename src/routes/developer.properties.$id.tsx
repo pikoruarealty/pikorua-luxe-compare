@@ -20,6 +20,7 @@ function EditDeveloperProperty() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [enriched, setEnriched] = useState<PropertyFormValues | null>(null);
+  const [enrichedJobId, setEnrichedJobId] = useState<string | undefined>(undefined);
   const [formKey, setFormKey] = useState(0);
   const { data, isPending, error } = useQuery({
     queryKey: ["developer", "property", id],
@@ -28,7 +29,9 @@ function EditDeveloperProperty() {
 
   const submitMutation = useMutation({
     mutationFn: (values: PropertyFormValues) =>
-      submitPropertyForReview({ data: { action: "update", propertyId: id, values } }),
+      submitPropertyForReview({
+        data: { action: "update", propertyId: id, jobId: enrichedJobId, values },
+      }),
     onSuccess: () => {
       toast.success("Edit submitted — your admin will review it before it goes live.");
       navigate({ to: "/developer" });
@@ -48,8 +51,9 @@ function EditDeveloperProperty() {
           <div className="mb-6">
             <BrochureEnrichPanel
               current={enriched ?? data}
-              onApply={(merged) => {
+              onApply={(merged, jobId) => {
                 setEnriched(merged);
+                setEnrichedJobId(jobId);
                 setFormKey((k) => k + 1);
               }}
             />

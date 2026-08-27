@@ -46,6 +46,7 @@ async function publishV2Revision(
   values: PropertyFormValues,
   ownerId: string,
   propertyId?: string,
+  brochureJobId?: string,
 ): Promise<{ propertyId: string; publicationVersionId: string }> {
   const { buildPublicationRevision } = await import("@/domain/publication-mapping.server");
   const { saveDeveloperRevision, submitDeveloperWorkflow } =
@@ -60,7 +61,13 @@ async function publishV2Revision(
     cityCode: market.cityCode,
   });
 
-  const { workflowId } = await saveDeveloperRevision(ownerId, revision, undefined, propertyId);
+  const { workflowId } = await saveDeveloperRevision(
+    ownerId,
+    revision,
+    undefined,
+    propertyId,
+    brochureJobId,
+  );
   await submitDeveloperWorkflow(workflowId, ownerId);
   return publishWorkflow(workflowId, ownerId);
 }
@@ -95,11 +102,16 @@ export const createV2Property = createServerFn({ method: "POST" })
  *  create, but `propertyId` is passed through so `publishWorkflow` creates a
  *  new version on the existing row rather than a new identity. Replaces
  *  `updateProperty`. */
+// Matches insertBrochureJob's generator (crypto.randomUUID, hyphens
+// stripped, sliced to 24) — see createBrochureUploadTicket.
+const JOB_ID_RE = /^[a-f0-9]{12,32}$/;
+
 export const updateV2Property = createServerFn({ method: "POST" })
   .middleware([requireOwnerAuth])
-  .inputValidator((data: { id: string; values: PropertyFormValues }) => {
+  .inputValidator((data: { id: string; jobId?: string; values: PropertyFormValues }) => {
     if (!data?.id || typeof data.id !== "string") throw new Error("Missing property id");
-    return { id: data.id, values: propertyFormSchema.parse(data.values) };
+    if (data.jobId && !JOB_ID_RE.test(data.jobId)) throw new Error("Invalid job id");
+    return { id: data.id, jobId: data.jobId, values: propertyFormSchema.parse(data.values) };
   })
   .handler(async ({ data, context }) => {
     const { eq } = await import("drizzle-orm");
@@ -113,7 +125,12 @@ export const updateV2Property = createServerFn({ method: "POST" })
       .limit(1);
     if (!exists) throw new Error("Property not found");
 
-    const { propertyId } = await publishV2Revision(data.values, context.adminProfile.id, data.id);
+    const { propertyId } = await publishV2Revision(
+      data.values,
+      context.adminProfile.id,
+      data.id,
+      data.jobId,
+    );
     // publishWorkflow always brings a property live (isPublished: true) — the
     // form's own checkbox is the one place that can ask for it to go back down.
     if (!data.values.isPublished) {

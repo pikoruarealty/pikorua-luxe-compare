@@ -271,6 +271,7 @@ async function submitV2PropertyUpdate(
   propertyId: string,
   developerId: string,
   values: PropertyFormValues,
+  brochureJobId?: string,
 ): Promise<{ ok: true }> {
   const { eq, and, ilike } = await import("drizzle-orm");
   const { getDatabase } = await import("@/db/client.server");
@@ -314,7 +315,13 @@ async function submitV2PropertyUpdate(
     cityCode: market.cityCode,
   });
 
-  const { workflowId } = await saveDeveloperRevision(developerId, revision, undefined, propertyId);
+  const { workflowId } = await saveDeveloperRevision(
+    developerId,
+    revision,
+    undefined,
+    propertyId,
+    brochureJobId,
+  );
   await submitDeveloperWorkflow(workflowId, developerId);
   return { ok: true };
 }
@@ -419,5 +426,6 @@ export const submitPropertyForReview = createServerFn({ method: "POST" })
       data.propertyId as string, // guaranteed by the validator above
       context.adminProfile.id,
       data.values,
+      data.jobId,
     );
   });
