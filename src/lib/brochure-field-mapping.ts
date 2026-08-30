@@ -318,10 +318,21 @@ function countBedrooms(rooms: RoomDimension[]): number {
   return highest || drawn;
 }
 
-/** Reads a wrapped field, returning "" for anything the OCR didn't find. */
+/** Phrases like this are an extractor-era placeholder, not a property value.
+ *  Treating them as a real string makes an unknown detail look customer-ready
+ *  and prevents the publication mapper from recording its `not_stated` state. */
+function isNotStatedPlaceholder(value: string): boolean {
+  return /^(?:n\/?a|not\s+(?:stated|mentioned|specified|available)(?:\s+in\s+(?:the\s+)?(?:brochure|document))?)$/i.test(
+    value.trim(),
+  );
+}
+
+/** Reads a wrapped field, returning "" for anything the OCR didn't find or
+ *  explicitly marked as unavailable in the brochure. */
 function text(field: ExtractedField | undefined): string {
   if (!field?.found || field.value === null || field.value === undefined) return "";
-  return String(field.value).trim();
+  const value = String(field.value).trim();
+  return isNotStatedPlaceholder(value) ? "" : value;
 }
 
 /** Null rather than "" — ConfigDetail distinguishes absent from empty. */
@@ -802,16 +813,26 @@ function variantFailingFields(variant: ConfigVariant): Set<string> {
   return failing;
 }
 
+/** The values a reviewer explicitly chose to carry forward. Passing this to
+ * `mapExtractedPayload` prevents an OCR value marked N/A from quietly coming
+ * back through the generic prefill path. */
+export interface ReviewedExtractionSelection {
+  formFields: readonly (keyof PropertyFormValues)[];
+  configFields: Record<number, Partial<Record<keyof ConfigDetailInput, true>>>;
+}
+
 /** Turns an extraction into a partial PropertyFormValues the developer's form
  *  is pre-filled with. Nothing here is authoritative — every value is still
  *  reviewed and ticked by a human before it can be submitted. */
 export function mapExtractedPayload(
   extraction: PropertyExtraction,
   overrides: VariantOverrides = {},
+  selection?: ReviewedExtractionSelection,
 ): Partial<PropertyFormValues> {
   const out: Partial<PropertyFormValues> = {};
 
   for (const [path, ourKey] of Object.entries(FIELD_MAP)) {
+    if (selection && !selection.formFields.includes(ourKey)) continue;
     const [sectionName, fieldName] = path.split(".");
     const value = text(section(extraction, sectionName)[fieldName]);
     if (!value) continue;
@@ -825,13 +846,19 @@ export function mapExtractedPayload(
   const notable = (extraction.developer?.notable_delivered_projects ?? [])
     .map((f) => text(f))
     .filter(Boolean);
-  if (notable.length) out.notableDeliveredProjects = notable;
+  if (notable.length && (!selection || selection.formFields.includes("notableDeliveredProjects"))) {
+    out.notableDeliveredProjects = notable;
+  }
 
   const amenities = (extraction.amenities ?? []).map((f) => text(f)).filter(Boolean);
-  if (amenities.length) out.amenities = amenities;
+  if (amenities.length && (!selection || selection.formFields.includes("amenities"))) {
+    out.amenities = amenities;
+  }
 
   const highlights = (extraction.highlights ?? []).map((f) => text(f)).filter(Boolean);
-  if (highlights.length) out.advantages = highlights;
+  if (highlights.length && (!selection || selection.formFields.includes("advantages"))) {
+    out.advantages = highlights;
+  }
 
   const variants = extraction.configurations ?? [];
   if (variants.length) {
@@ -847,12 +874,14 @@ export function mapExtractedPayload(
     };
     let matched = false;
     variants.forEach((variant, index) => {
+      const selectedFields = selection?.configFields[index];
+      if (selection && (!selectedFields || Object.keys(selectedFields).length === 0)) return;
       const bucket =
         overrides[index]?.bucket ??
         bucketFor(text(variant.bhk_type), text(variant.variant_label), variant.rooms ?? []);
       if (!bucket) return;
       matched = true;
-      configs[bucket].push({
+      const mapped = {
         ...emptyConfigDetail(),
         // Renamed to Type A/B/C in the order they appear in this BHK — see
         // sequentialLabel. Must match what the review screen showed.
@@ -864,7 +893,13 @@ export function mapExtractedPayload(
         rate: textOrNull(variant.rate_per_sqft),
         ...assignRooms(variant.rooms ?? []).values,
         ...overrides[index]?.fields,
-      });
+      };
+      if (selectedFields) {
+        for (const field of VARIANT_FIELDS) {
+          if (!selectedFields[field.name]) mapped[field.name] = emptyConfigDetail()[field.name];
+        }
+      }
+      configs[bucket].push(mapped);
     });
     if (matched) out.configs = configs;
   }
@@ -1289,6 +1324,58 @@ export function buildMergeRows(
   out.push(...configRows(current, mapped.configs, mappedFailing));
 
   return out;
+}
+
+/** Applies only the values that survived the evidence review. Lists are added
+ * to rather than replaced, and a configuration is matched by its reviewed
+ * label (falling back to its position) so a partly reviewed brochure can never
+ * erase existing measurements. */
+export function mergeReviewedExtraction(
+  current: PropertyFormValues,
+  incoming: Partial<PropertyFormValues>,
+): PropertyFormValues {
+  const merged = structuredClone(current);
+  const scalarIncoming = incoming as Record<string, unknown>;
+  const scalarTarget = merged as unknown as Record<string, unknown>;
+
+  for (const [key, value] of Object.entries(scalarIncoming)) {
+    if (
+      key === "configs" ||
+      key === "amenities" ||
+      key === "advantages" ||
+      key === "notableDeliveredProjects" ||
+      key === "isPublished" ||
+      value === undefined
+    ) {
+      continue;
+    }
+    scalarTarget[key] = value;
+  }
+
+  for (const key of ["amenities", "advantages", "notableDeliveredProjects"] as const) {
+    const additions = incoming[key] ?? [];
+    if (!additions.length) continue;
+    merged[key] = [...merged[key], ...additions.filter((value) => !merged[key].includes(value))];
+  }
+
+  if (!incoming.configs) return merged;
+  for (const bucket of Object.keys(BUCKET_LABELS) as ConfigBucket[]) {
+    for (const [position, variant] of (incoming.configs[bucket] ?? []).entries()) {
+      const currentVariants = merged.configs[bucket];
+      const index = matchIndex(currentVariants, variant, position);
+      const target =
+        index === null ? { ...emptyConfigDetail(), type: variant.type } : currentVariants[index];
+      let hasReviewedValue = false;
+      for (const field of VARIANT_FIELDS) {
+        const value = variant[field.name];
+        if (value === null || value === undefined || value === "") continue;
+        hasReviewedValue = true;
+        (target as Record<string, unknown>)[field.name] = value;
+      }
+      if (index === null && hasReviewedValue) currentVariants.push(target);
+    }
+  }
+  return merged;
 }
 
 /** Labels for the fields the OCR looked for and genuinely didn't find, so the

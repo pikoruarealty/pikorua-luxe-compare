@@ -174,10 +174,10 @@ export function AddPropertyFlow() {
       <ExtractedFieldsReview
         response={extraction}
         onCancel={() => setStep("upload")}
-        onContinue={(partial, _approved, overrides) => {
+        onContinue={(partial, selection, overrides) => {
           setFormDefaults({
             ...emptyPropertyForm(),
-            ...mapExtractedPayload(extraction.extraction, overrides),
+            ...mapExtractedPayload(extraction.extraction, overrides, selection),
             ...partial,
           });
           setStep("images");

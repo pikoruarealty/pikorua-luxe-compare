@@ -464,7 +464,13 @@ export const getMyDraftForReview = createServerFn({ method: "GET" })
     async ({
       data,
       context,
-    }): Promise<PropertyFormValues & { workflowId: string; action: "create" | "update" }> => {
+    }): Promise<
+      PropertyFormValues & {
+        workflowId: string;
+        action: "create" | "update";
+        brochureJobId: string | null;
+      }
+    > => {
       const { eq, and } = await import("drizzle-orm");
       const { getDatabase } = await import("@/db/client.server");
       const { propertySubmissionWorkflows, propertySubmissionRevisions, markets } =
@@ -477,6 +483,7 @@ export const getMyDraftForReview = createServerFn({ method: "GET" })
         .select({
           id: propertySubmissionWorkflows.id,
           propertyId: propertySubmissionWorkflows.propertyId,
+          brochureJobId: propertySubmissionWorkflows.brochureJobId,
           state: propertySubmissionWorkflows.state,
           currentRevision: propertySubmissionWorkflows.currentRevision,
         })
@@ -520,6 +527,7 @@ export const getMyDraftForReview = createServerFn({ method: "GET" })
         ...values,
         workflowId: workflow.id,
         action: workflow.propertyId ? "update" : "create",
+        brochureJobId: workflow.brochureJobId,
       };
     },
   );

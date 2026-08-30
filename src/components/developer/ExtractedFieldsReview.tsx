@@ -17,6 +17,7 @@ import {
 import type {
   ConfigBucket,
   ExtractionResponse,
+  ReviewedExtractionSelection,
   VariantOverrides,
 } from "@/lib/brochure-field-mapping";
 import type { PropertyFormValues } from "@/lib/property-schema";
@@ -52,14 +53,16 @@ export function ExtractedFieldsReview({
   response,
   onContinue,
   onCancel,
+  existingValues,
 }: {
   response: ExtractionResponse;
   onContinue: (
     values: Partial<PropertyFormValues>,
-    approvedKeys: (keyof PropertyFormValues)[],
+    selection: ReviewedExtractionSelection,
     overrides: VariantOverrides,
   ) => void;
   onCancel: () => void;
+  existingValues?: PropertyFormValues;
 }) {
   // Restored once on mount if this job's review was left and come back to —
   // by closing the tab, going back a step, or resuming by job id later.
@@ -71,6 +74,41 @@ export function ExtractedFieldsReview({
     () => sections.flatMap((s) => s.groups.flatMap((g) => g.items)),
     [sections],
   );
+  // A brochure may fill an established listing as well as create a new one.
+  // Keep replacements visible and deliberately unticked; only genuine blanks
+  // get the convenience of automatic approval.
+  const savedValuesByItem = useMemo(() => {
+    if (!existingValues) return new Map<string, string>();
+    const configPositions = new Map<number, { bucket: ConfigBucket; position: number }>();
+    const seenPerBucket = new Map<ConfigBucket, number>();
+    for (const section of sections) {
+      for (const group of section.groups) {
+        if (group.configIndex === undefined || !group.bucket) continue;
+        const position = seenPerBucket.get(group.bucket) ?? 0;
+        configPositions.set(group.configIndex, { bucket: group.bucket, position });
+        seenPerBucket.set(group.bucket, position + 1);
+      }
+    }
+    const out = new Map<string, string>();
+    for (const item of allItems) {
+      let savedValue: unknown;
+      if (item.formField) savedValue = existingValues[item.formField];
+      if (item.configField && item.configIndex !== undefined) {
+        const position = configPositions.get(item.configIndex);
+        savedValue = position
+          ? existingValues.configs[position.bucket]?.[position.position]?.[item.configField]
+          : undefined;
+      }
+      const savedText = Array.isArray(savedValue)
+        ? savedValue.join(" Â· ")
+        : savedValue === null || savedValue === undefined
+          ? ""
+          : String(savedValue).trim();
+      const incomingText = item.values ? item.values.join(" Â· ") : item.value;
+      if (savedText && savedText !== incomingText) out.set(item.key, savedText);
+    }
+    return out;
+  }, [allItems, existingValues, sections]);
   const missing = useMemo(() => missingFieldLabels(response), [response]);
 
   const [values, setValues] = useState<Record<string, string>>(() => ({
@@ -101,15 +139,18 @@ export function ExtractedFieldsReview({
   const [approved, setApproved] = useState<Record<string, boolean>>(() => ({
     ...Object.fromEntries(
       allItems
-        .filter((i) => (i.confidence ?? 0) > 0.75 && !i.validationWarning)
+        .filter(
+          (i) =>
+            (i.confidence ?? 0) > 0.75 && !i.validationWarning && !savedValuesByItem.has(i.key),
+        )
         .map((i) => [i.key, true]),
     ),
     ...saved?.approved,
   }));
-  // A reviewer's explicit "not providing this now" — a found value they
-  // choose to leave out (e.g. possession, until RERA confirms it) rather
-  // than approve. Counts toward "handled" the same as an approval, but the
-  // value is dropped instead of written to the form.
+  // A reviewer's explicit N/A decision — a found value they choose to leave
+  // out (e.g. possession, until RERA confirms it) rather than approve. It
+  // becomes the structured `not_stated` publication state, not prose that can
+  // leak into customer-facing property details.
   const [skipped, setSkipped] = useState<Record<string, boolean>>(() => saved?.skipped ?? {});
   const [showError, setShowError] = useState(false);
 
@@ -357,11 +398,19 @@ export function ExtractedFieldsReview({
       };
     }
 
-    onContinue(
-      partial as unknown as Partial<PropertyFormValues>,
-      mapped.map((i) => i.formField as keyof PropertyFormValues),
-      mergedOverrides,
-    );
+    const selection: ReviewedExtractionSelection = {
+      formFields: mapped.map((i) => i.formField as keyof PropertyFormValues),
+      configFields: {},
+    };
+    for (const item of allItems) {
+      if (!item.configField || item.configIndex === undefined || skipped[item.key]) continue;
+      selection.configFields[item.configIndex] = {
+        ...selection.configFields[item.configIndex],
+        [item.configField]: true,
+      };
+    }
+
+    onContinue(partial as unknown as Partial<PropertyFormValues>, selection, mergedOverrides);
   };
 
   const setVariant = (index: number, patch: { bucket?: ConfigBucket; label?: string }) =>
@@ -376,9 +425,18 @@ export function ExtractedFieldsReview({
       </p>
 
       {missing.length > 0 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-(--rule-strong) bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>Not found in any file, fill these in yourself: {missing.join(", ")}</span>
+        <div className="mt-4 rounded-xl border border-dashed border-amber-500/45 bg-amber-500/8 px-3.5 py-3 text-xs text-muted-foreground">
+          <div className="flex items-start gap-2">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div>
+              <p className="font-medium text-foreground">Not stated in the brochure</p>
+              <p className="mt-1 leading-5">
+                These fields are marked <strong>N/A</strong> and will be omitted from customer
+                details unless you add a verified value in the final check.
+              </p>
+            </div>
+          </div>
+          <p className="mt-2 leading-5 text-muted-foreground">{missing.join(", ")}</p>
         </div>
       )}
       {response.extraction.warnings?.length > 0 && (
@@ -456,6 +514,7 @@ export function ExtractedFieldsReview({
                 {group.items.map((item) => {
                   const isApproved = Boolean(approved[item.key]);
                   const isSkipped = Boolean(skipped[item.key]);
+                  const savedValue = savedValuesByItem.get(item.key);
                   const needsAttention = showError && !isApproved && !isSkipped;
                   const editable = Boolean(item.formField) || Boolean(item.configField);
                   // The label bakes in a count ("Amenities (37)") computed once from
@@ -493,6 +552,11 @@ export function ExtractedFieldsReview({
                                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${confidenceStyle(item.confidence)}`}
                               >
                                 {Math.round(item.confidence * 100)}% confident
+                              </span>
+                            )}
+                            {savedValue && (
+                              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 uppercase dark:text-amber-400">
+                                Replaces saved value
                               </span>
                             )}
                           </div>
@@ -567,6 +631,12 @@ export function ExtractedFieldsReview({
                             <p className="mt-1.5 flex items-start gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
                               <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                               <span>{item.validationWarning}</span>
+                            </p>
+                          )}
+
+                          {savedValue && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Saved: <span className="line-through">{savedValue}</span>
                             </p>
                           )}
 
@@ -678,7 +748,7 @@ export function ExtractedFieldsReview({
                               isSkipped ? "text-foreground" : "text-muted-foreground/70"
                             }`}
                           >
-                            {isSkipped ? "Skipped — leave blank" : "Skip this field"}
+                            {isSkipped ? "N/A — hidden from customers" : "Mark N/A"}
                           </button>
                         </div>
                       </div>
