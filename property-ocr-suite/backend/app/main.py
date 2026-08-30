@@ -61,6 +61,7 @@ import json
 import logging
 import re
 import shutil
+import tempfile
 import threading
 import time
 import uuid
@@ -245,6 +246,25 @@ def _resolve_source_pdf(job_id: str, source_file: str) -> Path | None:
             if len(pdfs) == 1:
                 return pdfs[0]
     return None
+
+
+def _download_archived_pdf(job_id: str, destination: Path) -> bool:
+    """Fetch a historical brochure only for the duration of page rendering.
+
+    The object name is deterministic, so the old extraction JSON does not
+    need a new mutable field just to locate its original source document."""
+    if not settings.GCS_PRIVATE_SOURCE_BUCKET or not JOB_ID_RE.fullmatch(job_id):
+        return False
+    try:
+        from google.cloud import storage
+
+        storage.Client().bucket(settings.GCS_PRIVATE_SOURCE_BUCKET).blob(
+            f"brochure-archive/legacy/{job_id}/source.pdf"
+        ).download_to_filename(destination)
+        return True
+    except Exception:  # noqa: BLE001
+        log.exception("Could not read archived brochure for job %s", job_id)
+        return False
 
 
 # job_id -> {"status": "queued"|"processing"|"done"|"error", "batches_done": int,
@@ -603,12 +623,20 @@ async def get_page_image(job_id: str, file: str, page: int):
     citation against the source — not saved anywhere, since it's cheap to
     re-render and would otherwise be one more file per page per job."""
     pdf_path = _resolve_source_pdf(job_id, file)
-    if pdf_path is None:
-        raise HTTPException(status_code=404, detail="Source PDF not found")
-    try:
-        image_bytes = render_page_jpeg(pdf_path, page)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if pdf_path is not None:
+        try:
+            image_bytes = render_page_jpeg(pdf_path, page)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+    else:
+        with tempfile.TemporaryDirectory(prefix="propcompare-citation-") as directory:
+            archived_pdf = Path(directory) / "source.pdf"
+            if not _download_archived_pdf(job_id, archived_pdf):
+                raise HTTPException(status_code=404, detail="Source PDF not found")
+            try:
+                image_bytes = render_page_jpeg(archived_pdf, page)
+            except ValueError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
     return Response(
         content=image_bytes,
         media_type="image/jpeg",

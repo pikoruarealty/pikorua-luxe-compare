@@ -151,6 +151,7 @@ class Settings:
     # Historical imports are mounted separately and read-only in production.
     # They must not replace the writable working directories above.
     LEGACY_STORAGE_DIR: Path = Path(os.getenv("LEGACY_STORAGE_DIR", "/legacy-storage"))
+    GCS_PRIVATE_SOURCE_BUCKET: str = os.getenv("GCS_PRIVATE_SOURCE_BUCKET", "")
     # Per-developer review corrections, used to hint the next brochure from
     # the same developer — see learning_hints.py.
     HINTS_DIR: Path = Path(os.getenv("HINTS_DIR", str(BASE_DIR / "storage" / "learning_hints")))
