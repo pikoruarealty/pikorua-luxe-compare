@@ -1,19 +1,23 @@
 # PropCompare deployment runbook
 
-Ground truth for the live deployment as of 2026-08-27. This is a shared VM;
+Ground truth for the live deployment as of 2026-08-30. This is a shared VM;
 `PROGRESS.md` records migration history and this file records current operation.
 
 ## Where it runs
 
 - **VM:** `instance-small-mumbai`, zone `asia-south1-a`, project
   `project-2f5d7375-d77f-44ae-b19`. Repository: `/opt/propcompare`.
-- **Access:** IAP SSH only. Run all VM commands explicitly in the active IAP
-  session.
+- **Access:** IAP/browser SSH. Run VM commands inside the already-open VM
+  session; do not wrap them in `gcloud compute ssh` from the VM itself.
 - **Containers:** self-hosted Postgres, `web-blue`, OCR API/worker, and nginx
   run through `docker-compose.production.yml` on `propcompare-production`.
   Postgres is internal-only; nginx is the public HTTP/HTTPS entry point.
 - **Public property media:** GCS bucket
   `project-2f5d7375-d77f-44ae-b19-propcompare-images`.
+- **Private brochure originals:** `GCS_PRIVATE_SOURCE_BUCKET`
+  (`propcompare-source-mumbai` in the production environment). Original
+  brochures are private; page citations are rendered only through the
+  authenticated OCR API and its short-lived image ticket.
 - **Authentication:** Better Auth, backed by the self-hosted Postgres database.
 
 ## Secrets
@@ -29,6 +33,10 @@ This creates `web.env`, `ocr.env`, and `db.env`, each mode `0600`.
 `web.env` includes `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SESSION_SECRET`,
 GCS, Upstash, SMS, Maps, Sentry, and feature-flag values. Do not print or
 commit those files.
+
+`fetch-secrets.sh` copies only `GCS_PRIVATE_SOURCE_BUCKET` from `web.env` into
+`ocr.env`; this lets the OCR API retrieve private source PDFs without receiving
+the full web-secret set.
 
 GitHub repository variables are `GCP_PROJECT_ID`, `GCP_VM_NAME`, and
 `GCP_VM_ZONE`. The deploy identity uses
@@ -55,6 +63,40 @@ start.
 Images are built in CI, not on the 2 GB VM. `web-blue` is the single active
 application slot on this deployment path. The older manual blue/green workflow
 is retained only as a recovery path and is not the normal release mechanism.
+
+## Brochure citation storage and recovery
+
+The current reviewer URL is `https://propcompare.in/ocr-api`; page-image URLs
+must retain that `/ocr-api` prefix. The reviewer UI uses this same cited-page
+experience for Add Property, Edit from brochure, and retrospective drafts.
+
+Historical imports made before durable storage retained JSON extraction output
+on the host but not necessarily their PDFs. A temporary read-only
+`/legacy-storage` mount on `ocr-api` supports recovery while the originals are
+moved into private GCS. Do not remove it until the migration has been verified.
+
+For the 24 live retrospective drafts, run the archive script **dry first** and
+then with `--apply` using the one-off Bun pattern below:
+
+```bash
+bun scripts/archive-retrospective-brochures-to-gcs.ts
+bun scripts/archive-retrospective-brochures-to-gcs.ts --apply
+```
+
+The script uploads one source PDF per linked draft to the deterministic private
+object path `brochure-archive/legacy/<job-id>/source.pdf`. The OCR API falls
+back to that object only when a host PDF is absent, downloads it into a
+temporary directory to render the requested page, and deletes that temporary
+file immediately. It never exposes the bucket or a signed bucket URL to the
+browser.
+
+Cleanup order is mandatory:
+
+1. Upload and verify all 24 private objects.
+2. Verify a reviewer citation still renders after host-PDF access is removed.
+3. Remove the temporary host PDF archive/mount and the browser-SSH upload ZIP.
+4. Keep only the private GCS originals; do not use VM disk for future durable
+   brochure storage.
 
 ## Verification and debugging
 
@@ -99,3 +141,7 @@ sudo docker run --rm --network propcompare-production \
   the Terraform configuration.
 - `docker-compose.override.yml` is VM-local and untracked; confirm it exists
   before changing its use in the deploy script.
+- The existing browser upload component still uses the legacy OCR endpoint.
+  Durable V2 OCR already writes originals to `GCS_PRIVATE_SOURCE_BUCKET`; route
+  new Add/Edit uploads through that path before declaring host OCR storage fully
+  retired.

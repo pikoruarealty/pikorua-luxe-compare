@@ -12,6 +12,44 @@ merge on `main` (`0bdd28f`). **Never commit to `main` directly.**
 
 ---
 
+## Production brochure-review recovery and durable-storage cutover â€” 2026-08-30
+
+This section supersedes older assumptions about the live brochure-review path.
+
+- The live shared-VM deploy is GitHub Actions `deploy-shared-vm.yml`; push to
+  `main` builds immutable web/OCR images, runs `ops/deploy-shared-vm.sh`,
+  fetches Secret Manager runtime env, and restarts `web-blue` plus OCR. VM
+  commands are run directly inside the existing browser/IAP SSH session.
+- The 24 live-property workflows were deliberately reset to `draft`, then
+  linked (not submitted or published) to their matching OCR jobs by
+  `scripts/backfill-retrospective-brochure-links.ts`. Verification query result:
+  `24 live_drafts`, `24 drafts_with_brochure_evidence`.
+- Add, Edit-from-brochure, and retrospective Draft Review now share
+  `ExtractedFieldsReview`: field-level citations, source-page panel, deliberate
+  replacement approval for existing values, and explicit N/A handling. Legacy
+  placeholder text such as `Not stated in brochure` is normalized to the
+  structured omitted/not-stated state and does not reach customer details.
+- Fixed citation page URLs to preserve the public `/ocr-api` reverse-proxy
+  prefix (`96aee0a`). The OCR API itself and a real page-20 render for 360 both
+  returned `200 image/jpeg` after recovery.
+- Historical OCR JSON had survived on the VM but PDFs/page images had not.
+  The 24 original PDFs (457 MiB) were restored temporarily under host
+  `property-ocr-suite/backend/storage/uploads`. A private-GCS archival fallback
+  and guarded migration script are in `3ec77b2`; deployment/migration/cleanup
+  remain in progress. **Do not delete the host PDFs or the read-only
+  `/legacy-storage` mount until the private GCS upload and post-removal browser
+  citation check pass.** The browser-SSH ZIP is temporary and can be removed
+  only after that verification.
+- The intended steady state is private GCS originals, temporary OCR render
+  files only, and no growing VM source-PDF archive. Durable V2 OCR already has
+  that storage model; the legacy Add/Edit upload component still needs routing
+  onto it before host OCR storage is fully retired.
+
+Relevant production commits: `0ab77c8`, `3c1de51`, `77b911b`, `c00b8c3`,
+`96aee0a`, `3ec77b2`.
+
+---
+
 ## Status at a glance
 
 - [x] **Phase 0 — Merge and stop the live bleeding** — DONE
