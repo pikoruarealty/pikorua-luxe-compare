@@ -19,7 +19,10 @@ the brochure itself states the total.
 2. Every field you DO report must include:
    - "value": the value, normalised the way a human data-entry clerk would type \
 it (e.g. dates as dd-mm-yyyy, numbers as plain numbers without commas).
-   - "page": the page number (from the page header given to you) it came from.
+   - "page": the PHYSICAL PDF page number from the `--- PAGE N ---` header
+     given to you. This is the only page number you may report. Some brochures
+     print their own folio number on the artwork and it can differ from N
+     because of covers or inserts; ignore that printed folio completely.
    - "evidence": a short verbatim snippet (under 20 words) from that exact page \
 proving the value — a human will use this to verify in one glance without \
 re-reading the page.

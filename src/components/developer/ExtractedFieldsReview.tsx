@@ -520,6 +520,31 @@ export function ExtractedFieldsReview({
                   const savedValue = savedValuesByItem.get(item.key);
                   const needsAttention = showError && !isApproved && !isSkipped;
                   const editable = Boolean(item.formField) || Boolean(item.configField);
+                  // Amenities and highlights are reviewed as one list, but each
+                  // pill carries its own source page. Keep those citations at
+                  // the end of the card as distinct page links, rather than
+                  // burying an inert page number inside every pill.
+                  const listCitationPages = item.values
+                    ? (item.valueCitations ?? []).reduce<
+                        { sourceFile: string; sourcePage: number }[]
+                      >((pages, citation) => {
+                        if (!citation?.sourceFile || !citation.sourcePage) return pages;
+                        if (
+                          pages.some(
+                            (page) =>
+                              page.sourceFile === citation.sourceFile &&
+                              page.sourcePage === citation.sourcePage,
+                          )
+                        ) {
+                          return pages;
+                        }
+                        pages.push({
+                          sourceFile: citation.sourceFile,
+                          sourcePage: citation.sourcePage,
+                        });
+                        return pages;
+                      }, [])
+                    : [];
                   // The label bakes in a count ("Amenities (37)") computed once from
                   // the raw extraction — pills can be added/removed since then, so
                   // re-derive the number from the live list rather than showing a
@@ -586,11 +611,6 @@ export function ExtractedFieldsReview({
                                     className="inline-flex items-center gap-1 rounded-full border border-(--rule) bg-muted/30 py-1 pr-1.5 pl-2.5 text-xs text-foreground"
                                   >
                                     {v}
-                                    {citation?.sourcePage && (
-                                      <span className="text-[9px] text-muted-foreground/70">
-                                        p.{citation.sourcePage}
-                                      </span>
-                                    )}
                                     <button
                                       type="button"
                                       onClick={() => removePill(item.key, vi)}
@@ -641,6 +661,22 @@ export function ExtractedFieldsReview({
                             <p className="mt-1 text-[11px] text-muted-foreground">
                               Saved: <span className="line-through">{savedValue}</span>
                             </p>
+                          )}
+
+                          {listCitationPages.length > 0 && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                              <span className="text-muted-foreground">Brochure pages:</span>
+                              {listCitationPages.map(({ sourceFile, sourcePage }) => (
+                                <button
+                                  key={pageKey(sourceFile, sourcePage)}
+                                  type="button"
+                                  onClick={() => openViewer(sourceFile, sourcePage)}
+                                  className="inline-flex items-center gap-1 font-medium text-champagne underline underline-offset-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-champagne/40 focus-visible:outline-none"
+                                >
+                                  <ImageIcon className="h-3 w-3" /> View page {sourcePage}
+                                </button>
+                              ))}
+                            </div>
                           )}
 
                           {(item.snippet || item.sourceFile) && (
