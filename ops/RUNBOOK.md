@@ -98,6 +98,11 @@ Cleanup order is mandatory:
 4. Keep only the private GCS originals; do not use VM disk for future durable
    brochure storage.
 
+The 2026-08-30 retrospective recovery completed all four steps for its 24
+brochures. Do not repeat the host-PDF restoration unless a private-GCS recovery
+test has first failed; the normal state has no original brochure PDF archive on
+the VM.
+
 ## Verification and debugging
 
 ```bash

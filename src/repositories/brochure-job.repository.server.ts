@@ -1,7 +1,7 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, notExists } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client.server";
-import { brochureJobs } from "@/db/schema";
+import { brochureJobs, propertySubmissionWorkflows } from "@/db/schema";
 
 export interface BrochureJobRow {
   jobId: string;
@@ -31,10 +31,22 @@ export async function isBrochureJobOwnedBy(
 export async function listUnconsumedBrochureJobs(
   adminProfileId: string,
 ): Promise<BrochureJobRow[]> {
-  return getDatabase()
+  const db = getDatabase();
+  return db
     .select({ jobId: brochureJobs.jobId, createdAt: brochureJobs.createdAt })
     .from(brochureJobs)
-    .where(and(eq(brochureJobs.adminProfileId, adminProfileId), isNull(brochureJobs.propertyId)))
+    .where(
+      and(
+        eq(brochureJobs.adminProfileId, adminProfileId),
+        isNull(brochureJobs.propertyId),
+        notExists(
+          db
+            .select({ workflowId: propertySubmissionWorkflows.id })
+            .from(propertySubmissionWorkflows)
+            .where(eq(propertySubmissionWorkflows.brochureJobId, brochureJobs.jobId)),
+        ),
+      ),
+    )
     .orderBy(desc(brochureJobs.createdAt));
 }
 

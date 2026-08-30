@@ -37,8 +37,8 @@ This section supersedes older assumptions about the live brochure-review path.
   `property-ocr-suite/backend/storage/uploads`. A private-GCS archival fallback
   and guarded migration script are in `3ec77b2`; all 24 private objects and a
   GCS-only page-render test passed. The deploy now mounts only legacy JSON at
-  `/legacy-storage/jobs`; host PDFs and the browser-SSH ZIP may be removed only
-  after the final browser citation check.
+  `/legacy-storage/jobs`; the final browser citation check passed and the
+  temporary host-PDF folders plus browser-SSH ZIP were removed.
 - The intended steady state is private GCS originals, temporary OCR render
   files only, and no growing VM source-PDF archive. Durable V2 OCR already has
   that storage model; the legacy Add/Edit upload component still needs routing
