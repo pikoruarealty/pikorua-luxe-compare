@@ -95,10 +95,10 @@ services:
         condition: service_healthy
     env_file: /run/propcompare/ocr.env
     volumes:
-      # Legacy brochure imports retain their original PDFs on the host. The
-      # reviewer may render cited pages through the authenticated OCR API, but
-      # the service must never be able to alter that evidence archive.
-      - ./property-ocr-suite/backend/storage:/legacy-storage:ro
+      # Legacy JSON extraction records remain readable while the original PDFs
+      # live in private GCS. The OCR API renders cited pages from a temporary
+      # GCS download, so host source documents are never mounted here.
+      - ./property-ocr-suite/backend/storage/jobs:/legacy-storage/jobs:ro
     environment:
       APP_ENV: production
     expose: ["8000"]

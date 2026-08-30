@@ -71,9 +71,9 @@ must retain that `/ocr-api` prefix. The reviewer UI uses this same cited-page
 experience for Add Property, Edit from brochure, and retrospective drafts.
 
 Historical imports made before durable storage retained JSON extraction output
-on the host but not necessarily their PDFs. A temporary read-only
-`/legacy-storage` mount on `ocr-api` supports recovery while the originals are
-moved into private GCS. Do not remove it until the migration has been verified.
+on the host but not necessarily their PDFs. `ocr-api` mounts only that small
+legacy JSON folder read-only; original PDFs are private GCS objects and are
+never mounted into the container.
 
 For the 24 live retrospective drafts, run the archive script **dry first** and
 then with `--apply` using the one-off Bun pattern below:
@@ -94,7 +94,7 @@ Cleanup order is mandatory:
 
 1. Upload and verify all 24 private objects.
 2. Verify a reviewer citation still renders after host-PDF access is removed.
-3. Remove the temporary host PDF archive/mount and the browser-SSH upload ZIP.
+3. Remove the temporary host PDF archive and the browser-SSH upload ZIP.
 4. Keep only the private GCS originals; do not use VM disk for future durable
    brochure storage.
 

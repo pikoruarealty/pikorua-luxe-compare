@@ -35,11 +35,10 @@ This section supersedes older assumptions about the live brochure-review path.
 - Historical OCR JSON had survived on the VM but PDFs/page images had not.
   The 24 original PDFs (457 MiB) were restored temporarily under host
   `property-ocr-suite/backend/storage/uploads`. A private-GCS archival fallback
-  and guarded migration script are in `3ec77b2`; deployment/migration/cleanup
-  remain in progress. **Do not delete the host PDFs or the read-only
-  `/legacy-storage` mount until the private GCS upload and post-removal browser
-  citation check pass.** The browser-SSH ZIP is temporary and can be removed
-  only after that verification.
+  and guarded migration script are in `3ec77b2`; all 24 private objects and a
+  GCS-only page-render test passed. The deploy now mounts only legacy JSON at
+  `/legacy-storage/jobs`; host PDFs and the browser-SSH ZIP may be removed only
+  after the final browser citation check.
 - The intended steady state is private GCS originals, temporary OCR render
   files only, and no growing VM source-PDF archive. Durable V2 OCR already has
   that storage model; the legacy Add/Edit upload component still needs routing
