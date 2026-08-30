@@ -53,6 +53,11 @@ export const listBrochureJobs = createServerFn({ method: "POST" })
     // something the picker should ever fail over. If the OCR service is
     // unreachable the dropdown still works, just labeled by date/id alone.
     const names = new Map<string, { propertyName: string | null; developerName: string | null }>();
+    // A successful summaries response is authoritative: a row omitted by the
+    // OCR service can no longer be resumed, so don't present it as a broken,
+    // unnamed option. If the request itself fails, retain every row so a
+    // temporary OCR outage never hides work that may still be resumable.
+    let summariesLoaded = false;
     if (rows.length > 0) {
       try {
         const { baseUrl, headers } = serviceConfig();
@@ -61,6 +66,7 @@ export const listBrochureJobs = createServerFn({ method: "POST" })
           { headers, signal: AbortSignal.timeout(15_000) },
         );
         if (res.ok) {
+          summariesLoaded = true;
           const body = (await res.json()) as {
             summaries?: {
               job_id: string;
@@ -79,7 +85,9 @@ export const listBrochureJobs = createServerFn({ method: "POST" })
       }
     }
 
-    return rows.map((row) => ({
+    const resumableRows = summariesLoaded ? rows.filter((row) => names.has(row.job_id)) : rows;
+
+    return resumableRows.map((row) => ({
       jobId: row.job_id,
       createdAt: row.created_at,
       propertyName: names.get(row.job_id)?.propertyName ?? null,
