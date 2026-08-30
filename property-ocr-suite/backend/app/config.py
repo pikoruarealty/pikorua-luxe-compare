@@ -148,6 +148,9 @@ class Settings:
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", str(BASE_DIR / "storage" / "uploads")))
     IMAGE_DIR: Path = Path(os.getenv("IMAGE_DIR", str(BASE_DIR / "storage" / "images")))
     JOB_DIR: Path = Path(os.getenv("JOB_DIR", str(BASE_DIR / "storage" / "jobs")))
+    # Historical imports are mounted separately and read-only in production.
+    # They must not replace the writable working directories above.
+    LEGACY_STORAGE_DIR: Path = Path(os.getenv("LEGACY_STORAGE_DIR", "/legacy-storage"))
     # Per-developer review corrections, used to hint the next brochure from
     # the same developer — see learning_hints.py.
     HINTS_DIR: Path = Path(os.getenv("HINTS_DIR", str(BASE_DIR / "storage" / "learning_hints")))

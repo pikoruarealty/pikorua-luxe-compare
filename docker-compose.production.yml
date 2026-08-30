@@ -98,8 +98,7 @@ services:
       # Legacy brochure imports retain their original PDFs on the host. The
       # reviewer may render cited pages through the authenticated OCR API, but
       # the service must never be able to alter that evidence archive.
-      - ./property-ocr-suite/backend/storage/jobs:/app/storage/jobs:ro
-      - ./property-ocr-suite/backend/storage/uploads:/app/storage/uploads:ro
+      - ./property-ocr-suite/backend/storage:/legacy-storage:ro
     environment:
       APP_ENV: production
     expose: ["8000"]

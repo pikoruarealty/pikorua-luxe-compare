@@ -175,6 +175,17 @@ def _job_path(job_id: str) -> Path:
     return settings.JOB_DIR / f"{job_id}.json"
 
 
+def _legacy_job_path(job_id: str) -> Path:
+    return settings.LEGACY_STORAGE_DIR / "jobs" / f"{job_id}.json"
+
+
+def _readable_job_path(job_id: str) -> Path | None:
+    for path in (_job_path(job_id), _legacy_job_path(job_id)):
+        if path.is_file():
+            return path
+    return None
+
+
 def _save_job(job_id: str, extraction: PropertyExtraction) -> None:
     # encoding is explicit because Path.write_text defaults to the locale
     # encoding, which on Windows is cp1252 — brochures routinely carry
@@ -184,8 +195,8 @@ def _save_job(job_id: str, extraction: PropertyExtraction) -> None:
 
 
 def _load_job(job_id: str) -> PropertyExtraction:
-    path = _job_path(job_id)
-    if not path.exists():
+    path = _readable_job_path(job_id)
+    if path is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return PropertyExtraction.model_validate_json(path.read_text(encoding="utf-8"))
 
@@ -224,14 +235,15 @@ def _resolve_source_pdf(job_id: str, source_file: str) -> Path | None:
     instead keep the original filename under UPLOAD_DIR/manual/, which is
     tried first since it needs no per-job disambiguation."""
     original = Path(source_file).name
-    manual = (settings.UPLOAD_DIR / "manual" / original).resolve()
-    if manual.is_relative_to(settings.UPLOAD_DIR.resolve()) and manual.is_file():
-        return manual
-    job_dir = settings.UPLOAD_DIR / job_id
-    if job_dir.is_dir():
-        pdfs = sorted(p for p in job_dir.iterdir() if p.suffix.lower() == ".pdf")
-        if len(pdfs) == 1:
-            return pdfs[0]
+    for upload_dir in (settings.UPLOAD_DIR, settings.LEGACY_STORAGE_DIR / "uploads"):
+        manual = (upload_dir / "manual" / original).resolve()
+        if manual.is_relative_to(upload_dir.resolve()) and manual.is_file():
+            return manual
+        job_dir = upload_dir / job_id
+        if job_dir.is_dir():
+            pdfs = sorted(p for p in job_dir.iterdir() if p.suffix.lower() == ".pdf")
+            if len(pdfs) == 1:
+                return pdfs[0]
     return None
 
 
@@ -482,8 +494,8 @@ async def get_property_summaries(job_ids: str = Query(...)):
         job_id = job_id.strip()
         if not JOB_ID_RE.fullmatch(job_id):
             continue
-        path = _job_path(job_id)
-        if not path.exists():
+        path = _readable_job_path(job_id)
+        if path is None:
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
