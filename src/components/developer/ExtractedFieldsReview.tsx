@@ -350,9 +350,12 @@ export function ExtractedFieldsReview({
 
   const pageImageUrl = (sourceFile: string, sourcePage: number): string | null => {
     if (!response.imageBaseUrl || !response.imageTicket) return null;
+    // `imageBaseUrl` may be a public reverse-proxy prefix such as
+    // `https://propcompare.in/ocr-api`. A leading slash in `new URL()` would
+    // discard that prefix and send the browser to `/api/...`, which is not the
+    // OCR service. Build from the complete configured base instead.
     const url = new URL(
-      `/api/properties/${encodeURIComponent(response.job_id)}/page-image`,
-      response.imageBaseUrl,
+      `${response.imageBaseUrl.replace(/\/$/, "")}/api/properties/${encodeURIComponent(response.job_id)}/page-image`,
     );
     url.searchParams.set("file", sourceFile);
     url.searchParams.set("page", String(sourcePage));
